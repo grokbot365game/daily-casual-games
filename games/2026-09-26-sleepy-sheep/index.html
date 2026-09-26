@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#b9d9d0">
+  <title>ねむねむ羊 — Sleepy Sheep Count</title>
+  <style>
+    :root {
+      --ink: #30464a;
+      --ink-soft: #607477;
+      --cream: #fffaf1;
+      --paper: #fffdf8;
+      --mint: #b9d9d0;
+      --mint-dark: #6da69a;
+      --peach: #f4b39f;
+      --peach-dark: #db856f;
+      --lavender: #d9d4ec;
+      --yellow: #f8d986;
+      --shadow: rgba(48, 70, 74, .16);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      min-height: 100svh;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+      overflow-x: hidden;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 17% 13%, rgba(255,255,255,.8) 0 4%, transparent 4.5%),
+        radial-gradient(circle at 80% 6%, rgba(255,255,255,.5) 0 3%, transparent 3.5%),
+        linear-gradient(150deg, #dbe9df 0%, #f7e7d7 53%, #e7def0 100%);
+      font-family: ui-rounded, "Hiragino Maru Gothic ProN", "Yu Gothic", system-ui, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .game-shell {
+      width: min(100%, 720px);
+      position: relative;
+      isolation: isolate;
+    }
+    .game-card {
+      position: relative;
+      padding: clamp(18px, 4vw, 32px);
+      border: 3px solid rgba(255,255,255,.7);
+      border-radius: 32px;
+      background: rgba(255, 253, 248, .78);
+      box-shadow: 0 22px 60px var(--shadow), inset 0 1px 0 rgba(255,255,255,.8);
+      backdrop-filter: blur(12px);
+    }
+    header { text-align: center; margin-bottom: 18px; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      margin: 0 0 6px;
+      color: var(--mint-dark);
+      font-size: .72rem;
+      font-weight: 800;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+    }
+    .eyebrow::before, .eyebrow::after { content: "✦"; color: var(--peach); font-size: .8em; }
+    h1 { margin: 0; color: var(--ink); font-size: clamp(2rem, 7vw, 3.6rem); line-height: 1; letter-spacing: .04em; }
+    .subtitle { margin: 9px 0 0; color: var(--ink-soft); font-size: clamp(.78rem, 2vw, .95rem); font-weight: 700; letter-spacing: .08em; }
+    .hud { display: flex; justify-content: center; gap: 12px; margin: 0 auto 15px; }
+    .score-pill {
+      min-width: 135px;
+      padding: 10px 18px 11px;
+      text-align: center;
+      border-radius: 18px;
+      background: var(--cream);
+      box-shadow: inset 0 0 0 2px rgba(109,166,154,.14), 0 5px 12px rgba(48,70,74,.06);
+    }
+    .score-label { display: block; color: var(--ink-soft); font-size: .72rem; font-weight: 800; letter-spacing: .16em; }
+    #score { display: block; margin-top: 1px; color: var(--mint-dark); font-size: 1.65rem; font-weight: 900; line-height: 1; }
+    .stage-wrap { position: relative; overflow: hidden; border-radius: 23px; box-shadow: 0 9px 18px rgba(48,70,74,.12); }
+    canvas { display: block; width: 100%; height: auto; aspect-ratio: 1.55; background: #cbe7e0; touch-action: none; cursor: pointer; }
+    .canvas-hint {
+      position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%);
+      pointer-events: none; white-space: nowrap;
+      padding: 7px 13px; border-radius: 99px; color: rgba(48,70,74,.74);
+      background: rgba(255,253,248,.67); font-size: .78rem; font-weight: 800;
+      transition: opacity .4s ease, transform .4s ease;
+    }
+    .canvas-hint.hidden { opacity: 0; transform: translate(-50%, 8px); }
+    .action-row { display: flex; justify-content: center; margin-top: 17px; }
+    button {
+      border: 0; font: inherit; font-weight: 900; color: #fff;
+      cursor: pointer; touch-action: manipulation;
+      transition: transform .13s ease, box-shadow .13s ease, background .13s ease;
+    }
+    button:focus-visible { outline: 4px solid rgba(109,166,154,.38); outline-offset: 4px; }
+    .jump-button {
+      width: min(100%, 340px); padding: 16px 25px 17px;
+      border-radius: 18px; background: var(--peach-dark);
+      box-shadow: 0 5px 0 #b96e5d, 0 10px 18px rgba(185,110,93,.25);
+      font-size: 1.05rem; letter-spacing: .08em;
+    }
+    .jump-button:hover { background: #cf7965; transform: translateY(-2px); box-shadow: 0 7px 0 #b96e5d, 0 13px 20px rgba(185,110,93,.27); }
+    .jump-button:active { transform: translateY(4px); box-shadow: 0 1px 0 #b96e5d, 0 5px 10px rgba(185,110,93,.2); }
+    .tip { margin: 16px 0 0; text-align: center; color: var(--ink-soft); font-size: .73rem; font-weight: 700; letter-spacing: .05em; }
+    .tip kbd { display: inline-block; min-width: 27px; padding: 2px 6px; border-radius: 6px; background: #eef3ec; box-shadow: inset 0 -2px 0 rgba(48,70,74,.13); font-size: .68rem; }
+    .overlay {
+      position: absolute; inset: 0; z-index: 4; display: grid; place-items: center; padding: 20px;
+      border-radius: 20px; background: rgba(48,70,74,.18); opacity: 0; pointer-events: none; transition: opacity .25s ease;
+    }
+    .overlay.show { opacity: 1; pointer-events: auto; }
+    .game-over-card { width: min(100%, 325px); padding: 24px 22px 22px; text-align: center; border-radius: 24px; background: var(--paper); box-shadow: 0 14px 35px rgba(48,70,74,.2); transform: translateY(10px) scale(.97); transition: transform .25s ease; }
+    .overlay.show .game-over-card { transform: translateY(0) scale(1); }
+    .sleepy-face { display: block; margin-bottom: 1px; font-size: 2.5rem; line-height: 1; }
+    .game-over-card h2 { margin: 8px 0 5px; font-size: 1.5rem; }
+    .game-over-card p { margin: 0 0 17px; color: var(--ink-soft); font-size: .9rem; font-weight: 700; }
+    .restart-button { width: 100%; padding: 13px 18px; border-radius: 14px; background: var(--mint-dark); box-shadow: 0 4px 0 #558d82; }
+    .restart-button:hover { background: #5d988d; transform: translateY(-2px); }
+    .restart-button:active { transform: translateY(3px); box-shadow: 0 1px 0 #558d82; }
+    .cloud { position: absolute; z-index: -1; width: 120px; height: 37px; border-radius: 99px; background: rgba(255,255,255,.37); filter: blur(1px); }
+    .cloud::before, .cloud::after { content: ""; position: absolute; border-radius: 50%; background: inherit; }
+    .cloud::before { width: 56px; height: 56px; left: 17px; bottom: 0; }
+    .cloud::after { width: 43px; height: 43px; right: 18px; bottom: 0; }
+    .cloud.one { top: 8%; left: -45px; transform: scale(.8); }
+    .cloud.two { top: 34%; right: -62px; transform: scale(1.1); opacity: .55; }
+    @media (max-width: 480px) {
+      body { padding: 8px; align-items: start; padding-top: max(8px, env(safe-area-inset-top)); }
+      .game-card { padding: 17px 12px 19px; border-radius: 25px; }
+      header { margin-bottom: 13px; }
+      .hud { margin-bottom: 11px; }
+      .score-pill { padding: 8px 15px 9px; min-width: 120px; }
+      .stage-wrap { border-radius: 18px; }
+      .action-row { margin-top: 13px; }
+      .tip { margin-top: 13px; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <main class="game-shell" aria-label="ねむねむ羊 Sleepy Sheep Count">
+    <span class="cloud one" aria-hidden="true"></span><span class="cloud two" aria-hidden="true"></span>
+    <section class="game-card">
+      <header>
+        <p class="eyebrow">A tiny cozy game</p>
+        <h1>ねむねむ羊</h1>
+        <p class="subtitle">Sleepy Sheep Count</p>
+      </header>
+      <div class="hud" aria-live="polite">
+        <div class="score-pill"><span class="score-label">スコア</span><strong id="score">0</strong></div>
+      </div>
+      <div class="stage-wrap">
+        <canvas id="game" width="900" height="580" aria-label="羊が柵を飛び越えるゲーム。クリックまたはタップでジャンプ"></canvas>
+        <span id="hint" class="canvas-hint">タップでジャンプ</span>
+        <div id="overlay" class="overlay" aria-hidden="true">
+          <div class="game-over-card" role="dialog" aria-labelledby="over-title">
+            <span class="sleepy-face" aria-hidden="true">( ˘ω˘ )</span>
+            <h2 id="over-title">おやすみなさい…</h2>
+            <p>スコア：<strong id="final-score">0</strong> 回</p>
+            <button id="restart" class="restart-button" type="button">もう一回</button>
+          </div>
+        </div>
+      </div>
+      <div class="action-row"><button id="jump" class="jump-button" type="button">ジャンプ！</button></div>
+      <p class="tip"><kbd>SPACE</kbd> または <kbd>↑</kbd> でもジャンプできます</p>
+    </section>
+  </main>
+  <script>
+  (() => {
+    'use strict';
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const finalScoreEl = document.getElementById('final-score');
+    const overlay = document.getElementById('overlay');
+    const jumpButton = document.getElementById('jump');
+    const restartButton = document.getElementById('restart');
+    const hint = document.getElementById('hint');
+    const W = canvas.width, H = canvas.height;
+    const groundY = 474;
+    let dpr = 1, raf = 0, lastTime = 0, elapsed = 0;
+    let score = 0, best = 0, running = true, started = false;
+    let speed = 315, fenceX = 790;
+    let sheep = { x: 196, y: groundY, vy: 0, grounded: true, blink: 0 };
+    let particles = [], stars = [], grass = [];
+    try { best = Number(localStorage.getItem('sleepy-sheep-best') || 0); } catch (_) {}
+    for (let i = 0; i < 55; i++) stars.push({ x: (i * 137) % W, y: 72 + (i * 71) % 230, r: 1 + (i % 3) * .45, a: .13 + (i % 4) * .04 });
+    for (let i = 0; i < 80; i++) grass.push({ x: (i * 67) % W, h: 4 + (i % 4) * 2 });
+
+    function fitCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.round(rect.width * dpr);
+      canvas.height = Math.round(rect.width * (H / W) * dpr);
+      ctx.setTransform(dpr * rect.width / W, 0, 0, dpr * rect.width / W, 0, 0);
+    }
+    // Draw in a fixed logical coordinate system while the canvas scales responsively.
+    window.addEventListener('resize', fitCanvas, { passive: true });
+    fitCanvas();
+
+    function roundRect(x, y, w, h, r) {
+      ctx.beginPath(); ctx.roundRect(x, y, w, h, r);
+    }
+    function jump() {
+      if (!running) return;
+      started = true; hint.classList.add('hidden');
+      if (sheep.grounded) { sheep.vy = -720; sheep.grounded = false; puff(sheep.x - 24, groundY + 3, 7, '#fff8eb'); }
+    }
+    function restart() {
+      score = 0; speed = 315; fenceX = 790; elapsed = 0; started = false; running = true;
+      sheep = { x: 196, y: groundY, vy: 0, grounded: true, blink: 0 };
+      particles = []; scoreEl.textContent = '0'; hint.classList.remove('hidden');
+      overlay.classList.remove('show'); overlay.setAttribute('aria-hidden', 'true');
+      lastTime = performance.now();
+    }
+    function gameOver() {
+      running = false; finalScoreEl.textContent = score; overlay.classList.add('show'); overlay.setAttribute('aria-hidden', 'false');
+      if (score > best) { best = score; try { localStorage.setItem('sleepy-sheep-best', String(best)); } catch (_) {} }
+      puff(sheep.x + 10, sheep.y - 28, 13, '#f4b39f');
+    }
+    function puff(x, y, n, color) {
+      for (let i = 0; i < n; i++) particles.push({ x, y, vx: (Math.random()-.5)*150, vy: -Math.random()*135-20, life: .5 + Math.random()*.45, max: .95, r: 3 + Math.random()*5, color });
+    }
+    function update(dt) {
+      elapsed += dt;
+      const pace = started ? speed : 0;
+      if (started) {
+        fenceX -= pace * dt;
+        if (fenceX < -80) {
+          fenceX = W + 90 + Math.random()*100;
+          score++; speed = Math.min(470, speed + 7); scoreEl.textContent = score;
+          puff(760, groundY + 5, 7, '#f8d986');
+        }
+      }
+      sheep.vy += 1850 * dt; sheep.y += sheep.vy * dt;
+      if (sheep.y >= groundY) { sheep.y = groundY; sheep.vy = 0; if (!sheep.grounded) puff(sheep.x - 14, groundY + 4, 5, '#fff8eb'); sheep.grounded = true; }
+      sheep.blink = (sheep.blink + dt) % 4.3;
+      // Collision only when the fence overlaps the sheep's forward body area.
+      const sheepLeft = sheep.x - 54, sheepRight = sheep.x + 31, fenceLeft = fenceX - 14, fenceRight = fenceX + 34;
+      if (started && fenceRight > sheepLeft && fenceLeft < sheepRight && sheep.y > groundY - 125) gameOver();
+      particles.forEach(p => { p.x += p.vx*dt; p.y += p.vy*dt; p.vy += 220*dt; p.life -= dt; });
+      particles = particles.filter(p => p.life > 0);
+    }
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      drawSky(); drawHills(); drawGround(); drawFence(fenceX); drawSheep(sheep.x, sheep.y); drawParticles();
+    }
+    function drawSky() {
+      const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#b8ded8'); g.addColorStop(1, '#d9eee1'); ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+      ctx.fillStyle = 'rgba(255,250,227,.72)'; ctx.beginPath(); ctx.arc(735, 118, 42, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.67)'; stars.forEach(s => { ctx.globalAlpha = s.a + Math.sin(elapsed*1.3+s.x)*.035; ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill(); }); ctx.globalAlpha = 1;
+      // distant soft clouds
+      cloud(145, 147, 1); cloud(544, 196, .72);
+    }
+    function cloud(x,y,scale) { ctx.save(); ctx.translate(x,y); ctx.scale(scale,scale); ctx.fillStyle='rgba(255,255,255,.42)'; ctx.beginPath(); ctx.arc(0,12,25,0,Math.PI*2); ctx.arc(27,2,31,0,Math.PI*2); ctx.arc(62,13,23,0,Math.PI*2); ctx.roundRect(-25,12,110,24,15); ctx.fill(); ctx.restore(); }
+    function drawHills() { ctx.fillStyle='#9fc9b4'; ctx.beginPath(); ctx.moveTo(0,385); ctx.quadraticCurveTo(120,305,267,385); ctx.quadraticCurveTo(390,270,555,382); ctx.quadraticCurveTo(710,300,900,369); ctx.lineTo(900,510); ctx.lineTo(0,510); ctx.closePath(); ctx.fill(); ctx.fillStyle='#b7d8be'; ctx.beginPath(); ctx.moveTo(0,430); ctx.quadraticCurveTo(190,346,380,437); ctx.quadraticCurveTo(620,330,900,427); ctx.lineTo(900,510); ctx.lineTo(0,510); ctx.closePath(); ctx.fill(); }
+    function drawGround() {
+      ctx.fillStyle='#87b99b'; ctx.fillRect(0, groundY+21, W, H-groundY-21);
+      ctx.fillStyle='#73aa8b'; grass.forEach(g => { const x=(g.x - (started ? elapsed*speed*.12 : 0))%W; ctx.fillRect((x+W)%W, groundY+15-g.h, 2, g.h); });
+      ctx.fillStyle='#659b7d'; ctx.fillRect(0, groundY+19, W, 5);
+    }
+    function drawFence(x) {
+      ctx.save(); ctx.translate(x, 0);
+      ctx.shadowColor='rgba(48,70,74,.12)'; ctx.shadowBlur=7; ctx.shadowOffsetY=5;
+      ctx.fillStyle='#d88f78'; roundRect(-13, groundY-111, 29, 140, 7); ctx.fill(); roundRect(42, groundY-111, 29, 140, 7); ctx.fill();
+      ctx.shadowColor='transparent'; ctx.fillStyle='#f0b08e'; roundRect(-25, groundY-91, 99, 24, 8); ctx.fill(); roundRect(-25, groundY-37, 99, 24, 8); ctx.fill();
+      ctx.fillStyle='#bd705f'; ctx.beginPath(); ctx.arc(1,groundY-101,4,0,Math.PI*2); ctx.arc(56,groundY-101,4,0,Math.PI*2); ctx.fill(); ctx.restore();
+    }
+    function drawSheep(x,y) {
+      ctx.save(); ctx.translate(x,y); const bob = sheep.grounded ? Math.sin(elapsed*5)*1.5 : 0; ctx.translate(0,bob);
+      // shadow
+      ctx.fillStyle='rgba(48,70,74,.17)'; ctx.beginPath(); ctx.ellipse(2, 5, 65, 11, 0, 0, Math.PI*2); ctx.fill();
+      // legs
+      ctx.fillStyle='#526b6d'; roundRect(-30,-30,13,34,6); ctx.fill(); roundRect(14,-30,13,34,6); ctx.fill();
+      // wool body scallops
+      ctx.fillStyle='#fff9ed'; ctx.beginPath(); ctx.arc(-27,-65,23,0,Math.PI*2); ctx.arc(-5,-78,30,0,Math.PI*2); ctx.arc(23,-67,25,0,Math.PI*2); ctx.arc(-2,-49,28,0,Math.PI*2); ctx.fill();
+      // head and ear
+      ctx.fillStyle='#526b6d'; ctx.beginPath(); ctx.ellipse(43,-60,28,25, -.12, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle='#e49d8b'; ctx.beginPath(); ctx.ellipse(62,-65,12,7,.25,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#526b6d'; ctx.beginPath(); ctx.ellipse(35,-81,13,6,-.6,0,Math.PI*2); ctx.fill();
+      // face, sleepy eyes
+      ctx.strokeStyle='#fff9ed'; ctx.lineWidth=3; ctx.lineCap='round'; const blink = sheep.blink > 4.04;
+      if (blink) { ctx.beginPath(); ctx.moveTo(39,-64); ctx.lineTo(45,-62); ctx.moveTo(55,-63); ctx.lineTo(61,-65); ctx.stroke(); }
+      else { ctx.fillStyle='#fff9ed'; ctx.beginPath(); ctx.arc(43,-64,3,0,Math.PI*2); ctx.arc(58,-65,3,0,Math.PI*2); ctx.fill(); }
+      ctx.fillStyle='#e49d8b'; ctx.beginPath(); ctx.ellipse(70,-57,5,4,0,0,Math.PI*2); ctx.fill();
+      // little scarf
+      ctx.fillStyle='#f4b39f'; roundRect(26,-43,34,9,4); ctx.fill(); ctx.beginPath(); ctx.moveTo(50,-37); ctx.lineTo(64,-25); ctx.lineTo(49,-29); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+    function drawParticles() { particles.forEach(p => { ctx.globalAlpha=Math.max(0,p.life/p.max); ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(p.x,p.y,p.r*(.6+p.life),0,Math.PI*2); ctx.fill(); }); ctx.globalAlpha=1; }
+    function loop(now) { const dt=Math.min((now-lastTime)/1000 || 0, .033); lastTime=now; if (running) update(dt); draw(); raf=requestAnimationFrame(loop); }
+    function activate(e) { if (e) e.preventDefault(); jump(); }
+    canvas.addEventListener('pointerdown', activate, { passive: false });
+    jumpButton.addEventListener('pointerdown', activate, { passive: false });
+    window.addEventListener('keydown', e => { if (e.code === 'Space' || e.code === 'ArrowUp') { e.preventDefault(); if (!e.repeat) jump(); } });
+    restartButton.addEventListener('click', restart);
+    document.addEventListener('visibilitychange', () => { lastTime = performance.now(); });
+    lastTime = performance.now(); raf=requestAnimationFrame(loop);
+  })();
+  </script>
+</body>
+</html>
