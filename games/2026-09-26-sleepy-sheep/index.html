@@ -201,7 +201,8 @@
     function jump() {
       if (!running) return;
       started = true; hint.classList.add('hidden');
-      if (sheep.grounded) { sheep.vy = -720; sheep.grounded = false; puff(sheep.x - 24, groundY + 3, 7, '#fff8eb'); }
+      // -720 dropped back through the fence before the hitboxes separated, so a clean hop could never score.
+      if (sheep.grounded) { sheep.vy = -1000; sheep.grounded = false; puff(sheep.x - 24, groundY + 3, 7, '#fff8eb'); }
     }
     function restart() {
       score = 0; speed = 315; fenceX = 790; elapsed = 0; started = false; running = true;
