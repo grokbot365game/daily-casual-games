@@ -1,0 +1,713 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#e7d4f4">
+  <title>うたた寝タッチ — Doze Touch</title>
+  <style>
+    :root {
+      --ink: #3c3158;
+      --ink-soft: #6e6288;
+      --paper: #fffdfb;
+      --cream: #fff6ef;
+      --lilac: #c9b2f2;
+      --lilac-deep: #7d64b8;
+      --pink: #e23e78;
+      --pink-deep: #c42b64;
+      --awake: #4d5ea8;
+      --shadow: rgba(60, 49, 88, .16);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      min-height: 100svh;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+      overflow-x: hidden;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 10%, rgba(255,255,255,.75) 0 3%, transparent 3.4%),
+        radial-gradient(circle at 88% 4%, rgba(255,255,255,.45) 0 2.5%, transparent 3%),
+        linear-gradient(160deg, #ddd0f6 0%, #f8d5e6 52%, #f6e4cf 100%);
+      font-family: ui-rounded, "Hiragino Maru Gothic ProN", "Yu Gothic", system-ui, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .game-shell { width: min(100%, 480px); position: relative; }
+    .game-card {
+      position: relative;
+      padding: clamp(18px, 4vw, 28px) clamp(14px, 3vw, 22px) 18px;
+      border: 3px solid rgba(255,255,255,.72);
+      border-radius: 28px;
+      background: rgba(255, 253, 251, .82);
+      box-shadow: 0 22px 50px var(--shadow);
+      backdrop-filter: blur(10px);
+      user-select: none;
+    }
+    .back {
+      display: inline-flex;
+      margin-bottom: 8px;
+      color: var(--ink-soft);
+      font-size: .78rem;
+      font-weight: 800;
+      letter-spacing: .06em;
+      text-decoration: none;
+    }
+    .back:hover { color: var(--lilac-deep); }
+    header { text-align: center; margin-bottom: 12px; }
+    .eyebrow {
+      margin: 0 0 4px;
+      color: var(--lilac-deep);
+      font-size: .72rem;
+      font-weight: 800;
+      letter-spacing: .18em;
+    }
+    h1 { margin: 0; font-size: clamp(1.8rem, 7vw, 2.6rem); line-height: 1.05; letter-spacing: .06em; }
+    .subtitle { margin: 6px 0 0; color: var(--ink-soft); font-size: .82rem; font-weight: 800; letter-spacing: .12em; }
+    .hud { display: flex; justify-content: center; gap: 10px; margin: 0 auto 12px; }
+    .pill {
+      min-width: 118px;
+      padding: 8px 14px 9px;
+      text-align: center;
+      border-radius: 16px;
+      background: var(--cream);
+      box-shadow: inset 0 0 0 2px rgba(125, 100, 184, .14);
+    }
+    .pill span { display: block; color: var(--ink-soft); font-size: .68rem; font-weight: 800; letter-spacing: .14em; }
+    .pill strong { display: block; margin-top: 1px; color: var(--lilac-deep); font-size: 1.55rem; line-height: 1; }
+    .stage-wrap {
+      position: relative;
+      overflow: hidden;
+      border-radius: 22px;
+      box-shadow: 0 0 0 4px rgba(226, 62, 120, .35), 0 10px 22px rgba(60, 49, 88, .12);
+      touch-action: none;
+    }
+    .stage-wrap.awake { box-shadow: 0 0 0 4px rgba(77, 94, 168, .55), 0 10px 22px rgba(60, 49, 88, .12); }
+    .stage-wrap.doze { cursor: pointer; }
+    .stage-wrap.awake { cursor: not-allowed; }
+    canvas { display: block; width: 100%; height: auto; aspect-ratio: 680 / 760; background: #e7d4f2; }
+    .cue {
+      position: absolute;
+      left: 50%;
+      top: 7%;
+      transform: translateX(-50%);
+      margin: 0;
+      padding: 6px 18px 8px;
+      border-radius: 999px;
+      color: #fff;
+      background: var(--pink);
+      box-shadow: 0 5px 0 var(--pink-deep);
+      font-size: clamp(1.35rem, 5vw, 1.8rem);
+      font-weight: 900;
+      letter-spacing: .14em;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .cue.show { opacity: 1; animation: cuepop 1s ease-in-out infinite; }
+    @keyframes cuepop { 50% { opacity: .78; } }
+    .phase {
+      position: absolute;
+      left: 50%;
+      bottom: 12px;
+      transform: translateX(-50%);
+      margin: 0;
+      padding: 7px 14px;
+      border-radius: 999px;
+      background: rgba(255, 253, 251, .88);
+      color: var(--pink-deep);
+      font-size: .92rem;
+      font-weight: 900;
+      letter-spacing: .06em;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+    .stage-wrap.awake .phase { color: var(--awake); }
+    .tip { margin: 12px 0 0; text-align: center; color: var(--ink-soft); font-size: .78rem; font-weight: 800; line-height: 1.55; }
+    .tip kbd {
+      display: inline-block;
+      min-width: 1.6em;
+      padding: 1px 6px;
+      border-radius: 6px;
+      background: #f3eaf8;
+      box-shadow: inset 0 -2px 0 rgba(60, 49, 88, .12);
+      font-size: .7rem;
+    }
+    .overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 4;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+      background: rgba(60, 49, 88, .2);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s ease;
+    }
+    .overlay.show { opacity: 1; pointer-events: auto; }
+    .game-over-card {
+      width: min(100%, 300px);
+      padding: 22px 18px 18px;
+      text-align: center;
+      border-radius: 22px;
+      background: var(--paper);
+      box-shadow: 0 14px 32px rgba(60, 49, 88, .22);
+      transform: translateY(8px) scale(.98);
+      transition: transform .2s ease;
+    }
+    .overlay.show .game-over-card { transform: none; }
+    .game-over-card h2 { margin: 0 0 6px; font-size: 1.45rem; }
+    .game-over-card p { margin: 0 0 6px; color: var(--ink-soft); font-size: .92rem; font-weight: 800; }
+    .record { color: var(--pink) !important; }
+    button {
+      border: 0;
+      font: inherit;
+      font-weight: 900;
+      color: #fff;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    button:focus-visible, .back:focus-visible { outline: 3px solid rgba(226, 62, 120, .45); outline-offset: 3px; }
+    .restart-button {
+      width: 100%;
+      margin-top: 10px;
+      padding: 13px 16px;
+      border-radius: 14px;
+      background: var(--pink);
+      box-shadow: 0 4px 0 var(--pink-deep);
+      letter-spacing: .08em;
+    }
+    .restart-button:hover { transform: translateY(-1px); }
+    .restart-button:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--pink-deep); }
+    @media (max-width: 480px) {
+      body { padding: 8px; align-items: start; padding-top: max(8px, env(safe-area-inset-top)); }
+      .game-card { padding: 14px 12px 14px; border-radius: 22px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="game-shell">
+    <section class="game-card">
+      <a class="back" href="../../index.html">← ギャラリー</a>
+      <header>
+        <p class="eyebrow">まぶたフィジェット</p>
+        <h1>うたた寝タッチ</h1>
+        <p class="subtitle">Doze Touch</p>
+      </header>
+      <div class="hud" aria-live="polite">
+        <div class="pill"><span>スコア</span><strong id="score">0</strong></div>
+        <div class="pill"><span>ベスト</span><strong id="best">0</strong></div>
+      </div>
+      <div id="stage" class="stage-wrap doze" data-phase="doze" tabindex="-1">
+        <canvas id="game" width="680" height="760" aria-label="うたた寝タッチ。目をとじているあいだだけタッチ。目が開いたらさわらない。"></canvas>
+        <p id="cue" class="cue" aria-hidden="true">いま！</p>
+        <p id="phase" class="phase">ねてる · タッチOK</p>
+        <div id="overlay" class="overlay" aria-hidden="true">
+          <div class="game-over-card" role="dialog" aria-labelledby="over-title">
+            <h2 id="over-title">起きちゃった</h2>
+            <p>開いた目のときに、さわっちゃった</p>
+            <p>スコア <strong id="final-score">0</strong> 回</p>
+            <p id="record" class="record" hidden>ベスト更新！</p>
+            <button id="restart" class="restart-button" type="button">もう一回</button>
+          </div>
+        </div>
+      </div>
+      <p class="tip">目をとじているあいだだけタッチしてね<br><kbd>Space</kbd> でもタッチできます</p>
+    </section>
+  </main>
+  <script>
+  (() => {
+    'use strict';
+
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const stage = document.getElementById('stage');
+    const scoreEl = document.getElementById('score');
+    const bestEl = document.getElementById('best');
+    const finalScoreEl = document.getElementById('final-score');
+    const recordEl = document.getElementById('record');
+    const overlay = document.getElementById('overlay');
+    const restartButton = document.getElementById('restart');
+    const cueEl = document.getElementById('cue');
+    const phaseEl = document.getElementById('phase');
+    const W = 680;
+    const H = 760;
+    const BEST_KEY = 'doze-touch-best';
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    let dpr = 1;
+    let score = 0;
+    let best = 0;
+    let bestAtStart = 0;
+    let running = true;
+    let phase = 'doze';
+    let phaseDur = 2.6;
+    let phaseLeft = 2.6;
+    let cueArmed = true;
+    let grace = 0;
+    let eye = 0;
+    let flash = 0;
+    let flashColor = '#ffd0e4';
+    let squash = 0;
+    let bobT = 0;
+    let lastTime = 0;
+    let blockRetryClick = false;
+    const pointers = new Set();
+    let keyHeld = false;
+    let particles = [];
+    const motes = Array.from({ length: 18 }, (_, i) => ({
+      x: (i * 97) % W,
+      y: (i * 131) % H,
+      r: 1.5 + (i % 3),
+      s: 8 + (i % 5) * 3
+    }));
+
+    try {
+      const saved = Number(localStorage.getItem(BEST_KEY) || 0);
+      if (Number.isFinite(saved) && saved > 0) best = Math.floor(saved);
+    } catch (_) {}
+    bestAtStart = best;
+    bestEl.textContent = String(best);
+
+    function touching() {
+      return pointers.size > 0 || keyHeld;
+    }
+
+    function fitCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.max(1, Math.round(rect.width * dpr));
+      canvas.height = Math.max(1, Math.round(rect.width * (H / W) * dpr));
+      ctx.setTransform(dpr * rect.width / W, 0, 0, dpr * rect.width / W, 0, 0);
+    }
+    window.addEventListener('resize', fitCanvas, { passive: true });
+    fitCanvas();
+
+    function syncPhase(next, dur) {
+      phase = next;
+      phaseDur = dur;
+      phaseLeft = dur;
+      const doze = next === 'doze';
+      stage.dataset.phase = next;
+      stage.classList.toggle('doze', doze);
+      stage.classList.toggle('awake', !doze);
+      phaseEl.textContent = doze ? 'ねてる · タッチOK' : 'おきてる · さわらない';
+      const showCue = running && doze && cueArmed;
+      cueEl.classList.toggle('show', showCue);
+      cueEl.setAttribute('aria-hidden', showCue ? 'false' : 'true');
+    }
+
+    function rollDoze() {
+      const base = Math.max(0.46, 1.62 - score * 0.045);
+      return base * (0.9 + Math.random() * 0.2);
+    }
+
+    function rollAwake() {
+      return 0.9 + Math.random() * 0.65;
+    }
+
+    function burst(color) {
+      for (let i = 0; i < 12; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const sp = 70 + Math.random() * 170;
+        particles.push({
+          x: W / 2,
+          y: 400,
+          vx: Math.cos(a) * sp,
+          vy: Math.sin(a) * sp - 30,
+          life: 0.4 + Math.random() * 0.28,
+          max: 0.68,
+          r: 3 + Math.random() * 4,
+          color
+        });
+      }
+    }
+
+    function scoreTouch() {
+      score += 1;
+      if (score > best) {
+        best = score;
+        try { localStorage.setItem(BEST_KEY, String(best)); } catch (_) {}
+        bestEl.textContent = String(best);
+      }
+      scoreEl.textContent = String(score);
+      squash = 1;
+      flash = 1;
+      flashColor = '#ffd0e4';
+      burst('#f4a0c4');
+    }
+
+    function endRun() {
+      if (!running) return;
+      running = false;
+      keyHeld = false;
+      pointers.clear();
+      grace = 0;
+      cueArmed = false;
+      flash = 1;
+      flashColor = '#ffb7c0';
+      squash = 0.4;
+      burst('#f0a0aa');
+      finalScoreEl.textContent = String(score);
+      recordEl.hidden = !(score > bestAtStart && score > 0);
+      blockRetryClick = true;
+      cueEl.classList.remove('show');
+      cueEl.setAttribute('aria-hidden', 'true');
+      stage.dataset.phase = 'awake';
+      stage.classList.remove('doze');
+      stage.classList.add('awake');
+      phaseEl.textContent = 'おきてる · さわらない';
+      overlay.classList.add('show');
+      overlay.setAttribute('aria-hidden', 'false');
+      restartButton.focus({ preventScroll: true });
+    }
+
+    function restart() {
+      score = 0;
+      running = true;
+      cueArmed = true;
+      grace = 0;
+      squash = 0;
+      flash = 0;
+      eye = 0;
+      particles = [];
+      pointers.clear();
+      keyHeld = false;
+      bestAtStart = best;
+      scoreEl.textContent = '0';
+      recordEl.hidden = true;
+      blockRetryClick = false;
+      overlay.classList.remove('show');
+      overlay.setAttribute('aria-hidden', 'true');
+      syncPhase('doze', 2.6);
+      stage.focus({ preventScroll: true });
+    }
+
+    function tap() {
+      if (!running) return;
+      if (phase === 'doze') scoreTouch();
+      else endRun();
+    }
+
+    function onPointerDown(e) {
+      if (e.target.closest('button, a')) return;
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      e.preventDefault();
+      if (!running) return;
+      pointers.add(e.pointerId);
+      tap();
+    }
+
+    function onPointerUp(e) {
+      if (e.pointerId != null) pointers.delete(e.pointerId);
+      if (!touching()) grace = 0;
+    }
+
+    function update(dt) {
+      bobT += dt;
+      squash = Math.max(0, squash - dt * 3.2);
+      flash = Math.max(0, flash - dt * 2.5);
+      const eyeTarget = !running || phase === 'awake' ? 1 : 0;
+      eye = reduce ? eyeTarget : eye + (eyeTarget - eye) * Math.min(1, dt * 9);
+      particles.forEach((p) => {
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.vy += 80 * dt;
+        p.life -= dt;
+      });
+      particles = particles.filter((p) => p.life > 0);
+      if (!running) return;
+
+      if (phase === 'awake' && touching() && grace > 0) {
+        grace -= dt;
+        if (grace <= 0) {
+          endRun();
+          return;
+        }
+      }
+
+      phaseLeft -= dt;
+      if (phaseLeft > 0) return;
+      if (phase === 'doze') {
+        cueArmed = false;
+        syncPhase('awake', rollAwake());
+        grace = touching() ? 0.12 : 0;
+        if (touching() && grace <= 0) endRun();
+      } else {
+        syncPhase('doze', rollDoze());
+        grace = 0;
+      }
+    }
+
+    function drawStar(x, y, r, color) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      for (let i = 0; i < 8; i++) {
+        const rad = i % 2 === 0 ? r : r * 0.42;
+        const a = -Math.PI / 2 + (i * Math.PI) / 4;
+        const px = x + Math.cos(a) * rad;
+        const py = y + Math.sin(a) * rad;
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function drawBackdrop() {
+      const g = ctx.createLinearGradient(0, 0, 0, H);
+      g.addColorStop(0, '#d9ccf6');
+      g.addColorStop(0.55, '#f6d4e6');
+      g.addColorStop(1, '#f8e6d2');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#fff';
+      motes.forEach((m) => {
+        const y = (m.y + (reduce ? 0 : bobT * m.s)) % H;
+        ctx.globalAlpha = 0.35;
+        ctx.beginPath();
+        ctx.arc(m.x, y, m.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = '#e7d0ee';
+      ctx.beginPath();
+      ctx.ellipse(W / 2, 628, 220, 48, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#f7e7f4';
+      ctx.beginPath();
+      ctx.ellipse(W / 2, 612, 170, 30, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawRing() {
+      if (!running) return;
+      const cx = W / 2;
+      const cy = 400;
+      const r = 214;
+      ctx.lineWidth = 12;
+      ctx.strokeStyle = 'rgba(255,255,255,.5)';
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+      const frac = Math.max(0, Math.min(1, phaseLeft / phaseDur));
+      ctx.strokeStyle = phase === 'doze' ? '#e23e78' : '#4d5ea8';
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2);
+      ctx.stroke();
+    }
+
+    function drawEyes(open) {
+      [-50, 50].forEach((ex) => {
+        if (open < 0.55) {
+          ctx.save();
+          ctx.globalAlpha = 1 - open / 0.55;
+          ctx.strokeStyle = '#3a2d55';
+          ctx.lineWidth = 8;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(ex - 22, 4);
+          ctx.quadraticCurveTo(ex, 18, ex + 22, 4);
+          ctx.stroke();
+          ctx.restore();
+        }
+        if (open > 0.08) {
+          ctx.save();
+          ctx.globalAlpha = Math.min(1, (open - 0.08) / 0.35);
+          const eh = 5 + open * 22;
+          ctx.fillStyle = '#fffdfb';
+          ctx.beginPath();
+          ctx.ellipse(ex, -2, 22, eh, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#5b4586';
+          ctx.beginPath();
+          ctx.ellipse(ex + 1, 0, 9, Math.max(2.4, eh * 0.45), 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#241833';
+          ctx.beginPath();
+          ctx.arc(ex + 2, 1, 4.4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#fff';
+          ctx.beginPath();
+          ctx.arc(ex - 4, -6, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      });
+    }
+
+    function drawCreature() {
+      const open = !running ? 1 : eye;
+      const breathe = reduce ? 1 : 1 + Math.sin(bobT * 2.1) * 0.018;
+      const sx = breathe * (1 + squash * 0.1);
+      const sy = breathe * (1 - squash * 0.08);
+      const bob = reduce ? 0 : Math.sin(bobT * 1.6) * 4;
+      ctx.save();
+      ctx.translate(W / 2, 408 + bob);
+      ctx.scale(sx, sy);
+
+      ctx.fillStyle = 'rgba(72, 52, 110, .16)';
+      ctx.beginPath();
+      ctx.ellipse(0, 136, 96, 16, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      const earLift = -8 - open * 12;
+      ctx.fillStyle = '#b89ae0';
+      ctx.beginPath();
+      ctx.ellipse(-82, -86 + earLift, 30, 38, -0.45, 0, Math.PI * 2);
+      ctx.ellipse(82, -86 + earLift, 30, 38, 0.45, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#f6c9e2';
+      ctx.beginPath();
+      ctx.ellipse(-82, -82 + earLift, 15, 22, -0.45, 0, Math.PI * 2);
+      ctx.ellipse(82, -82 + earLift, 15, 22, 0.45, 0, Math.PI * 2);
+      ctx.fill();
+
+      const body = ctx.createRadialGradient(-36, -48, 24, 0, 8, 160);
+      body.addColorStop(0, '#f4ecff');
+      body.addColorStop(0.42, '#cbb6f4');
+      body.addColorStop(1, '#eea9cc');
+      ctx.fillStyle = body;
+      ctx.beginPath();
+      ctx.ellipse(0, 8, 124, 116, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#fff6ef';
+      ctx.beginPath();
+      ctx.ellipse(0, 46, 72, 60, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = open > 0.65 ? 'rgba(243, 166, 190, .4)' : 'rgba(236, 120, 164, .8)';
+      ctx.beginPath();
+      ctx.ellipse(-64, 30, 18, 12, 0, 0, Math.PI * 2);
+      ctx.ellipse(64, 30, 18, 12, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      drawStar(0, -62, 12, '#f6d56a');
+      drawEyes(open);
+
+      ctx.strokeStyle = '#3a2d55';
+      ctx.lineWidth = 5;
+      ctx.lineCap = 'round';
+      if (open < 0.55 || !running) {
+        if (!running) {
+          ctx.beginPath();
+          ctx.ellipse(0, 66, 9, 12, 0, 0, Math.PI * 2);
+          ctx.stroke();
+        } else if (open < 0.55) {
+          ctx.globalAlpha = 1 - open / 0.55;
+          ctx.beginPath();
+          ctx.moveTo(-14, 60);
+          ctx.quadraticCurveTo(0, 74, 14, 60);
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+      }
+      if (running && open >= 0.35) {
+        ctx.globalAlpha = Math.min(1, (open - 0.35) / 0.4);
+        ctx.beginPath();
+        ctx.ellipse(0, 66, 8, 11, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+
+      ctx.fillStyle = '#c7afe6';
+      ctx.beginPath();
+      ctx.ellipse(-42, 118, 24, 13, 0, 0, Math.PI * 2);
+      ctx.ellipse(42, 118, 24, 13, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      if (eye < 0.45 && running) {
+        ctx.save();
+        ctx.globalAlpha = (1 - eye / 0.45) * 0.75;
+        ctx.fillStyle = '#7a68aa';
+        ctx.font = '700 32px ui-rounded, sans-serif';
+        [[236, 250, 22], [450, 220, 16], [268, 180, 14]].forEach(([x, y, speed], i) => {
+          const drift = reduce ? 0 : (bobT * speed) % 70;
+          ctx.fillText('z', x, y - drift);
+        });
+        ctx.restore();
+      }
+    }
+
+    function drawFlash() {
+      if (flash <= 0) return;
+      const g = ctx.createRadialGradient(W / 2, 400, 30, W / 2, 400, 360);
+      g.addColorStop(0, flashColor);
+      g.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.save();
+      ctx.globalAlpha = flash * 0.55;
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+      ctx.restore();
+    }
+
+    function drawParticles() {
+      particles.forEach((p) => {
+        ctx.globalAlpha = Math.max(0, p.life / p.max);
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      drawBackdrop();
+      drawRing();
+      drawCreature();
+      drawParticles();
+      drawFlash();
+    }
+
+    function loop(now) {
+      const dt = Math.min((now - lastTime) / 1000 || 0, 0.05);
+      lastTime = now;
+      if (!document.hidden) update(dt);
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    stage.addEventListener('pointerdown', onPointerDown, { passive: false });
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerUp);
+    stage.addEventListener('contextmenu', (e) => e.preventDefault());
+    restartButton.addEventListener('pointerdown', () => { blockRetryClick = false; });
+    restartButton.addEventListener('click', () => {
+      if (blockRetryClick) return;
+      restart();
+    });
+    window.addEventListener('keydown', (e) => {
+      if (e.repeat) return;
+      if (e.target === restartButton) return;
+      if (e.code !== 'Space' && e.code !== 'Enter') return;
+      e.preventDefault();
+      if (!running) {
+        restart();
+        return;
+      }
+      keyHeld = true;
+      tap();
+    });
+    window.addEventListener('keyup', (e) => {
+      if (e.code !== 'Space' && e.code !== 'Enter') return;
+      keyHeld = false;
+      if (!touching()) grace = 0;
+    });
+    document.addEventListener('visibilitychange', () => { lastTime = performance.now(); });
+
+    syncPhase('doze', 2.6);
+    lastTime = performance.now();
+    requestAnimationFrame(loop);
+  })();
+  </script>
+</body>
+</html>
