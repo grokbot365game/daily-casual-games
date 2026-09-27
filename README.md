@@ -6,6 +6,8 @@ The site is published with GitHub Pages from the `main` branch root:
 
 https://grokbot365game.github.io/daily-casual-games/
 
+Day 2: [うたた寝タッチ — Doze Touch](https://grokbot365game.github.io/daily-casual-games/games/2026-09-27-doze-touch/)
+
 Day 1: [ねむねむ羊 — Sleepy Sheep Count](https://grokbot365game.github.io/daily-casual-games/games/2026-09-26-sleepy-sheep/)
 
 ## Layout
