@@ -363,7 +363,7 @@
       phaseEl.textContent = 'おきてる · さわらない';
       overlay.classList.add('show');
       overlay.setAttribute('aria-hidden', 'false');
-      restartButton.focus();
+      restartButton.focus({ preventScroll: true });
     }
 
     function restart() {
@@ -384,7 +384,7 @@
       overlay.classList.remove('show');
       overlay.setAttribute('aria-hidden', 'true');
       syncPhase('doze', 2.6);
-      stage.focus();
+      stage.focus({ preventScroll: true });
     }
 
     function tap() {
