@@ -203,7 +203,7 @@
     const SHEEP = { x: GLASS.x + GLASS.w * 0.64, y: GLASS.y + GLASS.h * 0.40, hw: 74, hh: 84, r: 26 };
     const COLS = 40;
     const ROWS = 46;
-    const BRUSH = 132;
+    const BRUSH = 156;
     const GOAL = 0.85;
     const ROUND_SEC = 25;
     const BEST_KEY = 'window-wipe-best-pct';
@@ -489,7 +489,7 @@
     }
 
     function markCells(x, y) {
-      const reach = BRUSH * 0.78;
+      const reach = BRUSH * 0.9;
       const c0 = Math.max(0, Math.floor((x - reach - GLASS.x) / cellW));
       const c1 = Math.min(COLS - 1, Math.floor((x + reach - GLASS.x) / cellW));
       const r0 = Math.max(0, Math.floor((y - reach - GLASS.y) / cellH));
@@ -516,7 +516,7 @@
       fogCtx.globalCompositeOperation = 'destination-out';
       const g = fogCtx.createRadialGradient(x, y, BRUSH * 0.2, x, y, BRUSH);
       g.addColorStop(0, 'rgba(0,0,0,1)');
-      g.addColorStop(0.72, 'rgba(0,0,0,1)');
+      g.addColorStop(0.82, 'rgba(0,0,0,1)');
       g.addColorStop(1, 'rgba(0,0,0,0)');
       fogCtx.fillStyle = g;
       fogCtx.beginPath();
@@ -919,6 +919,10 @@
 
     function onPointerUp(e) {
       if (e.pointerId !== activePointer) return;
+      if (state === 'playing' && lastPoint) {
+        const p = toLogical(e);
+        wipeSegment(lastPoint.x, lastPoint.y, p.x, p.y);
+      }
       activePointer = null;
       lastPoint = null;
       if (e.pointerType !== 'mouse') cursor = null;
