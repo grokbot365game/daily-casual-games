@@ -6,6 +6,8 @@ The site is published with GitHub Pages from the `main` branch root:
 
 https://grokbot365game.github.io/daily-casual-games/
 
+Day 4: [ねむねむほし貯金 — Sleepy Star Bank](https://grokbot365game.github.io/daily-casual-games/games/2026-09-29-star-bank/)
+
 Day 3: [ねむねむ窓ふき — Sleepy Window Wipe](https://grokbot365game.github.io/daily-casual-games/games/2026-09-28-window-wipe/)
 
 Day 2: [うたた寝タッチ — Doze Touch](https://grokbot365game.github.io/daily-casual-games/games/2026-09-27-doze-touch/)
