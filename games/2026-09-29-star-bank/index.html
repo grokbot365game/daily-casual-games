@@ -286,6 +286,13 @@
       .pill { padding: 4px 6px 5px; }
       .meter { margin-top: 3px; }
       .bank-button { margin-top: 6px; padding: 10px 12px; }
+      .card-kicker, .game-over-card .en { display: none; }
+      .hint-demo { display: none; }
+      .game-over-card { padding: 8px 10px; }
+      .game-over-card h2 { margin-bottom: 2px; font-size: 1.05rem; }
+      .game-over-card p { margin-bottom: 3px; font-size: .78rem; line-height: 1.35; }
+      .drag-hint { margin-bottom: 3px; padding: 4px 10px; font-size: .82rem; }
+      .start-button, .restart-button { margin-top: 2px; padding: 8px 10px; }
     }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation: none !important; transition: none !important; }
@@ -535,9 +542,9 @@
     function makeStar(x, y) {
       return {
         x, y, baseX: x,
-        vx: (Math.random() - 0.5) * 18,
-        vy: 30 + Math.random() * 24,
-        r: 17 + Math.random() * 6,
+        vx: (Math.random() - 0.5) * 10,
+        vy: 14 + Math.random() * 10,
+        r: 24 + Math.random() * 8,
         phase: Math.random() * Math.PI * 2,
         rot: Math.random() * Math.PI,
         kind: Math.random() < 0.22 ? 'zzz' : 'star',
@@ -561,8 +568,14 @@
     function seedStars() {
       stars.length = 0;
       const p = scene().pillow;
-      const top = 48;
-      const bottom = Math.max(top + 30, p.y - 90);
+      const anchor = makeStar(W * 0.5, Math.max(70, p.y * 0.38));
+      anchor.anchored = true;
+      anchor.vx = 0;
+      anchor.vy = 0;
+      anchor.r = 30;
+      stars.push(anchor);
+      const top = 36;
+      const bottom = Math.max(top + 40, p.y * 0.55);
       for (let i = 0; i < 3; i++) spawnStar(top + (bottom - top) * ((i + 0.4) / 3));
     }
 
@@ -676,7 +689,7 @@
 
     function overPillow(x, y) {
       const p = scene().pillow;
-      return x >= p.x - 26 && x <= p.x + p.w + 26 && y >= p.y - 40 && y <= p.y + p.h + 18;
+      return x >= p.x - 36 && x <= p.x + p.w + 36 && y >= p.y - 56 && y <= p.y + p.h + 22;
     }
 
     function storedSlot(i) {
@@ -743,8 +756,8 @@
         g.addColorStop(1, star.color || '#fff4c8');
         ctx.fillStyle = g;
         ctx.fill();
-        ctx.strokeStyle = 'rgba(120, 86, 48, .28)';
-        ctx.lineWidth = 1.6;
+        ctx.strokeStyle = 'rgba(120, 78, 40, .55)';
+        ctx.lineWidth = 2;
         ctx.stroke();
         if (star.r >= 14) {
           ctx.strokeStyle = '#6a5478';
@@ -854,6 +867,9 @@
       ctx.arc(0, 12, 16, 0, Math.PI * 2);
       ctx.arc(0, -2, 15, 0, Math.PI * 2);
       ctx.fill();
+      ctx.strokeStyle = 'rgba(90, 70, 110, .28)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
       ctx.fillStyle = '#f7d0c0';
       ctx.beginPath();
       ctx.ellipse(-12, -18, 6, 9, -0.5, 0, Math.PI * 2);
@@ -949,12 +965,16 @@
         ctx.lineWidth = 3;
         ctx.stroke();
       }
+      ctx.restore();
 
       stored.forEach((item, i) => {
         const slot = storedSlot(i);
-        drawCollectible(slot.x, slot.y, { kind: item.kind, color: item.color, r: 11, rot: item.phase, phase: item.phase }, 1);
+        ctx.fillStyle = 'rgba(255,255,255,.92)';
+        ctx.beginPath();
+        ctx.arc(slot.x, slot.y, 13, 0, Math.PI * 2);
+        ctx.fill();
+        drawCollectible(slot.x, slot.y, { kind: item.kind, color: item.color, r: 12, rot: item.phase, phase: item.phase }, 1);
       });
-      ctx.restore();
 
       const n = stored.length;
       const label = n + '/' + CAP;
@@ -971,12 +991,12 @@
       ctx.fillStyle = n >= CAP ? '#d0725c' : '#6d5aa8';
       ctx.fillText(label, bx, by + 1);
 
-      const gap = 14;
+      const gap = 16;
       let px = bx - ((CAP - 1) * gap) / 2;
-      const py = by - 22;
+      const py = by - 24;
       for (let i = 0; i < CAP; i++) {
         ctx.beginPath();
-        ctx.arc(px, py, 4.2, 0, Math.PI * 2);
+        ctx.arc(px, py, 5.2, 0, Math.PI * 2);
         ctx.fillStyle = i < n ? '#ffd56a' : 'rgba(255,255,255,.72)';
         ctx.fill();
         ctx.lineWidth = 1.4;
@@ -1053,6 +1073,19 @@
         });
         if (held) drawCollectible(held.star.x, held.star.y, held.star, 1);
       }
+      if (state === 'playing' && !held && stars.length) {
+        let guide = stars.find((s) => s.anchored) || stars[0];
+        if (!guide.anchored) stars.forEach((s) => { if (s.y > guide.y) guide = s; });
+        const pulse = reduce ? 0.55 : 0.35 + Math.sin(t * 5) * 0.2;
+        ctx.save();
+        ctx.globalAlpha = stored.length === 0 ? pulse + 0.25 : pulse * 0.35;
+        ctx.strokeStyle = '#fff6d4';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(guide.x, guide.y, guide.r + 14, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
       drawFx();
       drawHint();
       ctx.restore();
@@ -1096,6 +1129,13 @@
       for (let i = stars.length - 1; i >= 0; i--) {
         const s = stars[i];
         if (s.held) continue;
+        if (s.anchored) {
+          const sky = scene().pillow;
+          s.x = W * 0.5 + Math.sin(bobT * 0.9 + s.phase) * 10;
+          s.y = Math.max(70, sky.y * 0.38) + Math.sin(bobT * 1.3) * 6;
+          s.baseX = s.x;
+          continue;
+        }
         s.baseX += s.vx * dt;
         if (s.baseX < 28) { s.baseX = 28; s.vx = Math.abs(s.vx); }
         if (s.baseX > W - 28) { s.baseX = W - 28; s.vx = -Math.abs(s.vx); }
@@ -1134,7 +1174,7 @@
       let bestHit = null;
       let bestD = 1e9;
       stars.forEach((s) => {
-        const reach = s.r + 26;
+        const reach = s.r + 48;
         const d = Math.hypot(s.x - pos.x, s.y - pos.y);
         if (d <= reach && d < bestD) {
           bestD = d;
@@ -1190,7 +1230,8 @@
         else storeStar(star);
         return;
       }
-      star.vy = Math.max(28, star.vy);
+      star.anchored = false;
+      star.vy = Math.max(16, star.vy);
     }
 
     stage.addEventListener('pointerdown', onPointerDown, { passive: false });
@@ -1198,7 +1239,9 @@
     stage.addEventListener('pointerup', onPointerUp);
     stage.addEventListener('pointercancel', onPointerUp);
     stage.addEventListener('lostpointercapture', (e) => {
-      if (held && e.pointerId === held.id) onPointerUp(e);
+      if (!held || e.pointerId !== held.id) return;
+      if (stage.hasPointerCapture(e.pointerId)) return;
+      onPointerUp(e);
     });
     stage.addEventListener('contextmenu', (e) => e.preventDefault());
 
