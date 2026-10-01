@@ -506,6 +506,8 @@
     let H = 640;
     let state = 'ready';
     let score = 0;
+    let shownScore = 0;
+    let shownStreak = 0;
     let streak = 0;
     let bestStreak = 0;
     let catches = 0;
@@ -525,7 +527,9 @@
     let bannerTimer = 0;
     let feedBusy = false;
     const feedQ = [];
-    const halo = { x: 240, y: 320, seen: false };
+    const halo = { x: 240, y: 320, seen: false, prevX: 240, prevY: 320 };
+    let haloVX = 0;
+    let haloVY = 0;
     const orbs = [];
     const particles = [];
     const pops = [];
@@ -601,13 +605,13 @@
     }
 
     function suckReach() {
-      const base = holding ? 132 : 112;
-      return base * (strongDone ? 1.1 : 1);
+      const base = holding ? 172 : 142;
+      return base * (strongDone ? 1.08 : 1);
     }
 
     function suckPower() {
-      const base = holding ? 540 : 440;
-      return base * (strongDone ? 1.25 : 1);
+      const base = holding ? 820 : 560;
+      return base * (strongDone ? 1.22 : 1);
     }
 
     function pointsForStreak(n) {
@@ -615,8 +619,8 @@
     }
 
     function updateHud() {
-      scoreEl.textContent = String(score);
-      comboEl.textContent = String(streak);
+      scoreEl.textContent = String(shownScore);
+      comboEl.textContent = String(shownStreak);
       timeEl.textContent = Math.max(0, timeLeft).toFixed(1);
       timePill.classList.toggle('urgent', state === 'playing' && timeLeft <= 10);
       stage.dataset.state = state;
@@ -632,8 +636,15 @@
       endCard.hidden = which !== 'end';
     }
 
-    function showCallout(kind, main, sub) {
-      feedQ.push({ kind: kind, main: main, sub: sub });
+    function showCallout(kind, main, sub, extra) {
+      feedQ.push({
+        kind: kind,
+        main: main,
+        sub: sub,
+        add: extra && extra.add ? extra.add : 0,
+        streak: extra && extra.streak ? extra.streak : 0,
+        miss: !!(extra && extra.miss)
+      });
       pumpCallout();
     }
 
@@ -641,9 +652,15 @@
       if (feedBusy || !feedQ.length) return;
       feedBusy = true;
       const item = feedQ.shift();
+      if (item.add) {
+        shownScore += item.add;
+        shownStreak = item.streak;
+      }
+      if (item.miss) shownStreak = 0;
       calloutMain.textContent = item.main;
       calloutSub.textContent = item.sub;
       calloutEl.className = 'callout show ' + item.kind;
+      updateHud();
       window.clearTimeout(calloutTimer);
       calloutTimer = window.setTimeout(() => {
         feedBusy = false;
@@ -761,28 +778,26 @@
       const add = pointsForStreak(streak);
       score += add;
       catches += 1;
-      updateHud();
       burst(orb.x, orb.y, '#3f8f82');
       pops.push({ x: orb.x, y: orb.y, text: '+' + add, life: 0.85, max: 0.85, color: '#1f6f64' });
-      showCallout('good', 'すいこんだ！', '+' + add);
+      showCallout('good', 'すいこんだ！', '+' + add, { add: add, streak: streak });
       liveEl.textContent = 'すいこんだ +' + add + ' スコア' + score;
     }
 
     function onMiss(orb, kind) {
       streak = 0;
       misses += 1;
-      updateHud();
       const text = kind === 'wake' ? 'おきた！' : 'にげちゃった…';
       burst(orb.x, orb.y, '#d0725c');
       pops.push({ x: orb.x, y: orb.y, text: text, life: 0.85, max: 0.85, color: '#c45b48' });
-      showCallout('bad', text, '連続リセット');
+      showCallout('bad', text, '連続リセット', { miss: true });
       liveEl.textContent = text;
     }
 
     function inFuton(orb) {
       const f = futonBox();
-      const dx = (orb.x - f.cx) / f.rx;
-      const dy = (orb.y - f.cy) / f.ry;
+      const dx = (orb.x - f.cx) / (f.rx + orb.r * 0.2);
+      const dy = (orb.y - f.cy) / (f.ry + orb.r * 0.28);
       return dx * dx + dy * dy <= 1;
     }
 
@@ -798,6 +813,17 @@
       const reach = suckReach();
       const power = suckPower();
       pullCount = 0;
+      if (dt > 0) {
+        haloVX = (halo.x - halo.prevX) / dt;
+        haloVY = (halo.y - halo.prevY) / dt;
+        const hv = Math.hypot(haloVX, haloVY);
+        if (hv > 980) {
+          haloVX *= 980 / hv;
+          haloVY *= 980 / hv;
+        }
+      }
+      halo.prevX = halo.x;
+      halo.prevY = halo.y;
       for (let i = 0; i < orbs.length; i++) {
         const orb = orbs[i];
         orb.sucked = false;
@@ -815,28 +841,46 @@
             const accel = power * fall * fall;
             orb.vx += (dx / dist) * accel * dt;
             orb.vy += (dy / dist) * accel * dt;
-            const swirl = (holding ? 22 : 12) * fall;
+            const swirl = (holding ? 18 : 10) * fall;
             orb.vx += (-dy / dist) * swirl * dt;
             orb.vy += (dx / dist) * swirl * dt;
+            if (holding) {
+              const follow = 1 - Math.exp(-12 * dt);
+              const weight = dist < 70 ? 0.82 : 0.4 * fall;
+              orb.vx += (haloVX - orb.vx) * follow * weight;
+              orb.vy += (haloVY - orb.vy) * follow * weight;
+            }
             orb.sucked = true;
             pullCount += 1;
           }
         }
 
-        const pad = 42;
-        const corner = Math.min(orb.y, H - orb.y) < 100 ? 0.38 : 1;
-        if (orb.x < pad) orb.vx += (pad - orb.x) * 8 * corner * dt;
-        if (orb.x > W - pad) orb.vx -= (orb.x - (W - pad)) * 8 * corner * dt;
-        if (orb.y < pad) orb.vy += (pad - orb.y) * 2.6 * dt;
+        const pad = 34;
+        const nearCorner = Math.min(orb.y, H - orb.y) < 120;
+        if (orb.x < pad) {
+          const slip = orb.vx < -50 ? 0.16 : (nearCorner ? 0.35 : 1);
+          orb.vx += (pad - orb.x) * 7 * slip * dt;
+        }
+        if (orb.x > W - pad) {
+          const slip = orb.vx > 50 ? 0.16 : (nearCorner ? 0.35 : 1);
+          orb.vx -= (orb.x - (W - pad)) * 7 * slip * dt;
+        }
+        if (orb.y < pad) {
+          const slip = orb.vy < -50 ? 0.16 : 0.5;
+          orb.vy += (pad - orb.y) * 3 * slip * dt;
+        }
         const f = futonBox();
-        const overNest = Math.abs(orb.x - f.cx) < f.rx * 1.05;
-        if (!overNest && orb.y > H - pad) orb.vy -= (orb.y - (H - pad)) * 7 * dt;
+        const overNest = Math.abs(orb.x - f.cx) < f.rx * 1.15;
+        if (!overNest && orb.y > H - pad) {
+          const slip = orb.vy > 50 ? 0.16 : 0.8;
+          orb.vy -= (orb.y - (H - pad)) * 6 * slip * dt;
+        }
 
-        const damp = Math.exp(-1.02 * dt);
+        const damp = Math.exp(-0.78 * dt);
         orb.vx *= damp;
         orb.vy *= damp;
         const sp = Math.hypot(orb.vx, orb.vy);
-        const cap = 330;
+        const cap = 420;
         if (sp > cap) {
           orb.vx = (orb.vx / sp) * cap;
           orb.vy = (orb.vy / sp) * cap;
@@ -945,6 +989,8 @@
       holding = false;
       activeId = null;
       timeLeft = 0;
+      shownScore = score;
+      shownStreak = streak;
       clearFeedback();
       clearBanner();
       updateHud();
@@ -967,6 +1013,8 @@
     function begin() {
       fitCanvas();
       score = 0;
+      shownScore = 0;
+      shownStreak = 0;
       streak = 0;
       bestStreak = 0;
       catches = 0;
@@ -981,6 +1029,10 @@
       halo.seen = false;
       halo.x = W * 0.5;
       halo.y = H * 0.46;
+      halo.prevX = halo.x;
+      halo.prevY = halo.y;
+      haloVX = 0;
+      haloVY = 0;
       orbs.length = 0;
       particles.length = 0;
       pops.length = 0;
@@ -999,8 +1051,8 @@
       const rect = canvas.getBoundingClientRect();
       const x = ((e.clientX - rect.left) / Math.max(1, rect.width)) * W;
       const y = ((e.clientY - rect.top) / Math.max(1, rect.height)) * H;
-      halo.x = Math.max(0, Math.min(W, x));
-      halo.y = Math.max(0, Math.min(H, y));
+      halo.x = Math.max(-140, Math.min(W + 140, x));
+      halo.y = Math.max(-140, Math.min(H + 140, y));
       halo.seen = true;
     }
 
