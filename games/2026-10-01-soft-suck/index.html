@@ -1,0 +1,1371 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#e7f0e9">
+  <title>ねむねむすいこみ — Sleepy Soft Suck</title>
+  <style>
+    :root {
+      --ink: #30464a;
+      --ink-soft: #607477;
+      --paper: #fffdf8;
+      --cream: #f4faf6;
+      --teal: #6da69a;
+      --teal-deep: #3f7f76;
+      --lavender: #c9b6e4;
+      --coral: #e07a6a;
+      --coral-deep: #c45b48;
+      --shadow: rgba(48, 70, 74, .16);
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+    body {
+      position: fixed;
+      inset: 0;
+      height: 100vh;
+      height: 100dvh;
+      max-height: 100vh;
+      max-height: 100dvh;
+      display: flex;
+      justify-content: center;
+      padding:
+        max(8px, env(safe-area-inset-top))
+        max(8px, env(safe-area-inset-right))
+        max(8px, env(safe-area-inset-bottom))
+        max(8px, env(safe-area-inset-left));
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 8%, rgba(201, 182, 228, .45), transparent 32%),
+        radial-gradient(circle at 90% 0%, rgba(255, 244, 220, .7), transparent 28%),
+        linear-gradient(165deg, #e7f0e9 0%, #e4e9f8 52%, #f7f3ea 100%);
+      font-family: ui-rounded, "Hiragino Maru Gothic ProN", "Yu Gothic", "Droid Sans Fallback", "WenQuanYi Micro Hei", system-ui, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+    .game-shell {
+      width: min(100%, 480px);
+      height: 100%;
+      max-height: 840px;
+      margin: auto;
+      min-height: 0;
+    }
+    .game-card {
+      height: 100%;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      padding: clamp(8px, 1.6vh, 16px) clamp(12px, 3vw, 18px) 10px;
+      border: 3px solid rgba(255,255,255,.72);
+      border-radius: 28px;
+      background: rgba(255, 253, 248, .88);
+      box-shadow: 0 22px 50px var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+    .back {
+      flex: none;
+      display: inline-flex;
+      align-self: flex-start;
+      margin-bottom: 4px;
+      color: var(--ink-soft);
+      font-size: .78rem;
+      font-weight: 800;
+      letter-spacing: .06em;
+      text-decoration: none;
+    }
+    .back:hover { color: var(--teal-deep); }
+    header { flex: none; text-align: center; margin-bottom: 6px; }
+    .eyebrow {
+      margin: 0 0 2px;
+      color: var(--teal-deep);
+      font-size: .68rem;
+      font-weight: 800;
+      letter-spacing: .14em;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(1.28rem, 5.4vw, 1.9rem);
+      line-height: 1.08;
+      letter-spacing: .04em;
+    }
+    .subtitle {
+      margin: 3px 0 0;
+      color: var(--ink-soft);
+      font-size: .78rem;
+      font-weight: 800;
+      letter-spacing: .08em;
+    }
+    .hud { flex: none; display: flex; gap: 8px; margin: 0 0 6px; }
+    .pill {
+      flex: 1;
+      min-width: 0;
+      padding: 6px 8px 7px;
+      text-align: center;
+      border-radius: 14px;
+      background: var(--cream);
+      box-shadow: inset 0 0 0 2px rgba(109, 166, 154, .28);
+    }
+    .pill span {
+      display: block;
+      color: var(--ink-soft);
+      font-size: .64rem;
+      font-weight: 800;
+      letter-spacing: .08em;
+    }
+    .pill strong {
+      display: block;
+      margin-top: 1px;
+      color: var(--teal-deep);
+      font-size: clamp(1.05rem, 4.4vw, 1.35rem);
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+    .pill.urgent strong { color: var(--coral-deep); }
+    .formula {
+      flex: none;
+      margin: 0 0 8px;
+      padding: 6px 10px;
+      border-radius: 12px;
+      background: rgba(244, 250, 246, .96);
+      box-shadow: inset 0 0 0 2px rgba(201, 182, 228, .45);
+      color: var(--ink);
+      font-size: clamp(.68rem, 2.8vw, .8rem);
+      font-weight: 800;
+      line-height: 1.35;
+      text-align: center;
+    }
+    .stage-wrap {
+      position: relative;
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: hidden;
+      border-radius: 22px;
+      box-shadow: 0 0 0 4px rgba(109, 166, 154, .28), 0 10px 22px rgba(48, 70, 74, .1);
+      touch-action: none;
+      overscroll-behavior: none;
+      background: #e7f3ee;
+    }
+    .stage-wrap.aimed { cursor: none; }
+    canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      touch-action: none;
+    }
+    .banner {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      z-index: 3;
+      max-width: calc(100% - 20px);
+      padding: 7px 14px;
+      border-radius: 999px;
+      background: rgba(255, 253, 248, .96);
+      box-shadow: 0 8px 18px rgba(48, 70, 74, .14);
+      color: var(--teal-deep);
+      font-size: .95rem;
+      font-weight: 900;
+      letter-spacing: .04em;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(-50%) translateY(-6px);
+      transition: opacity .15s ease, transform .15s ease;
+    }
+    .banner.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .callout {
+      position: absolute;
+      left: 50%;
+      top: 42%;
+      z-index: 4;
+      width: min(86%, 300px);
+      min-height: 112px;
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      gap: 2px;
+      padding: 16px 14px;
+      border-radius: 22px;
+      background: rgba(255, 253, 248, .97);
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, -46%) scale(.98);
+      transition: opacity .12s linear, transform .12s linear;
+    }
+    .callout.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+    .callout-main {
+      margin: 0;
+      font-size: clamp(1.35rem, 5.4vw, 1.75rem);
+      font-weight: 900;
+      letter-spacing: .06em;
+      line-height: 1.2;
+    }
+    .callout-sub {
+      margin: 0;
+      min-height: 1.15em;
+      font-size: clamp(1.45rem, 6vw, 2rem);
+      font-weight: 900;
+      letter-spacing: .04em;
+      line-height: 1.1;
+      font-variant-numeric: tabular-nums;
+    }
+    .callout.good {
+      color: var(--teal-deep);
+      box-shadow: 0 14px 32px rgba(47, 122, 112, .28), inset 0 0 0 3px rgba(109, 166, 154, .7);
+    }
+    .callout.bad {
+      color: var(--coral-deep);
+      box-shadow: 0 14px 32px rgba(196, 91, 72, .3), inset 0 0 0 3px rgba(224, 122, 106, .75);
+    }
+    .overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      display: grid;
+      place-items: center;
+      padding: 10px;
+      overflow: hidden;
+      background: rgba(48, 58, 74, .28);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s ease;
+    }
+    .overlay.show { opacity: 1; pointer-events: auto; }
+    .card {
+      width: min(100%, 340px);
+      max-height: 100%;
+      overflow: auto;
+      padding: 14px 14px 12px;
+      text-align: center;
+      border-radius: 22px;
+      background: var(--paper);
+      box-shadow: 0 14px 32px rgba(48, 70, 74, .2);
+      transform: translateY(8px) scale(.98);
+      transition: transform .2s ease;
+    }
+    .overlay.show .card { transform: none; }
+    .card[hidden] { display: none; }
+    .card-kicker {
+      margin: 0 0 2px;
+      color: var(--teal-deep);
+      font-size: .68rem;
+      font-weight: 800;
+      letter-spacing: .16em;
+    }
+    .card h2 {
+      margin: 0 0 2px;
+      font-size: 1.35rem;
+      letter-spacing: .04em;
+      line-height: 1.2;
+    }
+    .card .en {
+      margin: 0 0 8px;
+      color: var(--ink-soft);
+      font-size: .75rem;
+      font-weight: 800;
+      letter-spacing: .08em;
+    }
+    .blurb {
+      margin: 0 0 8px;
+      color: var(--ink-soft);
+      font-size: .88rem;
+      font-weight: 800;
+    }
+    .rules {
+      margin: 0 0 8px;
+      padding: 8px 10px;
+      border-radius: 14px;
+      background: var(--cream);
+      box-shadow: inset 0 0 0 2px rgba(201, 182, 228, .4);
+      color: var(--ink);
+      font-size: .8rem;
+      font-weight: 800;
+      line-height: 1.45;
+    }
+    .note {
+      margin: 0 0 8px;
+      color: var(--ink-soft);
+      font-size: .72rem;
+      font-weight: 800;
+      line-height: 1.45;
+    }
+    .drag-hint {
+      display: inline-block;
+      margin: 0 0 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: #eef8f4;
+      color: var(--teal-deep);
+      font-size: .92rem;
+      font-weight: 900;
+      letter-spacing: .03em;
+    }
+    .final {
+      margin: 4px 0 6px;
+      color: var(--ink);
+      font-size: 1.55rem;
+      font-weight: 900;
+      letter-spacing: .04em;
+      font-variant-numeric: tabular-nums;
+    }
+    .end-detail, .best-line {
+      margin: 0 0 4px;
+      color: var(--ink-soft);
+      font-size: .84rem;
+      font-weight: 800;
+    }
+    .record {
+      margin: 0 0 4px;
+      color: #8d78c8;
+      font-size: .84rem;
+      font-weight: 900;
+    }
+    .start-button, .restart-button {
+      width: 100%;
+      margin-top: 4px;
+      padding: 14px 16px;
+      border: 0;
+      border-radius: 14px;
+      font: inherit;
+      font-size: 1.05rem;
+      font-weight: 900;
+      letter-spacing: .12em;
+      color: #fff;
+      background: var(--teal);
+      box-shadow: 0 4px 0 var(--teal-deep);
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .restart-button {
+      padding: 16px 18px;
+      font-size: 1.28rem;
+      letter-spacing: .14em;
+    }
+    .start-button:hover, .restart-button:hover { transform: translateY(-1px); }
+    .start-button:active, .restart-button:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--teal-deep); }
+    .end-link {
+      display: inline-block;
+      margin-top: 10px;
+      color: var(--teal-deep);
+      font-size: .84rem;
+      font-weight: 800;
+      text-decoration: none;
+    }
+    .end-link:hover { text-decoration: underline; }
+    button:focus-visible, .back:focus-visible, .end-link:focus-visible {
+      outline: 3px solid rgba(109, 166, 154, .65);
+      outline-offset: 3px;
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+    @media (max-height: 700px) {
+      .subtitle { display: none; }
+      header { margin-bottom: 4px; }
+      h1 { font-size: 1.22rem; }
+      .game-card { padding: 8px 10px 8px; border-radius: 22px; }
+      .card { padding: 10px 10px 8px; }
+      .card h2 { font-size: 1.16rem; }
+      .blurb { margin-bottom: 6px; }
+    }
+    @media (max-height: 620px) {
+      .eyebrow, .card-kicker, .card .en, .blurb { display: none; }
+      header { margin-bottom: 2px; }
+    }
+    @media (max-height: 520px) {
+      header { display: none; }
+      .hud { margin-bottom: 4px; }
+      .pill { padding: 4px 6px 5px; }
+      .formula { margin-bottom: 4px; padding: 3px 8px; }
+      .note { display: none; }
+      .card h2 { margin-bottom: 2px; font-size: 1.05rem; }
+      .rules { margin-bottom: 6px; padding: 5px 8px; font-size: .72rem; }
+      .drag-hint { margin-bottom: 6px; padding: 4px 10px; font-size: .78rem; }
+      .final { margin: 2px 0 4px; font-size: 1.2rem; }
+      .end-extra { display: none; }
+      .start-button, .restart-button { padding: 10px 12px; font-size: 1rem; }
+      .end-link { margin-top: 6px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="game-shell">
+    <section class="game-card">
+      <a class="back" href="../../index.html">← ギャラリー</a>
+      <header>
+        <p class="eyebrow">Day 6 · 2026-10-01</p>
+        <h1>ねむねむすいこみ</h1>
+        <p class="subtitle">Sleepy Soft Suck</p>
+      </header>
+      <div class="hud">
+        <div class="pill"><span>スコア</span><strong id="score">0</strong></div>
+        <div class="pill"><span>連続</span><strong id="combo">0</strong></div>
+        <div class="pill" id="time-pill"><span>のこり</span><strong id="time">60.0</strong></div>
+      </div>
+      <p class="formula" id="formula">すいこみ +1　連続で +1ボーナス（最大+3）</p>
+      <div id="stage" class="stage-wrap" data-state="ready" tabindex="-1">
+        <canvas id="game" width="480" height="640" aria-label="ねむねむオーブをすいこみの輪でふとんへ運ぶ"></canvas>
+        <p id="banner" class="banner" aria-live="polite"></p>
+        <div id="callout" class="callout" aria-live="assertive">
+          <p id="callout-main" class="callout-main"></p>
+          <p id="callout-sub" class="callout-sub"></p>
+        </div>
+        <div id="overlay" class="overlay show" aria-hidden="false">
+          <div id="ready-card" class="card" role="dialog" aria-labelledby="ready-title">
+            <p class="card-kicker">ねむねむゲーム部</p>
+            <h2 id="ready-title">ねむねむすいこみ</h2>
+            <p class="en">Sleepy Soft Suck</p>
+            <p class="blurb">60秒で、ふわふわをふとんへ</p>
+            <p class="rules" id="ready-formula">すいこみ +1　連続で +1ボーナス（最大+3）</p>
+            <p class="drag-hint">ゆびやマウスで輪を動かす</p>
+            <p class="note">おすと、すいこみがすこしつよくなる<br>にげる・おきるとのきれる</p>
+            <p id="ready-best" class="best-line" hidden></p>
+            <button id="start" class="start-button" type="button">はじめる</button>
+          </div>
+          <div id="end-card" class="card" role="dialog" aria-labelledby="end-title" hidden>
+            <h2 id="end-title">おやすみタイムアップ</h2>
+            <p class="final" id="end-score">スコア 0点</p>
+            <p id="end-detail" class="end-detail end-extra"></p>
+            <p id="best-line" class="best-line end-extra"></p>
+            <p id="record" class="record end-extra" hidden>ベスト更新！</p>
+            <button id="restart" class="restart-button" type="button">もういちど</button>
+            <a class="end-link" href="../../index.html">ギャラリーへ</a>
+          </div>
+        </div>
+      </div>
+      <p id="live" class="sr-only" aria-live="assertive"></p>
+    </section>
+  </main>
+  <script>
+  (() => {
+    'use strict';
+
+    const ROUND = 60;
+    const BEST_KEY = 'nemunemu-soft-suck-best';
+    const FORMULA = 'すいこみ +1　連続で +1ボーナス（最大+3）';
+    const FONT = 'ui-rounded, "Hiragino Maru Gothic ProN", "Yu Gothic", "Droid Sans Fallback", "WenQuanYi Micro Hei", system-ui, sans-serif';
+    const FILLS = ['#f7d6e6', '#d7f3ea', '#e4d9f8', '#ffe6c8', '#d5e8f8'];
+    const FEEDBACK_MS = 1300;
+    const BANNER_MS = 1600;
+
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const stage = document.getElementById('stage');
+    const scoreEl = document.getElementById('score');
+    const comboEl = document.getElementById('combo');
+    const timeEl = document.getElementById('time');
+    const timePill = document.getElementById('time-pill');
+    const overlay = document.getElementById('overlay');
+    const readyCard = document.getElementById('ready-card');
+    const endCard = document.getElementById('end-card');
+    const readyBestEl = document.getElementById('ready-best');
+    const endScoreEl = document.getElementById('end-score');
+    const endDetail = document.getElementById('end-detail');
+    const bestLine = document.getElementById('best-line');
+    const recordEl = document.getElementById('record');
+    const startBtn = document.getElementById('start');
+    const restartBtn = document.getElementById('restart');
+    const bannerEl = document.getElementById('banner');
+    const calloutEl = document.getElementById('callout');
+    const calloutMain = document.getElementById('callout-main');
+    const calloutSub = document.getElementById('callout-sub');
+    const liveEl = document.getElementById('live');
+    const formulaEl = document.getElementById('formula');
+    const readyFormulaEl = document.getElementById('ready-formula');
+
+    formulaEl.textContent = FORMULA;
+    readyFormulaEl.textContent = FORMULA;
+
+    let W = 480;
+    let H = 640;
+    let state = 'ready';
+    let score = 0;
+    let shownScore = 0;
+    let shownStreak = 0;
+    let streak = 0;
+    let bestStreak = 0;
+    let catches = 0;
+    let misses = 0;
+    let best = 0;
+    let timeLeft = ROUND;
+    let simT = 0;
+    let lastNow = 0;
+    let holding = false;
+    let moreDone = false;
+    let strongDone = false;
+    let spawnWait = 0;
+    let pullCount = 0;
+    let booted = false;
+    let activeId = null;
+    let calloutTimer = 0;
+    let bannerTimer = 0;
+    let feedBusy = false;
+    const feedQ = [];
+    const halo = { x: 240, y: 320, seen: false, prevX: 240, prevY: 320 };
+    let haloVX = 0;
+    let haloVY = 0;
+    const orbs = [];
+    const particles = [];
+    const pops = [];
+
+    try {
+      const saved = Number(localStorage.getItem(BEST_KEY) || 0);
+      if (Number.isFinite(saved) && saved > 0) best = Math.floor(saved);
+    } catch (_) {}
+
+    function rng(seed) {
+      let a = seed >>> 0;
+      return () => {
+        a = (a + 0x6D2B79F5) >>> 0;
+        let t = Math.imul(a ^ (a >>> 15), 1 | a);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+    const decor = rng(20261001);
+    const motes = [];
+    for (let i = 0; i < 16; i++) {
+      motes.push({
+        u: decor(),
+        v: decor(),
+        r: 10 + decor() * 26,
+        text: decor() < 0.45 ? 'z' : 'zz',
+        drift: decor() * Math.PI * 2
+      });
+    }
+
+    function showReadyBest() {
+      if (best > 0) {
+        readyBestEl.hidden = false;
+        readyBestEl.textContent = 'ベスト ' + best + '点';
+      } else {
+        readyBestEl.hidden = true;
+      }
+    }
+    showReadyBest();
+
+    function fitCanvas() {
+      const rect = stage.getBoundingClientRect();
+      const cssW = Math.max(1, rect.width);
+      const cssH = Math.max(1, rect.height);
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const bw = Math.max(1, Math.round(cssW * dpr));
+      const bh = Math.max(1, Math.round(cssH * dpr));
+      if (canvas.width !== bw || canvas.height !== bh) {
+        canvas.width = bw;
+        canvas.height = bh;
+      }
+      W = 480;
+      H = Math.max(1, 480 * (cssH / cssW));
+      ctx.setTransform((cssW * dpr) / W, 0, 0, (cssH * dpr) / H, 0, 0);
+    }
+
+    function futonBox() {
+      return {
+        cx: W * 0.5,
+        cy: H - Math.max(52, Math.min(92, H * 0.12)),
+        rx: Math.min(118, W * 0.3),
+        ry: Math.max(34, Math.min(58, H * 0.085))
+      };
+    }
+
+    function wakeBox() {
+      const speed = 0.52;
+      return {
+        x: W * 0.5 + Math.sin(simT * speed) * W * 0.3,
+        y: Math.max(54, H * 0.15) + Math.cos(simT * speed * 0.72) * Math.min(28, H * 0.04),
+        r: Math.max(36, Math.min(46, W * 0.09))
+      };
+    }
+
+    function suckReach() {
+      const base = holding ? 172 : 142;
+      return base * (strongDone ? 1.08 : 1);
+    }
+
+    function suckPower() {
+      const base = holding ? 820 : 560;
+      return base * (strongDone ? 1.22 : 1);
+    }
+
+    function pointsForStreak(n) {
+      return Math.min(3, n);
+    }
+
+    function updateHud() {
+      scoreEl.textContent = String(shownScore);
+      comboEl.textContent = String(shownStreak);
+      timeEl.textContent = Math.max(0, timeLeft).toFixed(1);
+      timePill.classList.toggle('urgent', state === 'playing' && timeLeft <= 10);
+      stage.dataset.state = state;
+      stage.classList.toggle('playing', state === 'playing');
+      stage.classList.toggle('aimed', state === 'playing' && halo.seen);
+    }
+
+    function showOverlay(which) {
+      const open = which === 'ready' || which === 'end';
+      overlay.classList.toggle('show', open);
+      overlay.setAttribute('aria-hidden', open ? 'false' : 'true');
+      readyCard.hidden = which !== 'ready';
+      endCard.hidden = which !== 'end';
+    }
+
+    function showCallout(kind, main, sub, extra) {
+      feedQ.push({
+        kind: kind,
+        main: main,
+        sub: sub,
+        add: extra && extra.add ? extra.add : 0,
+        streak: extra && extra.streak ? extra.streak : 0,
+        miss: !!(extra && extra.miss)
+      });
+      pumpCallout();
+    }
+
+    function pumpCallout() {
+      if (feedBusy || !feedQ.length) return;
+      feedBusy = true;
+      const item = feedQ.shift();
+      if (item.add) {
+        shownScore += item.add;
+        shownStreak = item.streak;
+      }
+      if (item.miss) shownStreak = 0;
+      calloutMain.textContent = item.main;
+      calloutSub.textContent = item.sub;
+      calloutEl.className = 'callout show ' + item.kind;
+      updateHud();
+      window.clearTimeout(calloutTimer);
+      calloutTimer = window.setTimeout(() => {
+        feedBusy = false;
+        if (!feedQ.length) calloutEl.classList.remove('show');
+        pumpCallout();
+      }, FEEDBACK_MS);
+    }
+
+    function clearFeedback() {
+      feedQ.length = 0;
+      feedBusy = false;
+      window.clearTimeout(calloutTimer);
+      calloutEl.className = 'callout';
+      calloutMain.textContent = '';
+      calloutSub.textContent = '';
+    }
+
+    function showBanner(text) {
+      bannerEl.textContent = text;
+      bannerEl.classList.add('show');
+      window.clearTimeout(bannerTimer);
+      bannerTimer = window.setTimeout(() => {
+        bannerEl.classList.remove('show');
+      }, BANNER_MS);
+    }
+
+    function clearBanner() {
+      window.clearTimeout(bannerTimer);
+      bannerEl.classList.remove('show');
+      bannerEl.textContent = '';
+    }
+
+    function spawnOrb() {
+      const f = futonBox();
+      const w = wakeBox();
+      let x = W * 0.5;
+      let y = H * 0.42;
+      for (let guard = 0; guard < 10; guard++) {
+        x = 48 + Math.random() * (W - 96);
+        y = H * 0.3 + Math.random() * (H * 0.22);
+        const fdx = (x - f.cx) / f.rx;
+        const fdy = (y - f.cy) / f.ry;
+        const wdx = x - w.x;
+        const wdy = y - w.y;
+        const nearHalo = halo.seen && Math.hypot(x - halo.x, y - halo.y) < 90;
+        if (fdx * fdx + fdy * fdy > 2.4 && wdx * wdx + wdy * wdy > (w.r + 64) * (w.r + 64) && !nearHalo) break;
+      }
+      y = Math.max(H * 0.26, Math.min(H * 0.56, y));
+      orbs.push({
+        x: x,
+        y: y,
+        vx: (Math.random() - 0.5) * 46,
+        vy: (Math.random() - 0.5) * 28,
+        r: 17 + Math.random() * 8,
+        phase: Math.random() * Math.PI * 2,
+        fill: FILLS[Math.floor(Math.random() * FILLS.length)],
+        sucked: false
+      });
+    }
+
+    function separate() {
+      for (let i = 0; i < orbs.length; i++) {
+        for (let j = i + 1; j < orbs.length; j++) {
+          const a = orbs[i];
+          const b = orbs[j];
+          let dx = b.x - a.x;
+          let dy = b.y - a.y;
+          let dist = Math.hypot(dx, dy);
+          const min = a.r + b.r;
+          if (dist === 0) {
+            dx = 1;
+            dy = 0;
+            dist = 1;
+          }
+          if (dist >= min) continue;
+          const nx = dx / dist;
+          const ny = dy / dist;
+          const overlap = (min - dist) * 0.5;
+          a.x -= nx * overlap;
+          a.y -= ny * overlap;
+          b.x += nx * overlap;
+          b.y += ny * overlap;
+          const rel = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
+          if (rel < 0) {
+            const impulse = -(1 + 0.62) * rel * 0.5;
+            a.vx -= impulse * nx;
+            a.vy -= impulse * ny;
+            b.vx += impulse * nx;
+            b.vy += impulse * ny;
+          }
+        }
+      }
+    }
+
+    function burst(x, y, color) {
+      for (let i = 0; i < 10; i++) {
+        const a = (Math.PI * 2 * i) / 10 + Math.random() * 0.4;
+        const s = 50 + Math.random() * 120;
+        particles.push({
+          x: x,
+          y: y,
+          vx: Math.cos(a) * s,
+          vy: Math.sin(a) * s,
+          life: 0.72,
+          max: 0.72,
+          r: 3.2 + Math.random() * 2.6,
+          color: color
+        });
+      }
+    }
+
+    function onCatch(orb) {
+      streak += 1;
+      if (streak > bestStreak) bestStreak = streak;
+      const add = pointsForStreak(streak);
+      score += add;
+      catches += 1;
+      burst(orb.x, orb.y, '#3f8f82');
+      pops.push({ x: orb.x, y: orb.y, text: '+' + add, life: 0.85, max: 0.85, color: '#1f6f64' });
+      showCallout('good', 'すいこんだ！', '+' + add, { add: add, streak: streak });
+      liveEl.textContent = 'すいこんだ +' + add + ' スコア' + score;
+    }
+
+    function onMiss(orb, kind) {
+      streak = 0;
+      misses += 1;
+      const text = kind === 'wake' ? 'おきた！' : 'にげちゃった…';
+      burst(orb.x, orb.y, '#d0725c');
+      pops.push({ x: orb.x, y: orb.y, text: text, life: 0.85, max: 0.85, color: '#c45b48' });
+      showCallout('bad', text, '連続リセット', { miss: true });
+      liveEl.textContent = text;
+    }
+
+    function inFuton(orb) {
+      const f = futonBox();
+      const dx = (orb.x - f.cx) / (f.rx + orb.r * 0.2);
+      const dy = (orb.y - f.cy) / (f.ry + orb.r * 0.28);
+      return dx * dx + dy * dy <= 1;
+    }
+
+    function inWake(orb) {
+      const w = wakeBox();
+      const hit = w.r + orb.r * 0.82;
+      const dx = orb.x - w.x;
+      const dy = orb.y - w.y;
+      return dx * dx + dy * dy < hit * hit;
+    }
+
+    function stepOrbs(dt, live) {
+      const reach = suckReach();
+      const power = suckPower();
+      pullCount = 0;
+      if (dt > 0) {
+        haloVX = (halo.x - halo.prevX) / dt;
+        haloVY = (halo.y - halo.prevY) / dt;
+        const hv = Math.hypot(haloVX, haloVY);
+        if (hv > 980) {
+          haloVX *= 980 / hv;
+          haloVY *= 980 / hv;
+        }
+      }
+      halo.prevX = halo.x;
+      halo.prevY = halo.y;
+      for (let i = 0; i < orbs.length; i++) {
+        const orb = orbs[i];
+        orb.sucked = false;
+        orb.vx += Math.sin(simT * 0.9 + orb.phase) * 20 * dt;
+        orb.vy += Math.cos(simT * 0.7 + orb.phase * 1.3) * 14 * dt;
+        if (live) orb.vy -= 8 * dt;
+
+        if (live && halo.seen) {
+          const dx = halo.x - orb.x;
+          const dy = halo.y - orb.y;
+          const dist = Math.hypot(dx, dy);
+          const range = reach + orb.r;
+          if (dist < range && dist > 0.001) {
+            const fall = 1 - dist / range;
+            const accel = power * fall * fall;
+            orb.vx += (dx / dist) * accel * dt;
+            orb.vy += (dy / dist) * accel * dt;
+            const swirl = (holding ? 18 : 10) * fall;
+            orb.vx += (-dy / dist) * swirl * dt;
+            orb.vy += (dx / dist) * swirl * dt;
+            if (holding) {
+              const follow = 1 - Math.exp(-12 * dt);
+              const weight = dist < 70 ? 0.82 : 0.4 * fall;
+              orb.vx += (haloVX - orb.vx) * follow * weight;
+              orb.vy += (haloVY - orb.vy) * follow * weight;
+            }
+            orb.sucked = true;
+            pullCount += 1;
+          }
+        }
+
+        const pad = 34;
+        const nearCorner = Math.min(orb.y, H - orb.y) < 120;
+        if (orb.x < pad) {
+          const slip = orb.vx < -50 ? 0.16 : (nearCorner ? 0.35 : 1);
+          orb.vx += (pad - orb.x) * 7 * slip * dt;
+        }
+        if (orb.x > W - pad) {
+          const slip = orb.vx > 50 ? 0.16 : (nearCorner ? 0.35 : 1);
+          orb.vx -= (orb.x - (W - pad)) * 7 * slip * dt;
+        }
+        if (orb.y < pad) {
+          const slip = orb.vy < -50 ? 0.16 : 0.5;
+          orb.vy += (pad - orb.y) * 3 * slip * dt;
+        }
+        const f = futonBox();
+        const overNest = Math.abs(orb.x - f.cx) < f.rx * 1.15;
+        if (!overNest && orb.y > H - pad) {
+          const slip = orb.vy > 50 ? 0.16 : 0.8;
+          orb.vy -= (orb.y - (H - pad)) * 6 * slip * dt;
+        }
+
+        const damp = Math.exp(-0.78 * dt);
+        orb.vx *= damp;
+        orb.vy *= damp;
+        const sp = Math.hypot(orb.vx, orb.vy);
+        const cap = 420;
+        if (sp > cap) {
+          orb.vx = (orb.vx / sp) * cap;
+          orb.vy = (orb.vy / sp) * cap;
+        }
+        orb.x += orb.vx * dt;
+        orb.y += orb.vy * dt;
+      }
+      separate();
+    }
+
+    function resolveOutcomes() {
+      const gone = [];
+      for (let i = 0; i < orbs.length; i++) {
+        const orb = orbs[i];
+        if (inFuton(orb)) gone.push([orb, 'catch']);
+        else if (inWake(orb)) gone.push([orb, 'wake']);
+        else if (orb.x < -12 || orb.x > W + 12 || orb.y < -12 || orb.y > H + 12) gone.push([orb, 'escape']);
+      }
+      for (let i = 0; i < gone.length; i++) {
+        const orb = gone[i][0];
+        const kind = gone[i][1];
+        const idx = orbs.indexOf(orb);
+        if (idx >= 0) orbs.splice(idx, 1);
+        if (kind === 'catch') onCatch(orb);
+        else onMiss(orb, kind);
+      }
+    }
+
+    function updatePlay(dt) {
+      timeLeft -= dt;
+      if (timeLeft < 0) timeLeft = 0;
+      simT += dt;
+      const elapsed = ROUND - timeLeft;
+      if (!moreDone && elapsed >= 20) {
+        moreDone = true;
+        spawnOrb();
+        spawnOrb();
+        spawnOrb();
+        showBanner('ふわふわ増えた！');
+      }
+      if (!strongDone && elapsed >= 40) {
+        strongDone = true;
+        showBanner('すいこみつよめ！');
+      }
+      updateHud();
+      if (timeLeft <= 0) {
+        finish();
+        return;
+      }
+      stepOrbs(dt, true);
+      resolveOutcomes();
+      if (orbs.length < 3) {
+        spawnWait += dt;
+        if (spawnWait >= 2.15) {
+          spawnWait = 0;
+          spawnOrb();
+        }
+      } else {
+        spawnWait = 0;
+      }
+      updateParticles(dt);
+    }
+
+    function updatePreview(dt) {
+      simT += dt;
+      if (!booted && W > 20 && H > 20) {
+        booted = true;
+        for (let i = 0; i < 4; i++) spawnOrb();
+      }
+      for (let i = 0; i < orbs.length; i++) {
+        const orb = orbs[i];
+        orb.sucked = false;
+        orb.x += Math.sin(simT * 0.8 + orb.phase) * 10 * dt;
+        orb.y += Math.cos(simT * 0.65 + orb.phase) * 8 * dt;
+        const top = H * 0.24;
+        const bot = H * 0.68;
+        if (orb.x < 40) orb.x = 40;
+        if (orb.x > W - 40) orb.x = W - 40;
+        if (orb.y < top) orb.y = top;
+        if (orb.y > bot) orb.y = bot;
+      }
+      updateParticles(dt);
+    }
+
+    function updateParticles(dt) {
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.life -= dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.vx *= Math.exp(-1.6 * dt);
+        p.vy *= Math.exp(-1.6 * dt);
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+      for (let i = pops.length - 1; i >= 0; i--) {
+        const p = pops[i];
+        p.life -= dt;
+        p.y -= 28 * dt;
+        if (p.life <= 0) pops.splice(i, 1);
+      }
+    }
+
+    function finish() {
+      if (state !== 'playing') return;
+      state = 'ended';
+      holding = false;
+      activeId = null;
+      timeLeft = 0;
+      shownScore = score;
+      shownStreak = streak;
+      clearFeedback();
+      clearBanner();
+      updateHud();
+      let record = false;
+      if (score > best) {
+        best = score;
+        record = true;
+        try { localStorage.setItem(BEST_KEY, String(best)); } catch (_) {}
+      }
+      endScoreEl.textContent = 'スコア ' + score + '点';
+      endDetail.textContent = 'すいこみ ' + catches + '　ミス ' + misses;
+      bestLine.textContent = 'ベスト ' + best + '点';
+      recordEl.hidden = !record;
+      showReadyBest();
+      showOverlay('end');
+      liveEl.textContent = 'おやすみタイムアップ スコア' + score + '点';
+      restartBtn.focus({ preventScroll: true });
+    }
+
+    function begin() {
+      fitCanvas();
+      score = 0;
+      shownScore = 0;
+      shownStreak = 0;
+      streak = 0;
+      bestStreak = 0;
+      catches = 0;
+      misses = 0;
+      timeLeft = ROUND;
+      moreDone = false;
+      strongDone = false;
+      holding = false;
+      activeId = null;
+      spawnWait = 0;
+      pullCount = 0;
+      halo.seen = false;
+      halo.x = W * 0.5;
+      halo.y = H * 0.46;
+      halo.prevX = halo.x;
+      halo.prevY = halo.y;
+      haloVX = 0;
+      haloVY = 0;
+      orbs.length = 0;
+      particles.length = 0;
+      pops.length = 0;
+      booted = true;
+      clearFeedback();
+      clearBanner();
+      for (let i = 0; i < 4; i++) spawnOrb();
+      state = 'playing';
+      updateHud();
+      showOverlay(null);
+      liveEl.textContent = 'スタート';
+      stage.focus({ preventScroll: true });
+    }
+
+    function pointerWorld(e) {
+      const rect = canvas.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / Math.max(1, rect.width)) * W;
+      const y = ((e.clientY - rect.top) / Math.max(1, rect.height)) * H;
+      halo.x = Math.max(-140, Math.min(W + 140, x));
+      halo.y = Math.max(-140, Math.min(H + 140, y));
+      halo.seen = true;
+    }
+
+    function onDown(e) {
+      if (state !== 'playing') return;
+      if (activeId !== null) return;
+      activeId = e.pointerId;
+      try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+      holding = true;
+      pointerWorld(e);
+      e.preventDefault();
+    }
+
+    function onMove(e) {
+      if (state !== 'playing') return;
+      if (activeId !== null && e.pointerId !== activeId) return;
+      pointerWorld(e);
+      if (e.cancelable) e.preventDefault();
+    }
+
+    function onUp(e) {
+      if (e.pointerId !== activeId) return;
+      activeId = null;
+      holding = false;
+    }
+
+    canvas.addEventListener('pointerdown', onDown, { passive: false });
+    canvas.addEventListener('pointermove', onMove, { passive: false });
+    canvas.addEventListener('pointerup', onUp);
+    canvas.addEventListener('pointercancel', onUp);
+    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+    document.addEventListener('touchmove', (e) => {
+      if (e.target && e.target.closest && e.target.closest('#stage')) e.preventDefault();
+    }, { passive: false });
+    startBtn.addEventListener('click', begin);
+    restartBtn.addEventListener('click', begin);
+    window.addEventListener('keydown', (e) => {
+      if (e.repeat) return;
+      if (e.code !== 'Space') return;
+      if (e.target && e.target.closest && e.target.closest('button, a')) return;
+      if (state === 'ready' || state === 'ended') {
+        e.preventDefault();
+        begin();
+      }
+    });
+    window.addEventListener('resize', fitCanvas);
+
+    function drawBackground() {
+      const g = ctx.createLinearGradient(0, 0, 0, H);
+      g.addColorStop(0, '#d5e7f2');
+      g.addColorStop(0.42, '#e7f3ee');
+      g.addColorStop(1, '#ece6f8');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+
+      ctx.fillStyle = 'rgba(255,255,255,.35)';
+      ctx.beginPath();
+      ctx.ellipse(W * 0.18, H * 0.18, 70, 28, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(W * 0.78, H * 0.62, 84, 26, 0.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = 'rgba(109, 166, 154, .16)';
+      ctx.font = '700 18px ' + FONT;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      for (let i = 0; i < motes.length; i++) {
+        const m = motes[i];
+        const y = m.v * H + Math.sin(simT * 0.35 + m.drift) * 8;
+        ctx.globalAlpha = 0.22;
+        ctx.fillText(m.text, m.u * W, y);
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function drawWake() {
+      const w = wakeBox();
+      ctx.save();
+      const glow = ctx.createRadialGradient(w.x, w.y, 4, w.x, w.y, w.r * 1.85);
+      glow.addColorStop(0, 'rgba(255, 220, 170, .35)');
+      glow.addColorStop(1, 'rgba(255, 220, 170, 0)');
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(w.x, w.y, w.r * 1.85, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(224, 140, 96, .45)';
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 8; i++) {
+        const a = simT * 0.35 + (i * Math.PI) / 4;
+        ctx.beginPath();
+        ctx.moveTo(w.x + Math.cos(a) * (w.r * 0.72), w.y + Math.sin(a) * (w.r * 0.72));
+        ctx.lineTo(w.x + Math.cos(a) * (w.r * 1.28), w.y + Math.sin(a) * (w.r * 1.28));
+        ctx.stroke();
+      }
+      const core = ctx.createRadialGradient(w.x - 6, w.y - 6, 4, w.x, w.y, w.r);
+      core.addColorStop(0, '#fff1d2');
+      core.addColorStop(0.55, '#ffc48a');
+      core.addColorStop(1, '#f0a07a');
+      ctx.fillStyle = core;
+      ctx.beginPath();
+      ctx.arc(w.x, w.y, w.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'rgba(196, 91, 72, .8)';
+      ctx.stroke();
+      ctx.fillStyle = '#c45b48';
+      ctx.font = '800 14px ' + FONT;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('おきる', w.x, w.y + 1);
+      ctx.restore();
+    }
+
+    function drawFuton() {
+      const f = futonBox();
+      ctx.save();
+      ctx.fillStyle = 'rgba(90, 80, 130, .12)';
+      ctx.beginPath();
+      ctx.ellipse(f.cx, f.cy + 12, f.rx + 18, f.ry + 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+      const sheet = ctx.createLinearGradient(f.cx, f.cy - f.ry, f.cx, f.cy + f.ry);
+      sheet.addColorStop(0, '#f7f4ff');
+      sheet.addColorStop(1, '#d7efe6');
+      ctx.fillStyle = sheet;
+      ctx.beginPath();
+      ctx.ellipse(f.cx, f.cy, f.rx, f.ry, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = 'rgba(63, 127, 118, .9)';
+      ctx.stroke();
+      ctx.fillStyle = '#e4d9f8';
+      ctx.beginPath();
+      ctx.ellipse(f.cx, f.cy - f.ry * 0.12, f.rx * 0.52, f.ry * 0.46, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.setLineDash([7, 6]);
+      ctx.strokeStyle = 'rgba(63, 127, 118, .75)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(f.cx, f.cy, f.rx * 0.72, f.ry * 0.62, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#3f7f76';
+      ctx.font = '800 16px ' + FONT;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('ふとん', f.cx, f.cy + f.ry * 0.38);
+      ctx.restore();
+    }
+
+    function drawOrb(orb) {
+      const sp = Math.hypot(orb.vx, orb.vy);
+      if (sp > 24) {
+        ctx.save();
+        ctx.globalAlpha = Math.min(0.4, sp / 900);
+        ctx.strokeStyle = orb.fill;
+        ctx.lineWidth = orb.r * 0.85;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(orb.x, orb.y);
+        ctx.lineTo(orb.x - orb.vx * 0.085, orb.y - orb.vy * 0.085);
+        ctx.stroke();
+        ctx.restore();
+      }
+      ctx.fillStyle = orb.fill;
+      ctx.beginPath();
+      ctx.arc(orb.x, orb.y, orb.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.7)';
+      ctx.beginPath();
+      ctx.arc(orb.x - orb.r * 0.28, orb.y - orb.r * 0.32, orb.r * 0.26, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#5c6e78';
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(orb.x - orb.r * 0.26, orb.y + orb.r * 0.02, orb.r * 0.16, 0.15, Math.PI - 0.15);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(orb.x + orb.r * 0.26, orb.y + orb.r * 0.02, orb.r * 0.16, 0.15, Math.PI - 0.15);
+      ctx.stroke();
+      ctx.fillStyle = '#6a7c8a';
+      ctx.font = '700 ' + Math.max(11, Math.round(orb.r * 0.52)) + 'px ' + FONT;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('zzz', orb.x, orb.y - orb.r - 9);
+      if (orb.sucked) {
+        ctx.strokeStyle = holding ? '#fffdf8' : '#1f7a6c';
+        ctx.lineWidth = holding ? 4 : 3;
+        ctx.beginPath();
+        ctx.arc(orb.x, orb.y, orb.r + 3.5, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+
+    function drawLinks() {
+      if (!halo.seen || pullCount === 0) return;
+      ctx.save();
+      ctx.lineWidth = holding ? 3 : 2;
+      ctx.strokeStyle = holding ? 'rgba(255,255,255,.8)' : 'rgba(47, 143, 130, .55)';
+      for (let i = 0; i < orbs.length; i++) {
+        const orb = orbs[i];
+        if (!orb.sucked) continue;
+        ctx.beginPath();
+        ctx.moveTo(halo.x, halo.y);
+        ctx.lineTo(orb.x, orb.y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawHalo() {
+      if (state === 'ended') return;
+      if (!halo.seen) {
+        if (state !== 'playing') return;
+        ctx.save();
+        ctx.strokeStyle = 'rgba(63, 127, 118, .85)';
+        ctx.setLineDash([8, 7]);
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(W * 0.5, H * 0.46, 48, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#3f7f76';
+        ctx.font = '800 16px ' + FONT;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('ゆびをそえて', W * 0.5, H * 0.46);
+        ctx.restore();
+        return;
+      }
+      const reach = suckReach();
+      const hot = holding || pullCount > 0;
+      ctx.save();
+      const g = ctx.createRadialGradient(halo.x, halo.y, 6, halo.x, halo.y, reach);
+      g.addColorStop(0, holding ? 'rgba(255,255,255,.62)' : 'rgba(214, 244, 234, .3)');
+      g.addColorStop(0.55, hot ? 'rgba(109,166,154,.28)' : 'rgba(109,166,154,.1)');
+      g.addColorStop(1, 'rgba(109,166,154,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(halo.x, halo.y, reach, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.lineWidth = holding ? 8 : (hot ? 6 : 3);
+      ctx.strokeStyle = holding ? '#ffffff' : (hot ? '#14685c' : 'rgba(109,166,154,.7)');
+      ctx.beginPath();
+      ctx.arc(halo.x, halo.y, holding ? 42 : 34, 0, Math.PI * 2);
+      ctx.stroke();
+      if (hot) {
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'rgba(255,255,255,.95)';
+        ctx.beginPath();
+        ctx.arc(halo.x, halo.y, 20 + Math.sin(simT * 7) * 2, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      if (holding) {
+        ctx.fillStyle = '#14685c';
+        ctx.font = '800 15px ' + FONT;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('つよ', halo.x, halo.y);
+      }
+      ctx.restore();
+    }
+
+    function drawFx() {
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        ctx.globalAlpha = Math.max(0, p.life / p.max);
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      for (let i = 0; i < pops.length; i++) {
+        const p = pops[i];
+        ctx.globalAlpha = Math.max(0, p.life / p.max);
+        ctx.fillStyle = p.color;
+        ctx.font = '800 22px ' + FONT;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(p.text, p.x, p.y);
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function draw() {
+      drawBackground();
+      drawWake();
+      drawFuton();
+      drawLinks();
+      for (let i = 0; i < orbs.length; i++) drawOrb(orbs[i]);
+      drawHalo();
+      drawFx();
+    }
+
+    function frame(now) {
+      if (!lastNow) lastNow = now;
+      const dt = Math.min(0.033, Math.max(0, (now - lastNow) / 1000));
+      lastNow = now;
+      fitCanvas();
+      if (state === 'playing') updatePlay(dt);
+      else if (state === 'ready') updatePreview(dt);
+      else updateParticles(dt);
+      draw();
+      requestAnimationFrame(frame);
+    }
+
+    showOverlay('ready');
+    updateHud();
+    startBtn.focus({ preventScroll: true });
+    requestAnimationFrame(frame);
+  })();
+  </script>
+</body>
+</html>
