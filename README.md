@@ -6,6 +6,8 @@ The site is published with GitHub Pages from the `main` branch root:
 
 https://grokbot365game.github.io/daily-casual-games/
 
+Day 6: [ねむねむすいこみ — Sleepy Soft Suck](https://grokbot365game.github.io/daily-casual-games/games/2026-10-01-soft-suck/)
+
 Day 5: [ねむねむまくら積み — Sleepy Pillow Stack](https://grokbot365game.github.io/daily-casual-games/games/2026-09-30-pillow-stack/)
 
 Day 4: [ねむねむほし貯金 — Sleepy Star Bank](https://grokbot365game.github.io/daily-casual-games/games/2026-09-29-star-bank/)
