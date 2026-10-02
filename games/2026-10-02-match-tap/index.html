@@ -1,0 +1,715 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#10141c">
+  <title>あわせタップ — Match Tap</title>
+  <style>
+    :root {
+      --bg: #10141c;
+      --bg-2: #181e2a;
+      --ink: #f4f7fb;
+      --muted: #9aa6bb;
+      --line: rgba(255, 255, 255, .08);
+      --safe: #1ee072;
+      --safe-deep: #0c9a4a;
+      --danger: #ff3358;
+      --danger-deep: #8d1230;
+      --mark: #ffe14a;
+      --card: #1c2333;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+    body {
+      position: fixed;
+      inset: 0;
+      height: 100vh;
+      height: 100dvh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 50% -10%, #243049 0%, transparent 46%),
+        var(--bg);
+      font-family: "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", "Segoe UI", sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none;
+      user-select: none;
+      touch-action: none;
+    }
+    .back {
+      position: fixed;
+      z-index: 8;
+      top: max(10px, env(safe-area-inset-top));
+      left: max(12px, env(safe-area-inset-left));
+      padding: 8px 12px;
+      border-radius: 999px;
+      color: var(--ink);
+      background: rgba(16, 20, 28, .72);
+      box-shadow: inset 0 0 0 1px var(--line);
+      font-size: .78rem;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-decoration: none;
+    }
+    .shell {
+      height: 100%;
+      max-width: 520px;
+      margin: 0 auto;
+      padding:
+        calc(max(12px, env(safe-area-inset-top)) + 36px)
+        16px
+        max(14px, env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    header { text-align: center; flex: none; }
+    .kicker {
+      margin: 0;
+      color: var(--mark);
+      font-size: .72rem;
+      font-weight: 800;
+      letter-spacing: .16em;
+    }
+    h1 {
+      margin: 2px 0 0;
+      font-size: clamp(1.7rem, 7vw, 2.4rem);
+      line-height: 1.05;
+      letter-spacing: .06em;
+    }
+    .en {
+      margin: 2px 0 0;
+      color: var(--muted);
+      font-size: .72rem;
+      font-weight: 800;
+      letter-spacing: .18em;
+    }
+    .hud {
+      flex: none;
+      display: grid;
+      grid-template-columns: 1.3fr .7fr;
+      gap: 8px;
+      margin: 12px 0 8px;
+    }
+    .pill {
+      padding: 8px 10px 9px;
+      border-radius: 14px;
+      background: var(--bg-2);
+      box-shadow: inset 0 0 0 1px var(--line);
+      text-align: center;
+    }
+    .pill span {
+      display: block;
+      color: var(--muted);
+      font-size: .68rem;
+      font-weight: 800;
+      letter-spacing: .12em;
+    }
+    .pill strong {
+      display: block;
+      margin-top: 2px;
+      font-size: clamp(1.35rem, 6vw, 1.8rem);
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+    .pill.score strong { font-size: clamp(1.05rem, 4.5vw, 1.35rem); color: var(--mark); }
+    .pips {
+      flex: none;
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 5px;
+      margin: 0 0 10px;
+    }
+    .pips i {
+      display: block;
+      height: 7px;
+      border-radius: 99px;
+      background: #2a3346;
+    }
+    .pips i.on { background: var(--safe); box-shadow: 0 0 10px rgba(30, 224, 114, .7); }
+    .pips i.bad { background: var(--danger); }
+    .stage {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 12px;
+    }
+    .bar-wrap { padding: 22px 8px; }
+    .bar {
+      position: relative;
+      height: clamp(64px, 12vh, 84px);
+      border-radius: 16px;
+      background: linear-gradient(90deg, var(--danger) 0%, #5a1024 16%, #2a121a 50%, #5a1024 84%, var(--danger) 100%);
+      box-shadow:
+        inset 0 0 0 3px rgba(255, 51, 88, .55),
+        0 12px 30px rgba(0, 0, 0, .35);
+    }
+    .zone {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      border-radius: 12px;
+      background: linear-gradient(180deg, #67f5a4, var(--safe) 42%, var(--safe-deep));
+      box-shadow: 0 0 0 3px #f3fff8, 0 0 22px rgba(30, 224, 114, .85);
+    }
+    .marker {
+      position: absolute;
+      top: -18px;
+      bottom: -18px;
+      width: 16px;
+      margin-left: -8px;
+      display: flex;
+      justify-content: center;
+    }
+    .marker b {
+      width: 6px;
+      height: 100%;
+      border-radius: 4px;
+      background: #fff;
+      box-shadow: 0 0 0 3px var(--mark), 0 0 16px var(--mark);
+    }
+    .marker::before {
+      content: "";
+      position: absolute;
+      top: -2px;
+      left: 1px;
+      border-left: 7px solid transparent;
+      border-right: 7px solid transparent;
+      border-top: 11px solid var(--mark);
+    }
+    .marker.hit b { box-shadow: 0 0 0 3px var(--safe), 0 0 16px var(--safe); }
+    .marker.miss b { background: #fff; box-shadow: 0 0 0 3px var(--danger), 0 0 16px var(--danger); }
+    .marker.miss::before { border-top-color: var(--danger); }
+    .legend {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 0 4px;
+      font-size: .82rem;
+      font-weight: 900;
+      letter-spacing: .06em;
+    }
+    .legend .bad { color: var(--danger); }
+    .legend .good { color: var(--safe); }
+    .hint {
+      margin: 0;
+      text-align: center;
+      color: var(--muted);
+      font-size: .92rem;
+      font-weight: 800;
+    }
+    .flash {
+      position: fixed;
+      inset: 0;
+      z-index: 4;
+      pointer-events: none;
+      background: var(--danger);
+      opacity: 0;
+    }
+    .flash.on { animation: flash 1.2s linear forwards; }
+    @keyframes flash {
+      0% { opacity: .78; }
+      18% { opacity: .2; }
+      36% { opacity: .62; }
+      100% { opacity: 0; }
+    }
+    .boom {
+      position: fixed;
+      inset: 0;
+      z-index: 7;
+      display: grid;
+      place-items: center;
+      align-content: center;
+      pointer-events: none;
+      text-align: center;
+    }
+    .boom[hidden] { display: none !important; }
+    .boom strong {
+      display: block;
+      font-size: clamp(3.4rem, 16vw, 6.4rem);
+      line-height: .95;
+      letter-spacing: .04em;
+      animation: pop .18s ease-out;
+    }
+    .boom em {
+      display: block;
+      margin-top: 6px;
+      font-style: normal;
+      font-size: clamp(2rem, 9vw, 3.4rem);
+      font-weight: 900;
+      letter-spacing: .12em;
+    }
+    .boom.good strong { color: var(--safe); text-shadow: 0 8px 30px rgba(0, 0, 0, .45); }
+    .boom.bad strong, .boom.bad em { color: #fff; text-shadow: 0 6px 0 #6d0d24; }
+    @keyframes pop {
+      from { transform: scale(.72); opacity: .2; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .shell.shake { animation: shake 1.2s linear; }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      12% { transform: translateX(-10px); }
+      24% { transform: translateX(9px); }
+      36% { transform: translateX(-7px); }
+      48% { transform: translateX(5px); }
+      60% { transform: translateX(-3px); }
+    }
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 5;
+      display: grid;
+      place-items: center;
+      padding: 68px 16px 16px;
+      background: rgba(6, 8, 12, .78);
+    }
+    .modal[hidden] { display: none !important; }
+    .card {
+      width: min(100%, 420px);
+      padding: 22px 20px 18px;
+      border-radius: 22px;
+      background: var(--card);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, .45), inset 0 0 0 1px rgba(255, 255, 255, .06);
+      text-align: center;
+    }
+    .card h2 {
+      margin: 0 0 12px;
+      font-size: clamp(1.8rem, 8vw, 2.5rem);
+      letter-spacing: .08em;
+    }
+    .rules {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 8px;
+      text-align: left;
+    }
+    .rules li {
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #121722;
+      font-size: .98rem;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+    .rules li::before {
+      content: "";
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      margin-right: 8px;
+      border-radius: 99px;
+      background: var(--mark);
+      transform: translateY(-1px);
+    }
+    .keys, .sub {
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: .85rem;
+      font-weight: 800;
+    }
+    button {
+      width: 100%;
+      margin-top: 14px;
+      min-height: 52px;
+      border: 0;
+      border-radius: 14px;
+      background: var(--safe);
+      color: #06210f;
+      font: inherit;
+      font-size: 1.15rem;
+      font-weight: 900;
+      letter-spacing: .08em;
+      cursor: pointer;
+    }
+    button:focus-visible { outline: 3px solid var(--mark); outline-offset: 3px; }
+    .card.fail { box-shadow: 0 24px 60px rgba(0, 0, 0, .45), inset 0 0 0 2px var(--danger); }
+    .card.fail h2 { color: var(--danger); }
+    .card.clear { box-shadow: 0 24px 60px rgba(0, 0, 0, .45), inset 0 0 0 2px var(--safe); }
+    .card.clear h2 { color: var(--safe); }
+    .result-progress {
+      margin: 0;
+      font-size: clamp(2rem, 10vw, 3rem);
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: .04em;
+    }
+    .miss-word {
+      margin: 4px 0 0;
+      color: var(--danger);
+      font-size: 1.5rem;
+      font-weight: 900;
+    }
+    @media (max-height: 700px) {
+      .shell { padding-top: calc(max(8px, env(safe-area-inset-top)) + 32px); }
+      h1 { font-size: 1.45rem; }
+      .hud { margin: 6px 0; }
+      .pill { padding: 6px 8px; }
+      .pill strong { font-size: 1.25rem; }
+      .bar { height: 56px; }
+      .card { padding: 14px 14px 12px; }
+      .card h2 { margin-bottom: 8px; font-size: 1.6rem; }
+      .rules { gap: 6px; }
+      .rules li { padding: 7px 10px; font-size: .88rem; }
+      button { min-height: 46px; margin-top: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <a class="back" href="../../index.html">ギャラリーへ</a>
+  <div class="shell" id="shell">
+    <header>
+      <p class="kicker">DAY 7</p>
+      <h1>あわせタップ</h1>
+      <p class="en">MATCH TAP</p>
+    </header>
+    <div class="hud">
+      <div class="pill"><span>連続</span><strong id="progress">0 / 8</strong></div>
+      <div class="pill score"><span>スコア</span><strong id="score">0</strong></div>
+    </div>
+    <div class="pips" id="pips" aria-hidden="true"></div>
+    <div class="stage">
+      <div class="bar-wrap">
+        <div class="bar" id="bar">
+          <div class="zone" id="zone"></div>
+          <div class="marker" id="marker"><b></b></div>
+        </div>
+      </div>
+      <div class="legend">
+        <span class="bad">赤＝ハズレ</span>
+        <span class="good">緑＝セーフ</span>
+      </div>
+      <p class="hint" id="hint">緑のゾーンに入ったらタップ</p>
+    </div>
+  </div>
+
+  <div class="flash" id="flash"></div>
+  <div class="boom" id="boom" hidden><strong id="boom-main"></strong><em id="boom-sub"></em></div>
+
+  <div class="modal" id="gate">
+    <div class="card">
+      <p class="kicker">DAY 7</p>
+      <h2>あわせタップ</h2>
+      <ul class="rules">
+        <li>マーカーが緑のゾーンに入ったらタップ</li>
+        <li>8回連続成功でクリア</li>
+        <li>はずれたら即アウト</li>
+      </ul>
+      <p class="keys">Space またはタップ</p>
+      <button type="button" id="btn-start">スタート</button>
+    </div>
+  </div>
+
+  <div class="modal" id="fail-modal" hidden>
+    <div class="card fail">
+      <h2>失敗</h2>
+      <p class="miss-word">はずれ！</p>
+      <p class="result-progress" id="fail-progress">0 / 8</p>
+      <p class="sub" id="fail-score">スコア 0</p>
+      <button type="button" id="btn-retry-fail">もう一度</button>
+      <p class="keys">Space でもう一度</p>
+    </div>
+  </div>
+
+  <div class="modal" id="clear-modal" hidden>
+    <div class="card clear">
+      <h2>クリア！</h2>
+      <p class="result-progress">8 / 8</p>
+      <p class="sub" id="clear-score">スコア 0</p>
+      <button type="button" id="btn-retry-clear">もう一度</button>
+      <p class="keys">Space でもう一度</p>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var GOAL = 8;
+      var WIDTHS = [0.36, 0.32, 0.28, 0.24, 0.21, 0.18, 0.155, 0.135];
+      var SPEEDS = [0.45, 0.52, 0.60, 0.70, 0.82, 0.94, 1.06, 1.18];
+      var HIT_MS = 500;
+      var FAIL_MS = 1200;
+      var LOCK_MS = 120;
+
+      var phase = "start";
+      var streak = 0;
+      var score = 0;
+      var marker = 0.12;
+      var dir = 1;
+      var zoneLeft = (1 - WIDTHS[0]) / 2;
+      var zoneWidth = WIDTHS[0];
+      var speed = SPEEDS[0];
+      var last = 0;
+      var lockUntil = 0;
+      var timer = 0;
+      var audioCtx = null;
+
+      var shell = document.getElementById("shell");
+      var progressEl = document.getElementById("progress");
+      var scoreEl = document.getElementById("score");
+      var pipsEl = document.getElementById("pips");
+      var zoneEl = document.getElementById("zone");
+      var markerEl = document.getElementById("marker");
+      var hintEl = document.getElementById("hint");
+      var flashEl = document.getElementById("flash");
+      var boomEl = document.getElementById("boom");
+      var boomMain = document.getElementById("boom-main");
+      var boomSub = document.getElementById("boom-sub");
+      var gateEl = document.getElementById("gate");
+      var failModal = document.getElementById("fail-modal");
+      var clearModal = document.getElementById("clear-modal");
+      var failProgress = document.getElementById("fail-progress");
+      var failScore = document.getElementById("fail-score");
+      var clearScore = document.getElementById("clear-score");
+
+      function progressText(n) {
+        return n + " / " + GOAL;
+      }
+
+      function inside() {
+        return marker >= zoneLeft && marker <= zoneLeft + zoneWidth;
+      }
+
+      function paintMarker() {
+        markerEl.style.left = (marker * 100) + "%";
+      }
+
+      function paintZone() {
+        zoneEl.style.left = (zoneLeft * 100) + "%";
+        zoneEl.style.width = (zoneWidth * 100) + "%";
+      }
+
+      function renderPips() {
+        var html = "";
+        for (var i = 0; i < GOAL; i++) {
+          var cls = "";
+          if (i < streak) cls = "on";
+          else if ((phase === "fail" || phase === "failhold") && i === streak) cls = "bad";
+          html += "<i class=\"" + cls + "\"></i>";
+        }
+        pipsEl.innerHTML = html;
+      }
+
+      function render() {
+        progressEl.textContent = progressText(streak);
+        scoreEl.textContent = String(score);
+        paintZone();
+        paintMarker();
+        renderPips();
+        markerEl.classList.toggle("hit", phase === "hit");
+        markerEl.classList.toggle("miss", phase === "failhold" || phase === "fail");
+        gateEl.hidden = phase !== "start";
+        failModal.hidden = phase !== "fail";
+        clearModal.hidden = phase !== "clear";
+        if (phase === "fail") {
+          failProgress.textContent = progressText(streak);
+          failScore.textContent = "スコア " + score;
+          hintEl.textContent = "はずれたら即アウト";
+        } else if (phase === "clear") {
+          clearScore.textContent = "スコア " + score;
+          hintEl.textContent = "8回連続成功でクリア";
+        } else if (phase === "start") {
+          hintEl.textContent = "緑のゾーンに入ったらタップ";
+        } else {
+          hintEl.textContent = "緑＝セーフ　赤は即アウト";
+        }
+        document.body.dataset.phase = phase;
+      }
+
+      function placeZone() {
+        var margin = 0.02;
+        var gap = Math.max(0.1, speed * 0.2);
+        var maxLeft = 1 - zoneWidth - margin;
+        var i;
+        for (i = 0; i < 50; i++) {
+          var left = margin + Math.random() * (maxLeft - margin);
+          var right = left + zoneWidth;
+          if (marker <= left - gap || marker >= right + gap) {
+            zoneLeft = left;
+            return;
+          }
+        }
+        zoneLeft = marker < 0.5 ? maxLeft : margin;
+      }
+
+      function showBoom(kind, main, sub) {
+        boomEl.className = "boom " + kind;
+        boomMain.textContent = main;
+        boomSub.textContent = sub || "";
+        boomSub.hidden = !sub;
+        boomEl.hidden = false;
+      }
+
+      function hideBoom() {
+        boomEl.hidden = true;
+      }
+
+      function tone(freq, dur, type, gain) {
+        try {
+          audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+          if (audioCtx.state === "suspended") audioCtx.resume();
+          var o = audioCtx.createOscillator();
+          var g = audioCtx.createGain();
+          o.type = type;
+          o.frequency.value = freq;
+          g.gain.value = gain;
+          g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+          o.connect(g);
+          g.connect(audioCtx.destination);
+          o.start();
+          o.stop(audioCtx.currentTime + dur);
+        } catch (err) {}
+      }
+
+      function setupRound() {
+        var i = Math.min(streak, GOAL - 1);
+        zoneWidth = WIDTHS[i];
+        speed = SPEEDS[i];
+        placeZone();
+        lockUntil = performance.now() + LOCK_MS;
+      }
+
+      function startRun() {
+        clearTimeout(timer);
+        streak = 0;
+        score = 0;
+        marker = 0;
+        dir = 1;
+        hideBoom();
+        flashEl.classList.remove("on");
+        shell.classList.remove("shake");
+        phase = "play";
+        setupRound();
+        last = 0;
+        render();
+      }
+
+      function succeed() {
+        streak += 1;
+        score += 100 * streak;
+        phase = "hit";
+        showBoom("good", "よし！", "");
+        tone(880, 0.09, "square", 0.05);
+        render();
+        if (streak >= GOAL) {
+          timer = setTimeout(function () {
+            phase = "clear";
+            hideBoom();
+            tone(660, 0.08, "square", 0.05);
+            setTimeout(function () { tone(880, 0.1, "square", 0.05); }, 90);
+            setTimeout(function () { tone(1180, 0.14, "square", 0.05); }, 180);
+            render();
+          }, HIT_MS);
+        } else {
+          timer = setTimeout(function () {
+            hideBoom();
+            phase = "play";
+            setupRound();
+            render();
+          }, HIT_MS);
+        }
+      }
+
+      function fail() {
+        phase = "failhold";
+        showBoom("bad", "はずれ！", "失敗");
+        flashEl.classList.remove("on");
+        void flashEl.offsetWidth;
+        flashEl.classList.add("on");
+        shell.classList.remove("shake");
+        void shell.offsetWidth;
+        shell.classList.add("shake");
+        tone(110, 0.22, "sawtooth", 0.06);
+        render();
+        timer = setTimeout(function () {
+          phase = "fail";
+          hideBoom();
+          render();
+        }, FAIL_MS);
+      }
+
+      function judge() {
+        if (performance.now() < lockUntil && !inside()) return;
+        if (inside()) succeed();
+        else fail();
+      }
+
+      function act(e) {
+        if (e && e.target && e.target.closest && e.target.closest("a")) return;
+        if (phase === "start" || phase === "fail" || phase === "clear") {
+          startRun();
+          return;
+        }
+        if (phase === "play") judge();
+      }
+
+      function frame(now) {
+        requestAnimationFrame(frame);
+        if (phase !== "play") {
+          last = now;
+          return;
+        }
+        if (!last) last = now;
+        var dt = Math.min(0.05, (now - last) / 1000);
+        last = now;
+        marker += dir * speed * dt;
+        if (marker >= 1) {
+          marker = 1;
+          dir = -1;
+        } else if (marker <= 0) {
+          marker = 0;
+          dir = 1;
+        }
+        paintMarker();
+      }
+
+      document.addEventListener("pointerdown", function (e) {
+        if (e.button !== 0) return;
+        if (e.target.closest("a")) return;
+        e.preventDefault();
+        act(e);
+      }, { passive: false });
+
+      document.addEventListener("keydown", function (e) {
+        if (e.code !== "Space" && e.key !== " ") return;
+        if (e.repeat) return;
+        e.preventDefault();
+        act(e);
+      });
+
+      document.addEventListener("touchmove", function (e) {
+        e.preventDefault();
+      }, { passive: false });
+
+      window.__matchTap = {
+        getState: function () {
+          return {
+            phase: phase,
+            streak: streak,
+            score: score,
+            marker: marker,
+            zoneLeft: zoneLeft,
+            zoneWidth: zoneWidth,
+            speed: speed,
+            inside: inside(),
+            lockUntil: lockUntil,
+            goal: GOAL
+          };
+        }
+      };
+
+      paintZone();
+      paintMarker();
+      render();
+      requestAnimationFrame(frame);
+    })();
+  </script>
+</body>
+</html>
