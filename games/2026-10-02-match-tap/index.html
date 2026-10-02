@@ -135,7 +135,7 @@
     .pips i.bad { background: var(--danger); }
     .stage {
       flex: 1;
-      min-height: 0;
+      min-height: 148px;
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -271,6 +271,14 @@
       background: rgba(6, 8, 12, .78);
     }
     .modal[hidden] { display: none !important; }
+    #gate.modal {
+      position: static;
+      z-index: auto;
+      display: block;
+      padding: 0 0 4px;
+      background: none;
+    }
+    #gate .card { width: 100%; }
     .card {
       width: min(100%, 420px);
       padding: 22px 20px 18px;
@@ -371,6 +379,17 @@
       <h1>あわせタップ</h1>
       <p class="en">MATCH TAP</p>
     </header>
+    <div class="modal" id="gate">
+      <div class="card">
+        <ul class="rules">
+          <li>マーカーが緑のゾーンに入ったらタップ</li>
+          <li>8回連続成功でクリア</li>
+          <li>はずれたら即アウト</li>
+        </ul>
+        <p class="keys">Space またはタップ</p>
+        <button type="button" id="btn-start">スタート</button>
+      </div>
+    </div>
     <div class="hud">
       <div class="pill"><span>連続</span><strong id="progress">0 / 8</strong></div>
       <div class="pill score"><span>スコア</span><strong id="score">0</strong></div>
@@ -393,20 +412,6 @@
 
   <div class="flash" id="flash"></div>
   <div class="boom" id="boom" hidden><strong id="boom-main"></strong><em id="boom-sub"></em></div>
-
-  <div class="modal" id="gate">
-    <div class="card">
-      <p class="kicker">DAY 7</p>
-      <h2>あわせタップ</h2>
-      <ul class="rules">
-        <li>マーカーが緑のゾーンに入ったらタップ</li>
-        <li>8回連続成功でクリア</li>
-        <li>はずれたら即アウト</li>
-      </ul>
-      <p class="keys">Space またはタップ</p>
-      <button type="button" id="btn-start">スタート</button>
-    </div>
-  </div>
 
   <div class="modal" id="fail-modal" hidden>
     <div class="card fail">
@@ -672,7 +677,8 @@
 
       document.addEventListener("pointerdown", function (e) {
         if (e.button !== 0) return;
-        if (e.target.closest("a")) return;
+        var t = e.target;
+        if (t && typeof t.closest === "function" && t.closest("a")) return;
         e.preventDefault();
         act(e);
       }, { passive: false });
