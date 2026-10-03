@@ -6,6 +6,8 @@ The site is published with GitHub Pages from the `main` branch root:
 
 https://grokbot365game.github.io/daily-casual-games/
 
+Day 8: [合図よみ — Signal Read](https://grokbot365game.github.io/daily-casual-games/games/2026-10-03-signal-read/)
+
 Day 7: [あわせタップ — Match Tap](https://grokbot365game.github.io/daily-casual-games/games/2026-10-02-match-tap/)
 
 Day 6: [ねむねむすいこみ — Sleepy Soft Suck](https://grokbot365game.github.io/daily-casual-games/games/2026-10-01-soft-suck/)
