@@ -1,0 +1,1111 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#7c3aed">
+  <title>スキマぬけ — Gap Dash</title>
+  <style>
+    :root {
+      --ink: #1a1030;
+      --muted: #5c4d72;
+      --card: #fff8f4;
+      --teal: #14b8a6;
+      --teal-2: #5eead4;
+      --coral: #ff3d6e;
+      --gold: #ffe14a;
+      --line: rgba(26, 16, 48, .12);
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+    body {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      color: #fff;
+      background:
+        radial-gradient(90% 50% at 50% 108%, #5eead4 0%, transparent 42%),
+        radial-gradient(70% 42% at 100% -10%, #ff8ab0 0%, transparent 46%),
+        radial-gradient(60% 36% at 0% 0%, #ddd6fe 0%, transparent 48%),
+        linear-gradient(180deg, #8b6cff 0%, #c084fc 34%, #ff6b9a 68%, #14b8a6 68.4%, #0f766e 100%);
+      font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Yu Gothic", "Meiryo", sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none;
+      user-select: none;
+      touch-action: none;
+    }
+    body.heat {
+      background:
+        radial-gradient(90% 48% at 50% 110%, #99f6e4 0%, transparent 40%),
+        radial-gradient(80% 46% at 90% 0%, #fb7185 0%, transparent 48%),
+        linear-gradient(180deg, #7c3aed 0%, #e879f9 30%, #fb7185 66%, #14b8a6 66.4%, #0f766e 100%);
+    }
+    .city {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .skyline {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 7%;
+      height: 26%;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 8px;
+      padding: 0 4%;
+    }
+    .bldg {
+      position: relative;
+      height: 100%;
+      flex: 1;
+      max-width: 74px;
+      border-radius: 8px 8px 0 0;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, .18), transparent 28%),
+        repeating-linear-gradient(180deg, transparent 0 8px, rgba(18, 8, 40, .18) 8px 10px),
+        linear-gradient(180deg, #5b21b6, #3b0764);
+      box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .12);
+    }
+    .bldg:nth-child(odd) { height: 78%; background-color: #4c1d95; }
+    .bldg:nth-child(3n) { height: 92%; }
+    .bldg:nth-child(4) { height: 64%; }
+    .bldg::before {
+      content: "";
+      position: absolute;
+      left: 14%;
+      right: 14%;
+      top: 12%;
+      bottom: 10%;
+      background:
+        radial-gradient(circle, #5eead4 0 1.5px, transparent 2.2px) 0 0 / 12px 14px,
+        radial-gradient(circle, #ffd84a 0 1.4px, transparent 2px) 6px 7px / 12px 14px;
+      opacity: .9;
+    }
+    .bldg .sign {
+      position: absolute;
+      left: 18%;
+      right: 18%;
+      top: 18%;
+      height: 14%;
+      border-radius: 3px;
+      background: #ff3d6e;
+      box-shadow: 0 0 12px #ff3d6e;
+    }
+    .bldg:nth-child(2) .sign { background: #5eead4; box-shadow: 0 0 12px #5eead4; top: 28%; }
+    .back {
+      position: fixed;
+      z-index: 20;
+      top: max(10px, env(safe-area-inset-top));
+      left: max(12px, env(safe-area-inset-left));
+      padding: 8px 12px;
+      border-radius: 999px;
+      color: var(--ink);
+      background: rgba(255, 248, 244, .92);
+      box-shadow: inset 0 0 0 1px var(--line);
+      font-size: .78rem;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-decoration: none;
+    }
+    .shell {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      max-width: 520px;
+      margin: 0 auto;
+      padding:
+        calc(max(10px, env(safe-area-inset-top)) + 34px)
+        14px
+        max(8px, env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    header { flex: none; text-align: center; }
+    .kicker {
+      margin: 0;
+      color: #ecfeff;
+      font-size: .72rem;
+      font-weight: 800;
+      letter-spacing: .18em;
+      text-shadow: 0 2px 0 rgba(49, 16, 90, .35);
+    }
+    h1 {
+      margin: 1px 0 0;
+      color: #fff;
+      font-size: clamp(1.7rem, 7.4vw, 2.4rem);
+      line-height: 1.05;
+      letter-spacing: .12em;
+      text-shadow: 0 3px 0 #5b21b6, 0 10px 22px rgba(76, 29, 149, .35);
+    }
+    .en {
+      margin: 2px 0 0;
+      color: rgba(255, 255, 255, .9);
+      font-size: .72rem;
+      font-weight: 800;
+      letter-spacing: .2em;
+    }
+    #gate { flex: none; }
+    #gate[hidden] { display: none !important; }
+    .card {
+      width: min(100%, 460px);
+      margin: 8px auto 0;
+      padding: 14px 14px 12px;
+      border-radius: 18px;
+      background: var(--card);
+      color: var(--ink);
+      box-shadow: 0 12px 30px rgba(26, 16, 48, .16), inset 0 0 0 1px rgba(255, 255, 255, .7);
+      text-align: center;
+    }
+    .rule {
+      margin: 0;
+      font-size: .98rem;
+      font-weight: 800;
+      line-height: 1.45;
+    }
+    .keys, .sub, .why {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: .82rem;
+      font-weight: 800;
+    }
+    .keys.foot { flex: none; text-align: center; margin: 2px 0 0; color: #fff; text-shadow: 0 1px 0 rgba(49, 16, 90, .35); }
+    button {
+      width: 100%;
+      margin-top: 10px;
+      min-height: 48px;
+      border: 0;
+      border-radius: 14px;
+      background: #5b21b6;
+      color: #fff;
+      font: inherit;
+      font-size: 1.05rem;
+      font-weight: 900;
+      letter-spacing: .08em;
+      cursor: pointer;
+    }
+    button:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+    .card.fail button { background: var(--coral); }
+    .card.clear button { background: #0f766e; }
+    .hud {
+      flex: none;
+      display: grid;
+      grid-template-columns: 1.3fr .7fr;
+      gap: 8px;
+      margin: 8px 0 6px;
+    }
+    .pill {
+      padding: 7px 10px 8px;
+      border-radius: 14px;
+      background: rgba(255, 248, 244, .92);
+      color: var(--ink);
+      box-shadow: inset 0 0 0 1px var(--line);
+      text-align: center;
+    }
+    .pill span {
+      display: block;
+      color: var(--muted);
+      font-size: .68rem;
+      font-weight: 800;
+      letter-spacing: .12em;
+    }
+    .pill strong {
+      display: block;
+      margin-top: 1px;
+      font-size: clamp(1.25rem, 5.5vw, 1.7rem);
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+    .pill.score strong { font-size: clamp(1rem, 4.2vw, 1.25rem); color: #0f766e; }
+    .pips {
+      flex: none;
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 5px;
+      margin: 0 0 6px;
+    }
+    .pips i {
+      display: block;
+      height: 7px;
+      border-radius: 99px;
+      background: rgba(255, 255, 255, .38);
+    }
+    .pips i.on { background: var(--teal-2); box-shadow: 0 0 8px rgba(94, 234, 212, .8); }
+    .pips i.bad { background: var(--coral); }
+    .pips i.next { background: var(--gold); animation: pip .45s ease-in-out infinite; }
+    @keyframes pip {
+      50% { transform: scaleY(1.7); }
+    }
+    .track {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      border-radius: 22px;
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(15, 70, 78, .55), #0f766e 28%, #115e59 100%);
+      box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .28), 0 14px 30px rgba(49, 16, 90, .2);
+    }
+    body.fierce .track {
+      animation: rim .4s ease-in-out infinite;
+    }
+    @keyframes rim {
+      0%, 100% { box-shadow: inset 0 0 0 3px var(--gold), 0 14px 30px rgba(49, 16, 90, .2); }
+      50% { box-shadow: inset 0 0 0 6px #fff, 0 0 24px rgba(255, 225, 74, .7); }
+    }
+    .lane {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 33.333%;
+    }
+    .lane:nth-child(1) { left: 0; }
+    .lane:nth-child(2) { left: 33.333%; }
+    .lane:nth-child(3) { left: 66.666%; }
+    .lane.on { background: linear-gradient(180deg, rgba(94, 234, 212, .05), rgba(255, 255, 255, .16)); }
+    .road {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, transparent 32.6%, rgba(255, 255, 255, .45) 32.6% 33.2%, transparent 33.2% 66.4%, rgba(255, 255, 255, .45) 66.4% 67%, transparent 67%),
+        repeating-linear-gradient(180deg, rgba(255, 255, 255, .28) 0 12px, transparent 12px 34px);
+      background-size: 100% 100%, 10px 34px;
+      background-repeat: no-repeat, repeat-y;
+      background-position: center, center top;
+      opacity: .55;
+    }
+    body.playing .road { animation: road .32s linear infinite; }
+    body.heat.playing .road { animation-duration: .2s; }
+    body.fierce.playing .road { animation-duration: .12s; }
+    @keyframes road {
+      from { background-position: center, center 0; }
+      to { background-position: center, center 34px; }
+    }
+    .barrier {
+      position: absolute;
+      z-index: 4;
+      left: 2.5%;
+      right: 2.5%;
+      height: 18%;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 7px;
+      pointer-events: none;
+      transform-origin: center center;
+    }
+    .barrier[hidden] { display: none !important; }
+    .cell { position: relative; min-width: 0; }
+    .slab, .portal { position: absolute; inset: 0; border-radius: 14px; }
+    .cell.wall .portal, .cell.gap .slab { display: none; }
+    .slab {
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, .45), transparent 32%),
+        linear-gradient(180deg, #ff8fab 0%, #ff3d6e 58%, #be123c 100%);
+      box-shadow: inset 0 0 0 3px #4c0519, 0 8px 0 #9f1239;
+    }
+    .slab i {
+      position: absolute;
+      left: 42%;
+      top: 12%;
+      bottom: 12%;
+      width: 16%;
+      border-radius: 99px;
+      background: rgba(76, 5, 25, .35);
+    }
+    .barrier[data-lv="3"] .slab,
+    .barrier[data-lv="4"] .slab,
+    .barrier[data-lv="5"] .slab {
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, .4), transparent 30%),
+        linear-gradient(180deg, #fb7185, #e11d48 60%, #9f1239);
+    }
+    .barrier[data-lv="6"] .slab,
+    .barrier[data-lv="7"] .slab {
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, .5), transparent 26%),
+        linear-gradient(180deg, #fda4af, #f43f5e 40%, #881337);
+    }
+    .barrier.near .slab { box-shadow: inset 0 0 0 3px #fff, 0 0 18px rgba(255, 61, 110, .85); }
+    .portal {
+      background:
+        linear-gradient(#ecfeff, #ecfeff) top / 100% 5px no-repeat,
+        linear-gradient(#ecfeff, #ecfeff) bottom / 100% 5px no-repeat,
+        linear-gradient(#5eead4, #5eead4) left / 5px 100% no-repeat,
+        linear-gradient(#5eead4, #5eead4) right / 5px 100% no-repeat,
+        radial-gradient(circle, rgba(94, 234, 212, .42), rgba(94, 234, 212, .05) 70%);
+      box-shadow: 0 0 16px rgba(45, 212, 191, .9), inset 0 0 12px rgba(236, 254, 255, .45);
+    }
+    .portal b {
+      position: absolute;
+      left: 50%;
+      top: 7px;
+      width: 0;
+      height: 0;
+      transform: translateX(-50%);
+      border-left: 11px solid transparent;
+      border-right: 11px solid transparent;
+      border-top: 13px solid #ecfeff;
+      filter: drop-shadow(0 0 4px #5eead4);
+    }
+    .cell.hit .slab {
+      background: #fff;
+      box-shadow: 0 0 24px #fff, inset 0 0 0 3px #ff3d6e;
+    }
+    .runner {
+      position: absolute;
+      z-index: 2;
+      left: 33.333%;
+      bottom: 0;
+      width: 33.333%;
+      height: 54%;
+      pointer-events: none;
+      transition: left .06s linear;
+    }
+    .runner.bump-l { animation: bumpl .12s linear; }
+    .runner.bump-r { animation: bumpr .12s linear; }
+    @keyframes bumpl { 50% { transform: translateX(-8px); } }
+    @keyframes bumpr { 50% { transform: translateX(8px); } }
+    .hero { width: 100%; height: 100%; display: block; }
+    .face { display: none; }
+    .mood-idle .face-idle,
+    .mood-focused .face-focused,
+    .mood-good .face-good,
+    .mood-bad .face-bad { display: inline; }
+    .brow, .mouthline {
+      fill: none;
+      stroke: #1a1030;
+      stroke-width: 5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .mouthline { stroke: #9f1239; }
+    #bob { transform-box: fill-box; transform-origin: center bottom; }
+    .mood-idle #bob { animation: breathe 1.35s ease-in-out infinite; }
+    .mood-focused #bob { animation: dash .16s ease-in-out infinite; }
+    .mood-good #bob { animation: hop .36s cubic-bezier(.2, .8, .2, 1); }
+    .mood-bad #bob { animation: crush .42s ease-in forwards; }
+    @keyframes breathe {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+    @keyframes dash {
+      0%, 100% { transform: translateY(0) rotate(-2deg); }
+      50% { transform: translateY(-8px) rotate(2deg); }
+    }
+    @keyframes hop {
+      0% { transform: translateY(0) scale(1, 1); }
+      45% { transform: translateY(-20px) scale(.98, 1.06); }
+      100% { transform: translateY(0) scale(1, 1); }
+    }
+    @keyframes crush {
+      0% { transform: translateY(0) scale(1, 1); }
+      40% { transform: translateY(12px) scale(1.16, .64); }
+      100% { transform: translateY(18px) scale(1.24, .52); }
+    }
+    .hint {
+      flex: none;
+      min-height: 1.3em;
+      margin: 6px 0 0;
+      text-align: center;
+      font-size: .95rem;
+      font-weight: 900;
+      letter-spacing: .06em;
+      text-shadow: 0 2px 0 rgba(49, 16, 90, .35);
+    }
+    .flash {
+      position: fixed;
+      inset: 0;
+      z-index: 5;
+      pointer-events: none;
+      opacity: 0;
+    }
+    .flash.good { background: #5eead4; }
+    .flash.bad { background: #ff2d6a; }
+    .flash.win { background: #fff4b0; }
+    .flash.on { animation: flash .4s linear forwards; }
+    .flash.bad.on { animation: flash .72s linear forwards; }
+    .flash.win.on { animation: flash .8s linear forwards; }
+    @keyframes flash {
+      0% { opacity: .78; }
+      100% { opacity: 0; }
+    }
+    .boom {
+      position: fixed;
+      inset: 0;
+      z-index: 7;
+      display: grid;
+      place-items: center;
+      pointer-events: none;
+      text-align: center;
+    }
+    .boom[hidden] { display: none !important; }
+    .boom strong {
+      display: block;
+      font-size: clamp(3.1rem, 15vw, 5.6rem);
+      line-height: .95;
+      letter-spacing: .08em;
+      color: #fff;
+      animation: pop .16s ease-out;
+    }
+    .boom.good strong { text-shadow: 0 4px 0 #0f766e, 0 0 28px #5eead4; }
+    .boom.bad strong { text-shadow: 0 4px 0 #9f1239, 0 0 28px #ff3d6e; }
+    @keyframes pop {
+      from { transform: scale(.7); opacity: .2; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .shell.shake { animation: shake .48s linear; }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      15% { transform: translate(-11px, 3px); }
+      30% { transform: translate(10px, -3px); }
+      45% { transform: translate(-8px, 2px); }
+      60% { transform: translate(7px, -2px); }
+      75% { transform: translate(-3px, 1px); }
+    }
+    .sheet {
+      position: fixed;
+      inset: 0;
+      z-index: 8;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 16px 16px max(14px, env(safe-area-inset-bottom));
+      background: linear-gradient(180deg, rgba(26, 16, 48, .08), rgba(26, 16, 48, .62) 55%);
+    }
+    .sheet[hidden] { display: none !important; }
+    .sheet .card { position: relative; margin: 0; width: min(100%, 420px); overflow: hidden; }
+    .sheet h2 {
+      margin: 0;
+      font-size: clamp(2rem, 9vw, 2.8rem);
+      letter-spacing: .12em;
+    }
+    .card.fail { box-shadow: 0 16px 40px rgba(26, 16, 48, .24), inset 0 0 0 3px var(--coral); }
+    .card.fail h2 { color: var(--coral); }
+    .card.clear { box-shadow: 0 16px 40px rgba(26, 16, 48, .24), inset 0 0 0 3px var(--teal); }
+    .card.clear h2 { color: #0f766e; }
+    .result-progress {
+      margin: 4px 0 0;
+      font-size: clamp(1.8rem, 8vw, 2.6rem);
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+    }
+    .sparks { position: absolute; inset: 0; pointer-events: none; }
+    .sparks i {
+      position: absolute;
+      left: 50%;
+      top: 36%;
+      width: 9px;
+      height: 9px;
+      border-radius: 2px;
+      background: var(--teal-2);
+      animation: spark .9s ease-out forwards;
+    }
+    .sparks i:nth-child(2) { background: var(--gold); --x: 90px; --y: -70px; }
+    .sparks i:nth-child(3) { background: var(--coral); --x: -100px; --y: -40px; }
+    .sparks i:nth-child(4) { background: #8b5cf6; --x: 70px; --y: 30px; }
+    .sparks i:nth-child(5) { background: #fff; --x: -60px; --y: -90px; }
+    .sparks i:nth-child(6) { background: var(--gold); --x: 120px; --y: 10px; }
+    .sparks i:nth-child(7) { background: var(--teal-2); --x: -120px; --y: 20px; }
+    .sparks i:nth-child(8) { background: var(--coral); --x: 20px; --y: -100px; }
+    .sparks i:nth-child(1) { --x: -30px; --y: -80px; }
+    @keyframes spark {
+      to { transform: translate(var(--x), var(--y)) rotate(50deg); opacity: 0; }
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+    @media (max-height: 760px) {
+      h1 { font-size: 1.5rem; }
+      .hud { margin: 6px 0 4px; }
+      .pill { padding: 5px 8px; }
+      .pill strong { font-size: 1.2rem; }
+      .card { padding: 10px 12px 8px; }
+      .rule { font-size: .9rem; }
+      button { min-height: 42px; margin-top: 8px; }
+      .runner { height: 50%; }
+    }
+    @media (max-height: 640px) {
+      .kicker, .en { display: none; }
+      .shell { padding-top: calc(max(6px, env(safe-area-inset-top)) + 28px); }
+      .rule { font-size: .84rem; line-height: 1.35; }
+      .keys { margin-top: 4px; }
+      .skyline { display: none; }
+    }
+    @media (max-height: 540px) {
+      h1 { font-size: 1.15rem; }
+      .hud { margin: 4px 0; }
+      .pill span { display: none; }
+      .card { padding: 8px; }
+      button { min-height: 36px; font-size: .95rem; }
+      .keys.foot { display: none; }
+      .hint { margin-top: 2px; font-size: .82rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #bob, .runner, .road, .shell, .pips i, .sparks i, body.fierce .track { animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="city" aria-hidden="true">
+    <div class="skyline">
+      <div class="bldg"><i class="sign"></i></div>
+      <div class="bldg"><i class="sign"></i></div>
+      <div class="bldg"></div>
+      <div class="bldg"><i class="sign"></i></div>
+      <div class="bldg"></div>
+      <div class="bldg"><i class="sign"></i></div>
+    </div>
+  </div>
+  <a class="back" href="../../index.html">ギャラリーへ</a>
+  <div class="shell" id="shell">
+    <header>
+      <p class="kicker">DAY 9</p>
+      <h1>スキマぬけ</h1>
+      <p class="en">GAP DASH</p>
+    </header>
+    <div id="gate">
+      <div class="card">
+        <p class="rule">スキマに合わせて左右に動け。はずれたら即失敗。8回ぬけたらクリア。</p>
+        <p class="keys">左半分 / 右半分 ・ ← → ・ A D</p>
+        <button type="button" id="btn-start">スタート</button>
+      </div>
+    </div>
+    <div class="hud">
+      <div class="pill"><span>ぬけた</span><strong id="progress">0 / 8</strong></div>
+      <div class="pill score"><span>スコア</span><strong id="score">0</strong></div>
+    </div>
+    <div class="pips" id="pips" aria-hidden="true"></div>
+    <div class="track" id="track">
+      <div class="lane"></div>
+      <div class="lane on"></div>
+      <div class="lane"></div>
+      <div class="road"></div>
+      <div class="barrier preview" id="barrier" data-lv="0">
+        <div class="cell wall"><div class="slab"><i></i></div><div class="portal"><b></b></div></div>
+        <div class="cell gap"><div class="slab"><i></i></div><div class="portal"><b></b></div></div>
+        <div class="cell wall"><div class="slab"><i></i></div><div class="portal"><b></b></div></div>
+      </div>
+      <div class="runner" id="runner">
+        <svg id="hero" class="hero mood-idle" viewBox="0 0 220 320" preserveAspectRatio="xMidYMax meet">
+          <g id="bob">
+            <ellipse cx="110" cy="304" rx="54" ry="10" fill="#042f2e" opacity=".35"/>
+            <path d="M74 168 C48 210 58 260 92 286 C78 230 84 196 112 170 Z" fill="#ff4d7a"/>
+            <path d="M78 196 C46 214 52 258 84 268" fill="none" stroke="#f5b400" stroke-width="18" stroke-linecap="round"/>
+            <path d="M146 188 C186 168 198 214 176 246" fill="none" stroke="#eab308" stroke-width="18" stroke-linecap="round"/>
+            <circle cx="84" cy="268" r="12" fill="#ffd0b4"/>
+            <circle cx="176" cy="246" r="12" fill="#ffd0b4"/>
+            <rect x="84" y="232" width="22" height="60" rx="11" fill="#3b0764"/>
+            <rect x="116" y="226" width="22" height="66" rx="11" fill="#2e1065"/>
+            <rect x="74" y="278" width="42" height="18" rx="9" fill="#0f766e"/>
+            <rect x="108" y="278" width="46" height="18" rx="9" fill="#2ee6c7"/>
+            <rect x="80" y="284" width="16" height="5" rx="2" fill="#fff" opacity=".75"/>
+            <rect x="114" y="284" width="18" height="5" rx="2" fill="#fff" opacity=".85"/>
+            <path d="M64 168 C64 150 86 140 110 140 C134 140 156 150 156 168 L164 236 C142 258 78 258 56 236 Z" fill="#ffd84a"/>
+            <path d="M102 146 H118 L122 232 H98 Z" fill="#5eead4"/>
+            <path d="M76 186 H146" stroke="#3b0764" stroke-width="8" stroke-linecap="round"/>
+            <path d="M110 168 L118 184 L110 182 L114 198 L100 176 L108 178 Z" fill="#ff4d7a"/>
+            <rect x="96" y="132" width="28" height="18" rx="8" fill="#ffd0b4"/>
+            <ellipse cx="64" cy="118" rx="10" ry="14" fill="#ffd0b4"/>
+            <ellipse cx="156" cy="118" rx="10" ry="14" fill="#ffd0b4"/>
+            <circle cx="110" cy="112" r="52" fill="#ffd0b4"/>
+            <path d="M60 124 C52 58 84 34 110 42 C148 26 176 62 164 128 C152 86 132 70 110 76 C86 70 70 92 60 124 Z" fill="#3b0764"/>
+            <polygon points="78,78 88,34 104,74" fill="#5b21b6"/>
+            <polygon points="102,70 116,18 132,68" fill="#4c1d95"/>
+            <polygon points="128,74 154,28 162,90" fill="#2e1065"/>
+            <polygon points="112,66 124,20 134,64" fill="#2ee6c7"/>
+            <path d="M70 104 Q92 74 112 90 Q134 72 156 104 Q136 92 110 98 Q88 94 70 104 Z" fill="#4c1d95"/>
+            <path d="M76 88 H146" stroke="#1e1b4b" stroke-width="8" stroke-linecap="round"/>
+            <circle cx="146" cy="88" r="8" fill="#5eead4"/>
+            <circle cx="142" cy="86" r="2.5" fill="#fff"/>
+            <g class="face face-idle">
+              <path class="brow" d="M74 96 Q90 86 106 98"/>
+              <path class="brow" d="M114 98 Q130 86 146 96"/>
+              <ellipse cx="90" cy="118" rx="12" ry="15" fill="#1a1030"/>
+              <ellipse cx="132" cy="118" rx="12" ry="15" fill="#1a1030"/>
+              <circle cx="86" cy="112" r="4.2" fill="#fff"/>
+              <circle cx="128" cy="112" r="4.2" fill="#fff"/>
+              <path class="mouthline" d="M96 146 Q112 158 130 144"/>
+            </g>
+            <g class="face face-focused">
+              <path class="brow" d="M74 92 L106 106"/>
+              <path class="brow" d="M148 92 L116 106"/>
+              <ellipse cx="90" cy="120" rx="12" ry="8" fill="#1a1030"/>
+              <ellipse cx="132" cy="120" rx="12" ry="8" fill="#1a1030"/>
+              <circle cx="86" cy="118" r="3" fill="#fff"/>
+              <circle cx="128" cy="118" r="3" fill="#fff"/>
+              <path class="mouthline" d="M98 150 H126"/>
+            </g>
+            <g class="face face-good">
+              <path class="brow" d="M76 102 Q92 90 106 102"/>
+              <path class="brow" d="M116 102 Q130 90 144 102"/>
+              <path class="mouthline" d="M76 118 Q90 104 104 118" stroke-width="5"/>
+              <path class="mouthline" d="M118 118 Q132 104 146 118" stroke-width="5"/>
+              <path d="M94 144 Q112 176 130 144 Q112 156 94 144 Z" fill="#9f1239"/>
+              <ellipse cx="68" cy="136" rx="11" ry="7" fill="#fb7185" opacity=".95"/>
+              <ellipse cx="152" cy="136" rx="11" ry="7" fill="#fb7185" opacity=".95"/>
+            </g>
+            <g class="face face-bad">
+              <path class="brow" d="M76 112 L104 100"/>
+              <path class="brow" d="M146 112 L118 100"/>
+              <path class="mouthline" d="M78 112 L98 132 M98 112 L78 132" stroke-width="4.5"/>
+              <path class="mouthline" d="M122 112 L142 132 M142 112 L122 132" stroke-width="4.5"/>
+              <ellipse cx="112" cy="156" rx="12" ry="14" fill="#9f1239"/>
+              <path d="M156 92 Q168 110 156 122 Q144 110 156 92 Z" fill="#7dd3fc"/>
+            </g>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <p class="hint" id="hint">スキマを見ろ</p>
+    <p class="keys foot">左半分で左へ　右半分で右へ</p>
+  </div>
+
+  <div class="flash" id="flash"></div>
+  <div class="boom" id="boom" hidden><strong id="boom-main"></strong></div>
+  <p class="sr-only" id="live" aria-live="polite"></p>
+
+  <div class="sheet" id="fail-modal" hidden>
+    <div class="card fail">
+      <h2>つぶれた！</h2>
+      <p class="why">スキマからはずれて、かべにぶつかった。</p>
+      <p class="result-progress" id="fail-progress">0 / 8</p>
+      <p class="sub" id="fail-score">スコア 0</p>
+      <button type="button">もう一度</button>
+    </div>
+  </div>
+
+  <div class="sheet" id="clear-modal" hidden>
+    <div class="card clear">
+      <div class="sparks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <h2>ぬけた！</h2>
+      <p class="why">8つのゲートをぬけきった。</p>
+      <p class="result-progress">8 / 8</p>
+      <p class="sub" id="clear-score">スコア 0</p>
+      <button type="button">もう一度</button>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var GOAL = 8;
+      var DURATION = [860, 750, 660, 580, 510, 450, 390, 330];
+      var BREATHER = [220, 190, 160, 140, 120, 100, 90];
+      var LANE_NAMES = ["左", "真ん中", "右"];
+
+      var phase = "start";
+      var lane = 1;
+      var gap = 1;
+      var cleared = 0;
+      var score = 0;
+      var gateIndex = 0;
+      var mood = "idle";
+      var duration = DURATION[0];
+      var runStart = 0;
+      var introUntil = 0;
+      var breathUntil = 0;
+      var breathMs = 200;
+      var holdUntil = 0;
+      var audioCtx = null;
+
+      var shell = document.getElementById("shell");
+      var hero = document.getElementById("hero");
+      var gateCard = document.getElementById("gate");
+      var progressEl = document.getElementById("progress");
+      var scoreEl = document.getElementById("score");
+      var pipsEl = document.getElementById("pips");
+      var hintEl = document.getElementById("hint");
+      var flashEl = document.getElementById("flash");
+      var boomEl = document.getElementById("boom");
+      var boomMain = document.getElementById("boom-main");
+      var liveEl = document.getElementById("live");
+      var failModal = document.getElementById("fail-modal");
+      var clearModal = document.getElementById("clear-modal");
+      var failProgress = document.getElementById("fail-progress");
+      var failScore = document.getElementById("fail-score");
+      var clearScore = document.getElementById("clear-score");
+      var barrier = document.getElementById("barrier");
+      var runner = document.getElementById("runner");
+      var cells = barrier.querySelectorAll(".cell");
+      var laneEls = document.querySelectorAll(".lane");
+      var pipEls = [];
+
+      for (var i = 0; i < GOAL; i++) {
+        var pip = document.createElement("i");
+        pipsEl.appendChild(pip);
+        pipEls.push(pip);
+      }
+
+      function farthest(playerLane) {
+        if (playerLane === 1) return Math.random() < 0.5 ? 0 : 2;
+        return playerLane === 0 ? 2 : 0;
+      }
+
+      function pickGap(index, playerLane) {
+        var g = Math.floor(Math.random() * 3);
+        if (index >= 3 && g === playerLane && Math.random() < 0.7) {
+          g = (playerLane + 1 + Math.floor(Math.random() * 2)) % 3;
+        }
+        if (index >= 4 && Math.random() < 0.35) g = farthest(playerLane);
+        if (index >= 6 && Math.random() < 0.74) g = farthest(playerLane);
+        return g;
+      }
+
+      function approach(t) {
+        if (t < 0) return 0;
+        if (t > 1) return t;
+        return Math.pow(t, 1.28);
+      }
+
+      function tone(freq, dur, type, gain, delay) {
+        try {
+          audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+          if (audioCtx.state === "suspended") audioCtx.resume();
+          var t = audioCtx.currentTime + (delay || 0);
+          var o = audioCtx.createOscillator();
+          var g = audioCtx.createGain();
+          o.type = type;
+          o.frequency.value = freq;
+          g.gain.setValueAtTime(gain, t);
+          g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+          o.connect(g);
+          g.connect(audioCtx.destination);
+          o.start(t);
+          o.stop(t + dur);
+        } catch (err) {}
+      }
+
+      function buzz(ms) {
+        try {
+          if (navigator.vibrate) navigator.vibrate(ms);
+        } catch (err) {}
+      }
+
+      function announce(text) {
+        liveEl.textContent = "";
+        window.setTimeout(function () { liveEl.textContent = text; }, 20);
+      }
+
+      function setMood(next) {
+        if (mood === next) return;
+        mood = next;
+        hero.setAttribute("class", "hero mood-" + mood);
+      }
+
+      function setHint(text) {
+        if (hintEl.textContent !== text) hintEl.textContent = text;
+      }
+
+      function paintLanes() {
+        for (var n = 0; n < laneEls.length; n++) laneEls[n].classList.toggle("on", n === lane);
+      }
+
+      function placeRunner() {
+        runner.style.left = (lane * 100 / 3) + "%";
+      }
+
+      function paintGap() {
+        for (var n = 0; n < cells.length; n++) {
+          cells[n].className = "cell " + (n === gap ? "gap" : "wall");
+        }
+      }
+
+      function setBarrier(p) {
+        var clamped = p < 0 ? 0 : p;
+        barrier.style.top = (2 + Math.min(clamped, 1.35) * 70) + "%";
+        barrier.style.transform = "scale(" + (0.94 + Math.min(clamped, 1) * 0.06) + ")";
+        barrier.classList.toggle("near", clamped > 0.62 && clamped <= 1.02);
+      }
+
+      function updateHud() {
+        progressEl.textContent = cleared + " / " + GOAL;
+        scoreEl.textContent = String(score);
+      }
+
+      function updatePips() {
+        for (var n = 0; n < GOAL; n++) {
+          var name = "";
+          if (n < cleared) name = "on";
+          else if ((phase === "fail" || phase === "failhold") && n === cleared) name = "bad";
+          else if ((phase === "run" || phase === "breath" || phase === "intro") && n === cleared) name = "next";
+          pipEls[n].className = name;
+        }
+      }
+
+      function renderChrome() {
+        var playing = phase === "intro" || phase === "run" || phase === "breath" || phase === "failhold" || phase === "clearhold";
+        document.body.classList.toggle("playing", playing);
+        document.body.classList.toggle("heat", cleared >= 3 && phase !== "start");
+        document.body.classList.toggle("fierce", cleared >= 6 && phase !== "start" && phase !== "fail" && phase !== "failhold");
+        gateCard.hidden = phase !== "start";
+        failModal.hidden = phase !== "fail";
+        clearModal.hidden = phase !== "clear";
+        if (phase === "fail") {
+          failProgress.textContent = cleared + " / " + GOAL;
+          failScore.textContent = "スコア " + score;
+          setHint("つぶれた！");
+        } else if (phase === "clear") {
+          clearScore.textContent = "スコア " + score;
+          setHint("ぬけた！");
+        }
+      }
+
+      function showBoom(kindName, text) {
+        boomEl.className = "boom " + kindName;
+        boomMain.textContent = text;
+        boomEl.hidden = false;
+      }
+
+      function hideBoom() {
+        boomEl.hidden = true;
+      }
+
+      function pulseFlash(kindName) {
+        flashEl.className = "flash " + kindName;
+        void flashEl.offsetWidth;
+        flashEl.className = "flash " + kindName + " on";
+      }
+
+      function shake() {
+        shell.classList.remove("shake");
+        void shell.offsetWidth;
+        shell.classList.add("shake");
+      }
+
+      function nudge(dir) {
+        runner.classList.remove("bump-l", "bump-r");
+        void runner.offsetWidth;
+        runner.classList.add(dir < 0 ? "bump-l" : "bump-r");
+      }
+
+      function move(dir) {
+        if (phase !== "start" && phase !== "intro" && phase !== "run" && phase !== "breath") return;
+        var next = lane + dir;
+        if (next < 0 || next > 2) {
+          nudge(dir);
+          return;
+        }
+        lane = next;
+        placeRunner();
+        paintLanes();
+        if (phase === "run" || phase === "intro") setMood("focused");
+        tone(700, 0.03, "square", 0.03);
+      }
+
+      function spawnGate(now) {
+        gateIndex = cleared;
+        gap = pickGap(gateIndex, lane);
+        duration = DURATION[gateIndex];
+        phase = "run";
+        runStart = now;
+        barrier.hidden = false;
+        barrier.classList.remove("preview");
+        barrier.style.opacity = "1";
+        barrier.setAttribute("data-lv", String(gateIndex));
+        paintGap();
+        setBarrier(0);
+        setMood(gateIndex >= 3 ? "focused" : "idle");
+        if (gateIndex >= 6) setHint("ぎりぎりだ");
+        else if (gateIndex >= 3) setHint("はやく合わせろ");
+        else setHint("スキマに合わせろ");
+        updatePips();
+        renderChrome();
+        announce(LANE_NAMES[gap] + "のスキマ");
+        tone(gateIndex >= 6 ? 880 : 520, 0.05, "sine", 0.035);
+      }
+
+      function winTune() {
+        tone(523, 0.08, "square", 0.05);
+        tone(659, 0.08, "square", 0.05, 0.08);
+        tone(784, 0.08, "square", 0.05, 0.16);
+        tone(1046, 0.18, "square", 0.05, 0.24);
+      }
+
+      function resolve(now) {
+        setBarrier(1);
+        if (lane === gap) {
+          cleared += 1;
+          score += 100 * cleared;
+          setMood("good");
+          pulseFlash(cleared >= GOAL ? "win" : "good");
+          tone(740, 0.07, "square", 0.05);
+          tone(980, 0.09, "square", 0.045, 0.06);
+          updateHud();
+          if (cleared >= GOAL) {
+            phase = "clearhold";
+            showBoom("good", "ぬけた！");
+            shake();
+            winTune();
+            buzz(20);
+            announce("ぬけた");
+            holdUntil = now + 860;
+          } else {
+            phase = "breath";
+            breathMs = BREATHER[cleared - 1];
+            breathUntil = now + breathMs;
+            setHint("ぬけ");
+          }
+          updatePips();
+          renderChrome();
+          return;
+        }
+        phase = "failhold";
+        setMood("bad");
+        cells[lane].classList.add("hit");
+        showBoom("bad", "つぶれた！");
+        pulseFlash("bad");
+        shake();
+        tone(96, 0.24, "sawtooth", 0.06);
+        buzz(48);
+        updateHud();
+        updatePips();
+        renderChrome();
+        setHint("つぶれた！");
+        announce("つぶれた");
+        holdUntil = now + 880;
+      }
+
+      function startRun() {
+        if (phase === "run" || phase === "breath" || phase === "intro" || phase === "failhold" || phase === "clearhold") return;
+        cleared = 0;
+        score = 0;
+        lane = 1;
+        gap = 1;
+        gateIndex = 0;
+        duration = DURATION[0];
+        setMood("idle");
+        placeRunner();
+        paintLanes();
+        hideBoom();
+        flashEl.className = "flash";
+        shell.classList.remove("shake");
+        document.body.classList.remove("heat", "fierce");
+        barrier.hidden = true;
+        phase = "intro";
+        introUntil = performance.now() + 140;
+        updateHud();
+        updatePips();
+        setHint("ゲートが来る");
+        renderChrome();
+        announce("スタート");
+        tone(494, 0.05, "sine", 0.04);
+      }
+
+      function frame(now) {
+        requestAnimationFrame(frame);
+        if (phase === "intro" && now >= introUntil) {
+          spawnGate(now);
+          return;
+        }
+        if (phase === "run") {
+          var t = (now - runStart) / duration;
+          if (t >= 1) {
+            resolve(now);
+            return;
+          }
+          setBarrier(approach(t));
+          if (t > 0.18 && mood === "idle") setMood("focused");
+          return;
+        }
+        if (phase === "breath") {
+          var u = 1 - (breathUntil - now) / breathMs;
+          if (u < 0) u = 0;
+          setBarrier(1 + u * 0.45);
+          barrier.style.opacity = String(Math.max(0, 1 - u));
+          if (now >= breathUntil) spawnGate(now);
+          return;
+        }
+        if ((phase === "failhold" || phase === "clearhold") && now >= holdUntil) {
+          hideBoom();
+          phase = phase === "failhold" ? "fail" : "clear";
+          renderChrome();
+          updatePips();
+        }
+      }
+
+      document.addEventListener("pointerdown", function (e) {
+        if (e.button !== 0) return;
+        var t = e.target;
+        if (t && t.closest && t.closest("a")) return;
+        if (t && t.closest && t.closest("button")) {
+          e.preventDefault();
+          if (phase === "start" || phase === "fail" || phase === "clear") startRun();
+          return;
+        }
+        if (phase === "start" || phase === "intro" || phase === "run" || phase === "breath") {
+          e.preventDefault();
+          move(e.clientX < window.innerWidth / 2 ? -1 : 1);
+        }
+      }, { passive: false });
+
+      document.addEventListener("keydown", function (e) {
+        if (e.code === "Space") {
+          e.preventDefault();
+          return;
+        }
+        if (e.repeat) return;
+        var dir = 0;
+        if (e.code === "ArrowLeft" || e.code === "KeyA") dir = -1;
+        else if (e.code === "ArrowRight" || e.code === "KeyD") dir = 1;
+        else return;
+        e.preventDefault();
+        move(dir);
+      });
+
+      document.addEventListener("contextmenu", function (e) {
+        e.preventDefault();
+      });
+
+      document.addEventListener("touchmove", function (e) {
+        e.preventDefault();
+      }, { passive: false });
+
+      window.__gapDash = {
+        getState: function () {
+          return {
+            phase: phase,
+            lane: lane,
+            gap: gap,
+            cleared: cleared,
+            score: score,
+            gateIndex: gateIndex,
+            mood: mood,
+            goal: GOAL,
+            duration: duration
+          };
+        }
+      };
+
+      paintLanes();
+      placeRunner();
+      gap = 1;
+      paintGap();
+      barrier.classList.add("preview");
+      setBarrier(0.34);
+      updateHud();
+      updatePips();
+      renderChrome();
+      requestAnimationFrame(frame);
+    })();
+  </script>
+</body>
+</html>
