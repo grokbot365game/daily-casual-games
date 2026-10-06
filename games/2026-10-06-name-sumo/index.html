@@ -131,7 +131,7 @@
     }
     .stage {
       flex: 1 1 auto;
-      min-height: 168px;
+      min-height: 112px;
       position: relative;
       border-radius: 22px;
       overflow: hidden;
@@ -153,7 +153,8 @@
       color: #fee2e2;
       text-shadow: 0 2px 0 #9f1239, 0 0 16px rgba(244, 63, 94, .8);
     }
-    #gate { flex: none; max-height: 52dvh; overflow: auto; touch-action: pan-y; }
+    #gate { flex: 0 1 auto; min-height: 0; max-height: 48%; overflow: auto; touch-action: pan-y; }
+    #btn-start, #btn-push { flex: none; }
     #gate[hidden] { display: none !important; }
     .card {
       width: min(100%, 480px);
@@ -325,10 +326,12 @@
       button { min-height: 46px; margin-top: 6px; }
     }
     @media (max-height: 640px) {
-      .kicker, .en, .blurb { display: none; }
+      .kicker, .en, .blurb, .keys, #title-best { display: none; }
       .shell { padding-top: calc(max(6px, env(safe-area-inset-top)) + 28px); }
-      .stage { min-height: 132px; }
+      .stage { min-height: 100px; }
       .stars { font-size: .7rem; }
+      label { margin: 6px 0 2px; }
+      #gate { max-height: 42%; }
     }
     @media (max-height: 540px) {
       .stars, .keys { display: none; }
@@ -373,9 +376,9 @@
         <p class="stars" id="stat-stars"></p>
         <p class="blurb" id="stat-blurb"></p>
         <p class="best" id="title-best">ベスト 0連勝</p>
-        <button type="button" id="btn-start">はじめる</button>
       </div>
     </div>
+    <button type="button" id="btn-start">はじめる</button>
     <button type="button" id="btn-push" hidden>押す</button>
   </div>
 
@@ -443,6 +446,7 @@
       var preview = null;
       var wrestler = null;
       var copyTimer = 0;
+      var loopError = "";
 
       var gate = document.getElementById("gate");
       var stage = document.getElementById("stage");
@@ -458,6 +462,7 @@
       var statTrait = document.getElementById("stat-trait");
       var statStars = document.getElementById("stat-stars");
       var statBlurb = document.getElementById("stat-blurb");
+      var startBtn = document.getElementById("btn-start");
       var pushBtn = document.getElementById("btn-push");
       var sheet = document.getElementById("sheet");
       var resultCard = document.getElementById("result-card");
@@ -701,6 +706,7 @@
       function showChrome() {
         gate.hidden = phase !== "title";
         sheet.hidden = phase !== "result";
+        startBtn.hidden = phase !== "title";
         if (phase !== "fight" && phase !== "countdown") pushBtn.hidden = true;
       }
 
@@ -1407,9 +1413,13 @@
         return kind === "cpu" ? "smug" : "calm";
       }
 
+      function decided() {
+        return phase === "outro" || phase === "result";
+      }
+
       function posePlayer() {
-        if (phase === "outro" && pos < 0) return "out";
-        if (phase === "outro" && pos >= 0) return "win";
+        if (decided() && pos < 0) return "out";
+        if (decided() && pos >= 0) return "win";
         if (falseStart > 0) return "stamp";
         if (hitPose > 0.05 && pushPose <= 0) return "hit";
         if (pushPose > 0) return "push";
@@ -1417,8 +1427,8 @@
       }
 
       function poseCpu(demo) {
-        if (phase === "outro" && pos >= 0) return "out";
-        if (phase === "outro" && pos < 0) return "win";
+        if (decided() && pos >= 0) return "out";
+        if (decided() && pos < 0) return "win";
         if (phase === "title") return demo;
         if (cpu.mode === "tell") return "windup";
         if (cpu.mode === "open") return "open";
@@ -1468,7 +1478,8 @@
           ctx.fill();
         }
 
-        var ringR = Math.min(viewW * 0.36, (viewH - 28) * 0.4);
+        var ringR = Math.min(Math.max(viewW, 90) * 0.36, Math.max(viewH, 140) * 0.34);
+        if (!(ringR > 8)) ringR = 48;
         var cx = viewW / 2;
         var cy = viewH * 0.6;
         var rx = ringR;
@@ -1486,7 +1497,10 @@
         var showLevel = phase === "title" ? streak : level;
         var shift = pos * ringR * 0.82;
         var fly = 0;
-        if (phase === "outro") fly = (1 - outroLeft / (OUTRO_MS / 1000)) * ringR * 0.55;
+        if (phase === "outro" || phase === "result") {
+          var flyU = phase === "result" ? 1 : 1 - outroLeft / (OUTRO_MS / 1000);
+          fly = Math.max(0, flyU) * ringR * 0.55;
+        }
         var spread = ringR * 0.4;
         var pX = cx - spread + shift + (pos < 0 ? -fly : 0);
         var cX = cx + spread + shift + (pos >= 0 ? fly : 0);
@@ -1573,6 +1587,11 @@
         if (!lastNow) lastNow = now;
         var dt = Math.min(0.033, (now - lastNow) / 1000);
         lastNow = now;
+        try { frameBody(dt, now); } catch (err) { loopError = String(err && err.message ? err.message : err); }
+        window.requestAnimationFrame(frame);
+      }
+
+      function frameBody(dt, now) {
         if (phase === "countdown") {
           breath = (breath + dt / (params ? params.cycle : 1.36)) % 1;
           countLeft -= dt;
@@ -1627,7 +1646,6 @@
         if (phase !== "result") updateHint();
         paintButton(now);
         render(now);
-        window.requestAnimationFrame(frame);
       }
 
       loadStore();
@@ -1648,7 +1666,7 @@
           startBout();
         }
       });
-      document.getElementById("btn-start").addEventListener("click", startBout);
+      startBtn.addEventListener("click", startBout);
       retryBtn.addEventListener("click", startBout);
       renameBtn.addEventListener("click", backToName);
       copyBtn.addEventListener("click", copyResult);
@@ -1700,7 +1718,8 @@
               share: shareStreak,
               result: resultTitle.textContent,
               retry: retryBtn.textContent,
-              retryDisabled: retryBtn.disabled
+              retryDisabled: retryBtn.disabled,
+              loopError: loopError
             };
           },
           press: function () { act(performance.now()); },
