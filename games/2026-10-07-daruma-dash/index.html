@@ -209,11 +209,12 @@
     #syl.count { letter-spacing: 0; }
     .phrase {
       margin: 1px 0 0;
-      font-size: clamp(.78rem, 3.4vw, 1.05rem);
+      font-size: clamp(.68rem, 3.1vw, 1.05rem);
       font-weight: 900;
       letter-spacing: .06em;
       color: rgba(255, 255, 255, .55);
       text-shadow: 0 2px 0 rgba(3, 105, 161, .45);
+      white-space: nowrap;
     }
     .phrase i {
       font-style: normal;
@@ -540,7 +541,7 @@
         {
           timer: 14.5,
           speed: 15,
-          grace: 0.23,
+          grace: 0.25,
           look: 0.9,
           patterns: [
             [0.42, 0.24, 0.36, 0.2, 0.46, 0.18, 0.3, 0.16, 0.22],
@@ -670,7 +671,7 @@
         } catch (err) {}
       }
 
-      function formatSec(ms) { return (ms / 1000).toFixed(1); }
+      function formatSec(sec) { return (sec < 0 ? 0 : sec).toFixed(1); }
 
       function bestText() {
         if (bestRounds >= 3 && bestTime > 0) return "ベスト 完全クリア " + formatSec(bestTime) + "秒";
@@ -760,7 +761,7 @@
           boomMain.style.animation = "";
         }
         window.clearTimeout(popTimer);
-        popTimer = window.setTimeout(function () { boomEl.hidden = true; }, 700);
+        popTimer = window.setTimeout(function () { boomEl.hidden = true; }, 1100);
       }
 
       function flash(kind) {
@@ -1227,8 +1228,8 @@
         ctx.translate(0, bob);
         if (pose === "fall") {
           var f = clamp(fall, 0, 1);
-          ctx.rotate(-1.15 * f);
-          ctx.translate(16 * f, -18 * (1 - f));
+          ctx.rotate(-1.5 * f);
+          ctx.translate(6 * f, 4 * f);
         } else {
           ctx.rotate(lean);
         }
@@ -1643,10 +1644,13 @@
         ctx.restore();
       }
 
-      function drawBits() {
+      function drawBits(layer) {
         var i;
         for (i = 0; i < bits.length; i++) {
           var b = bits[i];
+          var front = b.kind === "star" || b.kind === "confetti";
+          if (layer === "front" && !front) continue;
+          if (layer === "dust" && front) continue;
           var k = 1 - b.age / b.life;
           ctx.save();
           ctx.translate(b.x, b.y);
@@ -1761,8 +1765,9 @@
           lastPuff = now;
           puff();
         }
-        drawBits();
+        drawBits("dust");
         drawFox(L.foxX, L.ground, L.u, pose, t, fall);
+        drawBits("front");
 
         if (pose === "run") {
           ctx.strokeStyle = "rgba(255,255,255,.8)";
