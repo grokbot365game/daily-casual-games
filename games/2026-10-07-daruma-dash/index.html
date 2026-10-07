@@ -1,0 +1,1919 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0284c7">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='8' fill='%230284c7'/%3E%3Ccircle cx='8' cy='9' r='4.2' fill='%23fb923c'/%3E%3Cpath d='M3.2 6.2 L5 2.4 L6.6 6.2 M9.4 6.2 L11 2.4 L12.8 6.2' fill='%23fb923c'/%3E%3Cpath d='M5.2 11.2 h5.6 l-.6 1.6 H5.8z' fill='%234f46e5'/%3E%3C/svg%3E">
+  <title>だるまさんダッシュ — Daruma Dash</title>
+  <style>
+    :root {
+      --ink: #1c1917;
+      --muted: #57534e;
+      --card: #fffdf8;
+      --line: rgba(28, 25, 23, .12);
+      --gold: #facc15;
+      --coral: #e11d48;
+      --teal: #0f766e;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+    body {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      color: #fff;
+      background:
+        radial-gradient(70% 40% at 50% -10%, #fff7d6 0%, transparent 46%),
+        linear-gradient(180deg, #0284c7 0%, #38bdf8 42%, #fde68a 100%);
+      font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Yu Gothic", "Meiryo", sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: none;
+    }
+    body.danger::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 4;
+      pointer-events: none;
+      box-shadow:
+        inset 0 0 0 10px rgba(225, 29, 72, .88),
+        inset 0 0 46px rgba(225, 29, 72, .42);
+      animation: edge .12s ease-in-out infinite alternate;
+    }
+    @keyframes edge {
+      from { opacity: .78; }
+      to { opacity: 1; }
+    }
+    .back {
+      position: fixed;
+      z-index: 20;
+      top: max(10px, env(safe-area-inset-top));
+      left: max(12px, env(safe-area-inset-left));
+      padding: 8px 12px;
+      border-radius: 999px;
+      color: var(--ink);
+      background: rgba(255, 253, 248, .94);
+      box-shadow: inset 0 0 0 1px var(--line);
+      font-size: .78rem;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-decoration: none;
+    }
+    .shell {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      max-width: 560px;
+      margin: 0 auto;
+      padding:
+        calc(max(10px, env(safe-area-inset-top)) + 34px)
+        14px
+        max(8px, env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+    header { flex: none; text-align: center; }
+    .kicker {
+      margin: 0;
+      color: #ecfeff;
+      font-size: .72rem;
+      font-weight: 800;
+      letter-spacing: .18em;
+      text-shadow: 0 2px 0 rgba(3, 105, 161, .45);
+    }
+    h1 {
+      margin: 1px 0 0;
+      font-size: clamp(1.45rem, 6.4vw, 2.15rem);
+      line-height: 1.05;
+      letter-spacing: .08em;
+      text-shadow: 0 3px 0 #0369a1, 0 10px 22px rgba(3, 105, 161, .28);
+    }
+    .en {
+      margin: 2px 0 0;
+      color: rgba(255, 255, 255, .92);
+      font-size: .72rem;
+      font-weight: 800;
+      letter-spacing: .2em;
+    }
+    .hud {
+      flex: none;
+      display: grid;
+      grid-template-columns: .9fr .8fr 1fr;
+      gap: 8px;
+      margin: 8px 0 6px;
+    }
+    .pill {
+      padding: 7px 8px 8px;
+      border-radius: 14px;
+      background: rgba(255, 253, 248, .94);
+      color: var(--ink);
+      box-shadow: inset 0 0 0 1px var(--line);
+      text-align: center;
+    }
+    .pill span {
+      display: block;
+      color: var(--muted);
+      font-size: .68rem;
+      font-weight: 800;
+      letter-spacing: .12em;
+    }
+    .pill strong {
+      display: block;
+      margin-top: 1px;
+      font-size: clamp(1.15rem, 5vw, 1.55rem);
+      font-variant-numeric: tabular-nums;
+      line-height: 1.05;
+    }
+    .pill.hot {
+      background: #ffe4e6;
+      box-shadow: inset 0 0 0 2px var(--coral);
+    }
+    .pill.hot strong { color: var(--coral); }
+    .bar-wrap { flex: none; margin: 0 0 6px; }
+    .bar {
+      height: 12px;
+      border-radius: 99px;
+      background: rgba(15, 23, 42, .22);
+      overflow: hidden;
+      box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .55);
+    }
+    .bar i {
+      display: block;
+      height: 100%;
+      width: 100%;
+      transform-origin: left center;
+      transform: scaleX(0);
+      border-radius: 99px;
+      background: linear-gradient(90deg, #22d3ee 0%, #facc15 70%, #f97316 100%);
+    }
+    .bar-cap {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 2px;
+      font-size: .68rem;
+      font-weight: 900;
+      letter-spacing: .12em;
+      text-shadow: 0 1px 0 rgba(3, 105, 161, .35);
+    }
+    .stage {
+      flex: 1 1 auto;
+      min-height: 0;
+      position: relative;
+      border-radius: 22px;
+      overflow: hidden;
+      background: #38bdf8;
+      box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .45), 0 14px 30px rgba(3, 105, 161, .2);
+    }
+    canvas { width: 100%; height: 100%; display: block; touch-action: none; }
+    .chant {
+      position: absolute;
+      left: 8px;
+      right: 8px;
+      top: 4px;
+      z-index: 2;
+      text-align: center;
+      pointer-events: none;
+    }
+    #syl {
+      display: block;
+      min-height: 1.05em;
+      font-size: clamp(2rem, 8.5vh, 4.2rem);
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: .08em;
+      color: #fff;
+      text-shadow: 0 4px 0 #0369a1;
+    }
+    #syl.hot {
+      color: #ffe14a;
+      text-shadow: 0 4px 0 #b45309, 0 0 18px rgba(250, 204, 21, .95);
+    }
+    #syl.glare {
+      color: #fff1f2;
+      text-shadow: 0 4px 0 #9f1239, 0 0 16px #fb7185;
+    }
+    #syl.dim { opacity: .4; }
+    #syl.count { letter-spacing: 0; }
+    .phrase {
+      margin: 1px 0 0;
+      font-size: clamp(.68rem, 3.1vw, 1.05rem);
+      font-weight: 900;
+      letter-spacing: .06em;
+      color: rgba(255, 255, 255, .55);
+      text-shadow: 0 2px 0 rgba(3, 105, 161, .45);
+      white-space: nowrap;
+    }
+    .phrase i {
+      font-style: normal;
+      display: inline-block;
+      min-width: .85em;
+    }
+    .phrase i.past { color: rgba(255, 255, 255, .9); }
+    .phrase i.now {
+      color: #fff;
+      transform: scale(1.28);
+      text-shadow: 0 2px 0 #0369a1;
+    }
+    .phrase i.soon { color: #fde047; }
+    .phrase i.now.last { color: #ffe14a; }
+    .phrase b {
+      font-weight: 900;
+      opacity: .45;
+    }
+    .hint {
+      flex: none;
+      min-height: 1.35em;
+      margin: 6px 0 0;
+      text-align: center;
+      font-size: .95rem;
+      font-weight: 900;
+      letter-spacing: .04em;
+      text-shadow: 0 2px 0 rgba(3, 105, 161, .4);
+    }
+    .hint.warn {
+      color: #fef9c3;
+      text-shadow: 0 2px 0 #b45309, 0 0 12px rgba(250, 204, 21, .7);
+    }
+    .hint.good { color: #ecfccb; text-shadow: 0 2px 0 #3f6212, 0 0 12px rgba(190, 242, 100, .8); }
+    .hint.bad { color: #ffe4e6; text-shadow: 0 2px 0 #9f1239, 0 0 12px rgba(251, 113, 133, .85); }
+    #gate { flex: none; }
+    #gate[hidden] { display: none !important; }
+    .card {
+      width: min(100%, 480px);
+      margin: 8px auto 0;
+      padding: 12px 14px 12px;
+      border-radius: 18px;
+      background: var(--card);
+      color: var(--ink);
+      box-shadow: 0 12px 30px rgba(3, 105, 161, .18), inset 0 0 0 1px rgba(255, 255, 255, .7);
+      text-align: center;
+    }
+    .rule {
+      margin: 0;
+      font-size: .98rem;
+      font-weight: 800;
+      line-height: 1.45;
+    }
+    .rule + .rule { margin-top: 2px; }
+    .keys, .sub, .best {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: .82rem;
+      font-weight: 800;
+      line-height: 1.4;
+    }
+    button {
+      width: 100%;
+      margin-top: 10px;
+      min-height: 48px;
+      border: 0;
+      border-radius: 14px;
+      background: var(--coral);
+      color: #fff;
+      font: inherit;
+      font-size: 1.05rem;
+      font-weight: 900;
+      letter-spacing: .08em;
+      cursor: pointer;
+    }
+    button:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+    button:disabled { opacity: .45; cursor: default; }
+    button.ghost {
+      background: #fff7ed;
+      color: var(--ink);
+      box-shadow: inset 0 0 0 2px rgba(28, 25, 23, .12);
+      letter-spacing: .04em;
+    }
+    .card.clear button.primary { background: var(--teal); }
+    .flash {
+      position: fixed;
+      inset: 0;
+      z-index: 5;
+      pointer-events: none;
+      opacity: 0;
+    }
+    .flash.good { background: #fde68a; }
+    .flash.bad { background: #fb7185; }
+    .flash.win { background: #fff7ed; }
+    .flash.on { animation: flash .38s linear forwards; }
+    .flash.bad.on { animation: flash .55s linear forwards; }
+    .flash.win.on { animation: flash .7s linear forwards; }
+    @keyframes flash {
+      0% { opacity: .62; }
+      100% { opacity: 0; }
+    }
+    .boom {
+      position: fixed;
+      inset: 0;
+      z-index: 7;
+      display: grid;
+      place-items: center;
+      pointer-events: none;
+      text-align: center;
+    }
+    .boom[hidden] { display: none !important; }
+    .boom strong {
+      display: block;
+      font-size: clamp(2.8rem, 14vw, 5.2rem);
+      line-height: .95;
+      letter-spacing: .08em;
+      color: #fff;
+      animation: pop .16s ease-out;
+    }
+    .boom.good strong { text-shadow: 0 4px 0 #3f6212, 0 0 28px #bef264; }
+    .boom.bad strong { text-shadow: 0 4px 0 #9f1239, 0 0 28px #fb7185; }
+    .boom.win strong { text-shadow: 0 4px 0 #b45309, 0 0 28px #facc15; }
+    .boom.long strong { font-size: clamp(2rem, 9vw, 3.5rem); letter-spacing: .04em; }
+    @keyframes pop {
+      from { transform: scale(.72); opacity: .2; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    @keyframes sylpop {
+      from { transform: scale(.8); }
+      to { transform: scale(1); }
+    }
+    .sheet {
+      position: fixed;
+      inset: 0;
+      z-index: 8;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 16px 16px max(14px, env(safe-area-inset-bottom));
+      background: linear-gradient(180deg, rgba(3, 105, 161, .05), rgba(28, 25, 23, .62) 58%);
+    }
+    .sheet[hidden] { display: none !important; }
+    .sheet .card {
+      position: relative;
+      margin: 0;
+      width: min(100%, 420px);
+      overflow: hidden;
+    }
+    .sheet h2 {
+      margin: 0;
+      font-size: clamp(1.8rem, 8vw, 2.6rem);
+      letter-spacing: .1em;
+    }
+    .card.fail { box-shadow: 0 16px 40px rgba(28, 25, 23, .24), inset 0 0 0 3px var(--coral); }
+    .card.fail h2 { color: var(--coral); }
+    .card.clear { box-shadow: 0 16px 40px rgba(28, 25, 23, .24), inset 0 0 0 3px #14b8a6; }
+    .card.clear h2 { color: var(--teal); }
+    .result-progress {
+      margin: 4px 0 0;
+      font-size: clamp(1.35rem, 6.5vw, 2.1rem);
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+    }
+    .record {
+      margin: 6px 0 0;
+      color: #c2410c;
+      font-size: 1.02rem;
+      font-weight: 900;
+      letter-spacing: .12em;
+    }
+    .card.clear .record { color: var(--teal); }
+    .shareline {
+      margin: 8px 0 0;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: #fff7ed;
+      color: var(--ink);
+      font-size: .78rem;
+      font-weight: 800;
+      line-height: 1.45;
+      word-break: break-all;
+      -webkit-user-select: text;
+      user-select: text;
+    }
+    .sparks { position: absolute; inset: 0; pointer-events: none; }
+    .sparks[hidden] { display: none !important; }
+    .sparks i {
+      position: absolute;
+      left: 50%;
+      top: 28%;
+      width: 9px;
+      height: 9px;
+      border-radius: 2px;
+      background: #2dd4bf;
+      animation: spark .9s ease-out forwards;
+    }
+    .sparks i:nth-child(1) { --x: -30px; --y: -70px; }
+    .sparks i:nth-child(2) { background: var(--gold); --x: 90px; --y: -64px; }
+    .sparks i:nth-child(3) { background: var(--coral); --x: -100px; --y: -36px; }
+    .sparks i:nth-child(4) { background: #fb923c; --x: 70px; --y: 24px; }
+    .sparks i:nth-child(5) { background: #fff; --x: -60px; --y: -84px; }
+    .sparks i:nth-child(6) { background: var(--gold); --x: 110px; --y: 8px; }
+    .sparks i:nth-child(7) { background: #2dd4bf; --x: -110px; --y: 16px; }
+    .sparks i:nth-child(8) { background: #38bdf8; --x: 16px; --y: -96px; }
+    @keyframes spark {
+      to { transform: translate(var(--x), var(--y)) rotate(50deg); opacity: 0; }
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+    [hidden] { display: none !important; }
+    @media (max-height: 760px) {
+      h1 { font-size: 1.4rem; }
+      .hud { margin: 6px 0 4px; }
+      .pill { padding: 5px 8px; }
+      .pill strong { font-size: 1.15rem; }
+      .card { padding: 10px 12px 8px; }
+      .rule { font-size: .9rem; }
+      button { min-height: 44px; margin-top: 8px; }
+    }
+    @media (max-height: 640px) {
+      .kicker, .en { display: none; }
+      .shell { padding-top: calc(max(6px, env(safe-area-inset-top)) + 28px); }
+      .rule { font-size: .84rem; line-height: 1.35; }
+      .keys, .best { margin-top: 4px; }
+      .bar-cap { display: none; }
+      .hint { margin-top: 4px; font-size: .86rem; }
+    }
+    @media (max-height: 520px) {
+      h1 { font-size: 1.05rem; }
+      .pill span { display: none; }
+      .keys { display: none; }
+      .card { padding: 8px; }
+      button { min-height: 38px; font-size: .95rem; }
+      .sheet h2 { font-size: 1.45rem; }
+      .result-progress { font-size: 1.15rem; }
+      .shareline { margin-top: 4px; padding: 6px; }
+      #syl { font-size: 1.7rem; }
+      .phrase { font-size: .72rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      body.danger::before, .sparks i, .boom strong, .flash { animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <a class="back" href="../../index.html">ギャラリーへ</a>
+  <div class="shell" id="shell">
+    <header>
+      <p class="kicker">DAY 12</p>
+      <h1>だるまさんダッシュ</h1>
+      <p class="en">DARUMA DASH</p>
+    </header>
+    <div class="hud">
+      <div class="pill"><span>ラウンド</span><strong id="round-label">1/3</strong></div>
+      <div class="pill"><span>あと</span><strong id="remain">100</strong></div>
+      <div class="pill" id="time-pill"><span>タイム</span><strong id="timer">19.0</strong></div>
+    </div>
+    <div class="bar-wrap">
+      <div class="bar" aria-hidden="true"><i id="bar-fill"></i></div>
+      <div class="bar-cap"><span>スタート</span><span>ゴール</span></div>
+    </div>
+    <div class="stage" id="stage">
+      <canvas id="cv" width="480" height="270"></canvas>
+      <div class="chant" id="chant" aria-hidden="true">
+        <b id="syl">だ</b>
+        <p class="phrase" id="phrase"></p>
+      </div>
+    </div>
+    <p class="hint" id="hint">3ラウンドで完全クリア</p>
+    <div id="gate">
+      <div class="card">
+        <p class="rule">おしてる間すすむ／ふりむいたら止まる！</p>
+        <p class="rule">れんだはNG：うごいてたらアウト</p>
+        <p class="keys">画面を長押し / スペース</p>
+        <p class="best" id="title-best">ベスト なし</p>
+        <button type="button" id="btn-start">スタート</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="flash" id="flash"></div>
+  <div class="boom" id="boom" hidden><strong id="boom-main"></strong></div>
+  <p class="sr-only" id="live" aria-live="polite"></p>
+
+  <div class="sheet" id="sheet" hidden>
+    <div class="card" id="result-card">
+      <div class="sparks" id="sparks" hidden aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <h2 id="result-title">完全クリア</h2>
+      <p class="sub" id="result-sub">3ラウンドクリア！</p>
+      <p class="result-progress" id="result-stat">タイム 0.0秒</p>
+      <p class="record" id="result-record" hidden>ベスト更新！</p>
+      <p class="best" id="result-best">ベスト なし</p>
+      <p class="shareline" id="share-line"></p>
+      <button type="button" class="primary" id="btn-retry">もう一度</button>
+      <button type="button" class="ghost" id="btn-copy">結果をコピー</button>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var SYL = ["だ", "る", "ま", "さ", "ん", "が", "こ", "ろ", "ん", "だ"];
+      var STORE = "daruma-dash-2026-10-07";
+      var PLAY_URL = "https://grokbot365game.github.io/daily-casual-games/games/2026-10-07-daruma-dash/";
+      var LOCK_MS = 800;
+      var COUNT_MS = 700;
+      var ROUNDS = [
+        {
+          timer: 19,
+          speed: 10.5,
+          grace: 0.25,
+          look: 1.2,
+          gaps: [0.64, 0.64, 0.64, 0.64, 0.64, 0.64, 0.68, 0.72, 0.78]
+        },
+        {
+          timer: 14.5,
+          speed: 15,
+          grace: 0.25,
+          look: 0.9,
+          patterns: [
+            [0.42, 0.24, 0.36, 0.2, 0.46, 0.18, 0.3, 0.16, 0.22],
+            [0.22, 0.4, 0.18, 0.44, 0.16, 0.34, 0.2, 0.28, 0.18],
+            [0.38, 0.18, 0.32, 0.22, 0.48, 0.16, 0.24, 0.15, 0.2]
+          ]
+        },
+        {
+          timer: 12,
+          speed: 16.2,
+          grace: 0.16,
+          look: 0.68,
+          patterns: [
+            [0.2, 0.18, 0.9, 0.16, 0.14, 0.94, 0.12, 0.1, 0.09],
+            [0.17, 0.15, 0.14, 1.05, 0.12, 0.11, 0.1, 0.09, 0.08],
+            [0.3, 0.15, 0.13, 0.82, 0.11, 0.98, 0.1, 0.09, 0.08]
+          ]
+        }
+      ];
+
+      var phase = "title";
+      var round = 1;
+      var progress = 0;
+      var timer = ROUNDS[0].timer;
+      var elapsed = 0;
+      var clearMs = 0;
+      var didClear = false;
+      var failKind = "";
+      var mode = "idle";
+      var sylIndex = -1;
+      var sylAt = 0;
+      var gaps = [];
+      var lookStart = 0;
+      var graceUntil = 0;
+      var lookUntil = 0;
+      var turnUntil = 0;
+      var countLeft = 3;
+      var countUntil = 0;
+      var celebrateUntil = 0;
+      var finaleUntil = 0;
+      var failUntil = 0;
+      var safeShown = false;
+      var safeWord = "";
+      var lastRelease = 0;
+      var wasHeld = false;
+      var spaceDown = false;
+      var downs = Object.create(null);
+      var lockUntil = 0;
+      var bestRounds = 0;
+      var bestTime = 0;
+      var record = false;
+      var faceAmt = 0;
+      var shake = 0;
+      var bits = [];
+      var lastPuff = 0;
+      var popTimer = 0;
+      var copyTimer = 0;
+      var audioCtx = null;
+      var reduce = false;
+      var viewW = 480;
+      var viewH = 270;
+      var px = 1;
+      var lastNow = 0;
+      var foxX = 40;
+      var foxGround = 200;
+      var foxU = 1;
+
+      var gate = document.getElementById("gate");
+      var stage = document.getElementById("stage");
+      var canvas = document.getElementById("cv");
+      var ctx = canvas.getContext("2d");
+      var sylEl = document.getElementById("syl");
+      var phraseEl = document.getElementById("phrase");
+      var hintEl = document.getElementById("hint");
+      var roundEl = document.getElementById("round-label");
+      var remainEl = document.getElementById("remain");
+      var timerEl = document.getElementById("timer");
+      var timePill = document.getElementById("time-pill");
+      var barFill = document.getElementById("bar-fill");
+      var titleBest = document.getElementById("title-best");
+      var flashEl = document.getElementById("flash");
+      var boomEl = document.getElementById("boom");
+      var boomMain = document.getElementById("boom-main");
+      var liveEl = document.getElementById("live");
+      var sheet = document.getElementById("sheet");
+      var resultCard = document.getElementById("result-card");
+      var resultTitle = document.getElementById("result-title");
+      var resultSub = document.getElementById("result-sub");
+      var resultStat = document.getElementById("result-stat");
+      var resultRecord = document.getElementById("result-record");
+      var resultBest = document.getElementById("result-best");
+      var shareLineEl = document.getElementById("share-line");
+      var sparks = document.getElementById("sparks");
+      var retryBtn = document.getElementById("btn-retry");
+      var copyBtn = document.getElementById("btn-copy");
+      var startBtn = document.getElementById("btn-start");
+
+      try { reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (err) {}
+
+      function clamp(v, a, b) {
+        if (v < a) return a;
+        if (v > b) return b;
+        return v;
+      }
+
+      function cfg() { return ROUNDS[round - 1]; }
+
+      function isHeld() {
+        if (spaceDown) return true;
+        for (var k in downs) if (downs[k]) return true;
+        return false;
+      }
+
+      function loadBest() {
+        try {
+          var raw = localStorage.getItem(STORE);
+          if (!raw) return;
+          var data = JSON.parse(raw);
+          if (data && typeof data.rounds === "number") bestRounds = data.rounds;
+          if (data && typeof data.time === "number") bestTime = data.time;
+        } catch (err) {}
+      }
+
+      function saveBest() {
+        try {
+          localStorage.setItem(STORE, JSON.stringify({ rounds: bestRounds, time: bestTime }));
+        } catch (err) {}
+      }
+
+      function formatSec(sec) { return (sec < 0 ? 0 : sec).toFixed(1); }
+
+      function bestText() {
+        if (bestRounds >= 3 && bestTime > 0) return "ベスト 完全クリア " + formatSec(bestTime) + "秒";
+        if (bestRounds > 0) return "ベスト ラウンド" + bestRounds + "クリア";
+        return "ベスト なし";
+      }
+
+      function noteRecord(rounds, timeMs) {
+        var better = false;
+        if (rounds > bestRounds) {
+          bestRounds = rounds;
+          better = true;
+        }
+        if (rounds >= 3 && timeMs > 0 && (bestTime <= 0 || timeMs < bestTime)) {
+          bestTime = timeMs;
+          bestRounds = 3;
+          better = true;
+        }
+        if (better) saveBest();
+        return better;
+      }
+
+      function announce(text) { liveEl.textContent = text; }
+
+      function setHint(text, kind) {
+        if (hintEl.textContent !== text) hintEl.textContent = text;
+        hintEl.className = "hint" + (kind ? " " + kind : "");
+      }
+
+      function showBig(text, cls) {
+        sylEl.textContent = text;
+        sylEl.className = cls || "";
+        if (reduce) return;
+        sylEl.style.animation = "none";
+        void sylEl.offsetWidth;
+        sylEl.style.animation = "sylpop .16s ease-out";
+      }
+
+      function renderPhrase(active) {
+        var html = "";
+        var i;
+        for (i = 0; i < SYL.length; i++) {
+          var cls = "next";
+          if (active >= 0 && i < active) cls = "past";
+          else if (i === active) cls = "now";
+          if (i === 9) cls += " last";
+          if (round === 1 && phase === "play" && active >= 7 && active < 9 && i === 9) cls += " soon";
+          html += "<i data-i=\"" + i + "\" class=\"" + cls + "\">" + SYL[i] + "</i>";
+          if (i < SYL.length - 1) html += "<b>・</b>";
+        }
+        if (phraseEl.innerHTML !== html) phraseEl.innerHTML = html;
+      }
+
+      function unlockAudio() {
+        try {
+          var AC = window.AudioContext || window.webkitAudioContext;
+          if (!AC) return;
+          if (!audioCtx) audioCtx = new AC();
+          if (audioCtx.state === "suspended") audioCtx.resume();
+        } catch (err) {}
+      }
+
+      function tone(freq, dur, type, gain) {
+        if (!audioCtx) return;
+        try {
+          var t = audioCtx.currentTime;
+          var o = audioCtx.createOscillator();
+          var g = audioCtx.createGain();
+          o.type = type || "square";
+          o.frequency.setValueAtTime(freq, t);
+          g.gain.setValueAtTime(gain || 0.035, t);
+          g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+          o.connect(g);
+          g.connect(audioCtx.destination);
+          o.start(t);
+          o.stop(t + dur + 0.02);
+        } catch (err) {}
+      }
+
+      function pop(text, kind) {
+        boomMain.textContent = text;
+        boomEl.className = "boom " + kind + (text.length > 4 ? " long" : "");
+        boomEl.hidden = false;
+        if (!reduce) {
+          boomMain.style.animation = "none";
+          void boomMain.offsetWidth;
+          boomMain.style.animation = "";
+        }
+        window.clearTimeout(popTimer);
+        popTimer = window.setTimeout(function () { boomEl.hidden = true; }, 1100);
+      }
+
+      function flash(kind) {
+        flashEl.className = "flash " + kind + " on";
+        window.setTimeout(function () {
+          if (flashEl.className.indexOf(kind) !== -1) flashEl.className = "flash " + kind;
+        }, 720);
+      }
+
+      function setDanger(on) {
+        stage.classList.toggle("danger", on);
+        document.body.classList.toggle("danger", on);
+      }
+
+      function pickGaps() {
+        var c = cfg();
+        var src = c.gaps || c.patterns[Math.floor(Math.random() * c.patterns.length)];
+        var jit = c.gaps ? 0.035 : 0.06;
+        var out = [];
+        var i;
+        for (i = 0; i < src.length; i++) {
+          var j = 1 + (Math.random() * 2 - 1) * jit;
+          var g = src[i] * j;
+          if (!c.gaps && src[i] >= 0.7 && g < 0.72) g = 0.72;
+          out.push(g);
+        }
+        return out;
+      }
+
+      function showSyl(i) {
+        sylIndex = i;
+        sylAt = performance.now();
+        showBig(SYL[i], i === 9 ? "hot" : "");
+        renderPhrase(i);
+        if (i === 9) tone(196, 0.16, "sawtooth", 0.05);
+        else tone(460 + i * 26, 0.05, "square", 0.028);
+      }
+
+      function startChant(now) {
+        mode = "chant";
+        safeShown = false;
+        safeWord = "";
+        gaps = pickGaps();
+        showSyl(0);
+        sylAt = now;
+      }
+
+      function beginLook(now) {
+        mode = "look";
+        lookStart = now;
+        var c = cfg();
+        graceUntil = now + c.grace * 1000;
+        lookUntil = now + c.look * 1000;
+        safeShown = false;
+        setDanger(true);
+        sylEl.className = "hot glare";
+        tone(160, 0.18, "sawtooth", 0.055);
+        announce("ふりむいた");
+        if (!isHeld()) {
+          var clutch = lastRelease > 0 && (now - lastRelease) <= 450;
+          markSafe(clutch);
+        }
+      }
+
+      function beginTurnBack(now) {
+        mode = "turnback";
+        turnUntil = now + 280;
+        setDanger(false);
+        sylEl.className = "dim";
+      }
+
+      function markSafe(clutch) {
+        if (safeShown || phase !== "play") return;
+        safeShown = true;
+        safeWord = clutch ? "セーフ！" : "よし！";
+        pop(safeWord, "good");
+        flash("good");
+        tone(clutch ? 740 : 620, 0.08, "square", 0.04);
+        tone(clutch ? 980 : 820, 0.12, "square", 0.035);
+        spawnStars();
+        announce(safeWord);
+      }
+
+      function onRelease(now) {
+        lastRelease = now;
+        if (phase === "play" && mode === "look" && now <= graceUntil) markSafe(true);
+      }
+
+      function onPress(now) {
+        if (phase === "play" && mode === "look" && now >= graceUntil) failOut(now);
+      }
+
+      function refreshHeld() {
+        var nowHeld = isHeld();
+        var now = performance.now();
+        if (wasHeld && !nowHeld) onRelease(now);
+        else if (!wasHeld && nowHeld) onPress(now);
+        wasHeld = nowHeld;
+      }
+
+      function startCountdown(now) {
+        phase = "countdown";
+        mode = "idle";
+        progress = 0;
+        timer = cfg().timer;
+        countLeft = 3;
+        countUntil = now + COUNT_MS;
+        setDanger(false);
+        showBig("3", "count");
+        renderPhrase(-1);
+        tone(523, 0.07, "square", 0.04);
+        announce("ラウンド" + round);
+      }
+
+      function startPlay(now) {
+        phase = "play";
+        timer = cfg().timer;
+        progress = 0;
+        startChant(now);
+      }
+
+      function beginRun() {
+        if (performance.now() < lockUntil) return;
+        unlockAudio();
+        round = 1;
+        elapsed = 0;
+        clearMs = 0;
+        didClear = false;
+        failKind = "";
+        record = false;
+        bits = [];
+        sheet.hidden = true;
+        gate.hidden = true;
+        boomEl.hidden = true;
+        sparks.hidden = true;
+        lockUntil = 0;
+        retryBtn.disabled = false;
+        if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+        startCountdown(performance.now());
+      }
+
+      function onGoal(now) {
+        progress = 100;
+        setDanger(false);
+        if (round >= 3) {
+          clearMs = elapsed;
+          didClear = true;
+          phase = "finale";
+          finaleUntil = now + 900;
+          pop("完全クリア", "win");
+          flash("win");
+          tone(523, 0.1, "square", 0.04);
+          tone(659, 0.12, "square", 0.04);
+          tone(784, 0.18, "square", 0.045);
+          spawnConfetti();
+          announce("完全クリア");
+        } else {
+          phase = "celebrate";
+          celebrateUntil = now + 760;
+          pop("クリア！", "good");
+          flash("good");
+          tone(659, 0.09, "square", 0.04);
+          tone(880, 0.14, "square", 0.04);
+          spawnStars();
+          announce("クリア");
+        }
+      }
+
+      function failOut(now) {
+        if (phase !== "play") return;
+        phase = "failanim";
+        failKind = "out";
+        failUntil = now + 860;
+        setDanger(true);
+        shake = reduce ? 0 : 9;
+        pop("アウト！", "bad");
+        flash("bad");
+        tone(130, 0.22, "sawtooth", 0.06);
+        announce("アウト");
+      }
+
+      function failTime(now) {
+        if (phase !== "play") return;
+        phase = "failanim";
+        failKind = "time";
+        failUntil = now + 860;
+        setDanger(false);
+        pop("時間切れ！", "bad");
+        flash("bad");
+        tone(180, 0.16, "triangle", 0.05);
+        announce("時間切れ");
+      }
+
+      function shareString() {
+        if (didClear) {
+          return "だるまさんダッシュ ラウンド3クリア！タイム " + formatSec(clearMs) + "秒 " + PLAY_URL;
+        }
+        var kind = failKind === "time" ? "時間切れ" : "アウト";
+        return "だるまさんダッシュ ラウンド" + round + "で" + kind + "！ " + PLAY_URL;
+      }
+
+      function openResult() {
+        var cleared = didClear ? 3 : Math.max(0, round - 1);
+        record = noteRecord(cleared, didClear ? clearMs : 0);
+        var win = didClear;
+        resultCard.className = "card " + (win ? "clear" : "fail");
+        if (win) {
+          resultTitle.textContent = "完全クリア";
+          resultSub.textContent = "3ラウンドクリア！";
+          resultStat.textContent = "タイム " + formatSec(clearMs) + "秒";
+        } else if (failKind === "time") {
+          resultTitle.textContent = "時間切れ！";
+          resultSub.textContent = "ゴールまでとどかなかった";
+          resultStat.textContent = cleared > 0 ? ("ラウンド" + cleared + "クリア") : ("ラウンド" + round + "で時間切れ！");
+        } else {
+          resultTitle.textContent = "アウト！";
+          resultSub.textContent = "うごいてたらアウト";
+          resultStat.textContent = cleared > 0 ? ("ラウンド" + cleared + "クリア") : ("ラウンド" + round + "でアウト！");
+        }
+        resultRecord.hidden = !record;
+        var best = bestText();
+        resultBest.textContent = best;
+        titleBest.textContent = best;
+        shareLineEl.textContent = shareString();
+        sparks.hidden = !win;
+        if (win) {
+          var html = sparks.innerHTML;
+          sparks.innerHTML = html;
+        }
+        boomEl.hidden = true;
+        setDanger(false);
+        sheet.hidden = false;
+        lockUntil = performance.now() + LOCK_MS;
+        retryBtn.disabled = true;
+        copyBtn.textContent = "結果をコピー";
+        phase = "result";
+        if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+        announce(resultTitle.textContent + "。" + resultStat.textContent);
+      }
+
+      function updateHint() {
+        if (phase === "title") setHint("3ラウンドで完全クリア", "");
+        else if (phase === "countdown") setHint("おしてる間すすむ／ふりむいたら止まる！", "");
+        else if (phase === "celebrate") setHint("クリア！", "good");
+        else if (phase === "finale") setHint("完全クリア", "good");
+        else if (phase === "failanim") setHint(failKind === "time" ? "時間切れ！" : "アウト！", "bad");
+        else if (phase === "result") return;
+        else if (phase === "play") {
+          if (mode === "look") {
+            if (safeShown) setHint(safeWord, "good");
+            else setHint("とまって！", "bad");
+          } else if (round === 1 && mode === "chant" && sylIndex >= 7 && sylIndex < 9) {
+            setHint("つぎの「だ」でふりむく！", "warn");
+          } else if (isHeld()) setHint("おしてる間すすむ", "");
+          else setHint("ふりむいたら止まる", "");
+        }
+      }
+
+      function updateHud() {
+        roundEl.textContent = round + "/3";
+        remainEl.textContent = String(Math.max(0, Math.ceil(100 - progress)));
+        var showT = Math.max(0, timer);
+        timerEl.textContent = showT.toFixed(1);
+        timePill.className = "pill" + (phase === "play" && showT <= 4 ? " hot" : "");
+        barFill.style.transform = "scaleX(" + clamp(progress / 100, 0, 1) + ")";
+      }
+
+      function advance(now) {
+        if (mode === "chant") {
+          if (sylIndex < 9 && (now - sylAt) / 1000 >= gaps[sylIndex]) {
+            var next = sylIndex + 1;
+            showSyl(next);
+            sylAt = now;
+            if (next === 9) beginLook(now);
+          }
+        } else if (mode === "look") {
+          if (now >= lookUntil) beginTurnBack(now);
+        } else if (mode === "turnback") {
+          if (now >= turnUntil) startChant(now);
+        }
+      }
+
+      function update(now, dt) {
+        if (phase === "countdown" || phase === "play" || phase === "celebrate") elapsed += dt;
+
+        if (phase === "countdown" && now >= countUntil) {
+          countLeft -= 1;
+          if (countLeft <= 0) startPlay(now);
+          else {
+            countUntil = now + COUNT_MS;
+            showBig(String(countLeft), "count");
+            tone(523, 0.07, "square", 0.04);
+          }
+        } else if (phase === "play") {
+          if (mode === "look" && now >= graceUntil && isHeld()) {
+            failOut(now);
+          } else {
+            if (isHeld()) progress += cfg().speed * dt;
+            if (progress > 100) progress = 100;
+            if (progress >= 100) onGoal(now);
+            else {
+              timer -= dt;
+              if (timer <= 0) failTime(now);
+              else advance(now);
+            }
+          }
+        } else if (phase === "celebrate" && now >= celebrateUntil) {
+          round += 1;
+          startCountdown(now);
+        } else if (phase === "finale" && now >= finaleUntil) {
+          openResult();
+        } else if (phase === "failanim" && now >= failUntil) {
+          openResult();
+        } else if (phase === "result" && retryBtn.disabled && now >= lockUntil) {
+          retryBtn.disabled = false;
+        }
+
+        var target = (phase === "play" && mode === "look") || phase === "finale" || phase === "celebrate" || (phase === "failanim" && failKind === "out") ? 1 : 0;
+        if (phase === "failanim" && failKind === "time") target = 1;
+        var step = dt / 0.14;
+        if (faceAmt < target) faceAmt = Math.min(target, faceAmt + step);
+        else if (faceAmt > target) faceAmt = Math.max(target, faceAmt - step);
+
+        if (shake > 0) shake = Math.max(0, shake - dt * 28);
+
+        var i;
+        var alive = [];
+        for (i = 0; i < bits.length; i++) {
+          var b = bits[i];
+          b.age += dt;
+          if (b.age >= b.life) continue;
+          b.x += b.vx * dt;
+          b.y += b.vy * dt;
+          b.vy += (b.g || 0) * dt;
+          b.rot += (b.spin || 0) * dt;
+          alive.push(b);
+        }
+        bits = alive;
+        updateHint();
+        updateHud();
+      }
+
+      function layout() {
+        var u = Math.max(0.68, Math.min(1.35, Math.min(viewW / 440, viewH / 320)));
+        var ground = viewH * 0.78;
+        var startX = 24 + 26 * u;
+        var goalX = viewW - 92 * u;
+        if (goalX < startX + 70) goalX = Math.min(viewW - 36, startX + 70);
+        var x = startX + (goalX - startX) * clamp(progress / 100, 0, 1);
+        var oniX = Math.min(viewW - 34 * u, goalX + 52 * u);
+        return { u: u, ground: ground, startX: startX, goalX: goalX, foxX: x, oniX: oniX };
+      }
+
+      function spawnStars() {
+        var n = reduce ? 6 : 14;
+        var i;
+        for (i = 0; i < n; i++) {
+          var a = (Math.PI * 2 * i) / n;
+          bits.push({
+            kind: "star",
+            x: foxX,
+            y: foxGround - 70 * foxU,
+            vx: Math.cos(a) * (80 + Math.random() * 90),
+            vy: Math.sin(a) * (80 + Math.random() * 90) - 20,
+            g: 40,
+            life: 0.55,
+            age: 0,
+            rot: Math.random() * 6,
+            spin: 0,
+            c: i % 2 ? "#facc15" : "#bef264"
+          });
+        }
+      }
+
+      function spawnConfetti() {
+        var n = reduce ? 18 : 72;
+        var colors = ["#facc15", "#fb7185", "#38bdf8", "#4ade80", "#fff", "#fb923c"];
+        var i;
+        for (i = 0; i < n; i++) {
+          bits.push({
+            kind: "confetti",
+            x: Math.random() * viewW,
+            y: -12 - Math.random() * 40,
+            vx: (Math.random() - 0.5) * 90,
+            vy: 50 + Math.random() * 140,
+            g: 80,
+            life: 2.6 + Math.random() * 0.8,
+            age: 0,
+            rot: Math.random() * 6,
+            spin: (Math.random() - 0.5) * 8,
+            w: 6 + Math.random() * 6,
+            h: 8 + Math.random() * 6,
+            c: colors[i % colors.length]
+          });
+        }
+      }
+
+      function puff() {
+        bits.push({
+          kind: "dust",
+          x: foxX - 10 * foxU,
+          y: foxGround - 6,
+          vx: -30 - Math.random() * 40,
+          vy: -16 - Math.random() * 24,
+          g: 30,
+          life: 0.35,
+          age: 0,
+          rot: 0,
+          spin: 0,
+          c: "rgba(180, 130, 70, .45)"
+        });
+      }
+
+      function rr(x, y, w, h, r) {
+        var rad = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+        ctx.beginPath();
+        ctx.moveTo(x + rad, y);
+        ctx.arcTo(x + w, y, x + w, y + h, rad);
+        ctx.arcTo(x + w, y + h, x, y + h, rad);
+        ctx.arcTo(x, y + h, x, y, rad);
+        ctx.arcTo(x, y, x + w, y, rad);
+        ctx.closePath();
+      }
+
+      function ink(fill, width) {
+        ctx.fillStyle = fill;
+        ctx.fill();
+        ctx.lineWidth = width || 2.4;
+        ctx.strokeStyle = "#1c1917";
+        ctx.lineJoin = "round";
+        ctx.stroke();
+      }
+
+      function arm(x, y, rot) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(rot);
+        rr(-4, 0, 8, 16, 4);
+        ink("#ea580c", 2.2);
+        ctx.beginPath();
+        ctx.arc(0, 16, 4.5, 0, Math.PI * 2);
+        ink("#fff7ed", 2);
+        ctx.restore();
+      }
+
+      function drawFox(x, ground, s, pose, t, fall) {
+        ctx.save();
+        ctx.translate(x, ground);
+        ctx.scale(s, s);
+        var bob = 0;
+        var lean = 0;
+        if (pose === "run") {
+          bob = Math.abs(Math.sin(t * 14)) * -5;
+          lean = 0.12;
+        } else if (pose === "freeze") {
+          bob = Math.sin(t * 28) * 1.1;
+        } else if (pose === "cheer") {
+          bob = Math.abs(Math.sin(t * 9)) * -8;
+        } else if (pose === "idle") {
+          bob = Math.sin(t * 3) * -2;
+        } else if (pose === "slump") {
+          bob = 8;
+        }
+        ctx.translate(0, bob);
+        if (pose === "fall") {
+          var f = clamp(fall, 0, 1);
+          ctx.rotate(-1.5 * f);
+          ctx.translate(6 * f, 4 * f);
+        } else {
+          ctx.rotate(lean);
+        }
+
+        ctx.fillStyle = "rgba(28,25,23,.16)";
+        ctx.beginPath();
+        ctx.ellipse(0, -2, 18, 5, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        var swing = pose === "run" ? Math.sin(t * 14) : 0;
+        ctx.save();
+        ctx.translate(-16, -30);
+        ctx.rotate(-0.7 + Math.sin(t * (pose === "run" ? 14 : 3)) * 0.25);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 11, 8, 0, 0, Math.PI * 2);
+        ink("#fb923c");
+        ctx.beginPath();
+        ctx.ellipse(6, -2, 6, 5, 0.4, 0, Math.PI * 2);
+        ink("#fdba74");
+        ctx.restore();
+
+        function leg(lx, rot) {
+          ctx.save();
+          ctx.translate(lx, -22);
+          ctx.rotate(rot);
+          rr(-4, 0, 8, 18, 4);
+          ink("#ea580c");
+          ctx.beginPath();
+          ctx.ellipse(0, 18, 6, 3.5, 0, 0, Math.PI * 2);
+          ink("#fff7ed", 2);
+          ctx.restore();
+        }
+        leg(-7, swing * 0.55);
+        leg(8, -swing * 0.55);
+
+        ctx.beginPath();
+        ctx.ellipse(0, -38, 16, 14, 0, 0, Math.PI * 2);
+        ink("#fb923c");
+        ctx.beginPath();
+        ctx.ellipse(2, -34, 9, 8, 0, 0, Math.PI * 2);
+        ctx.fillStyle = "#fff7ed";
+        ctx.fill();
+
+        ctx.save();
+        ctx.translate(0, -48);
+        ctx.rotate(-0.5 + Math.sin(t * (pose === "run" ? 12 : 4)) * (pose === "run" ? 0.35 : 0.08));
+        rr(-5, 0, 10, 20, 5);
+        ink("#4f46e5", 2.2);
+        rr(-5, 15, 10, 6, 3);
+        ctx.fillStyle = "#facc15";
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+        ctx.save();
+        ctx.translate(-2, -46);
+        ctx.rotate(-1.5 + Math.sin(t * 8) * 0.15);
+        rr(-4, 0, 8, 14, 4);
+        ink("#4338ca", 2);
+        ctx.restore();
+
+        ctx.beginPath();
+        ctx.arc(4, -68, 22, 0, Math.PI * 2);
+        ink("#fb923c");
+
+        ear(-8, -82, false);
+        ear(14, -84, true);
+
+        ctx.beginPath();
+        ctx.ellipse(14, -60, 9, 7, 0.2, 0, Math.PI * 2);
+        ink("#fff7ed", 2.2);
+        ctx.beginPath();
+        ctx.arc(18, -60, 2.3, 0, Math.PI * 2);
+        ctx.fillStyle = "#1c1917";
+        ctx.fill();
+
+        if (pose === "cheer") {
+          arm(-18, -58, -2.6);
+          arm(20, -56, 2.6);
+        } else if (pose !== "fall") {
+          arm(-16, -50, 0.6 + swing);
+          arm(16, -48, 1.1 - swing);
+        }
+
+        drawFoxFace(pose, t);
+        ctx.restore();
+      }
+
+      function ear(x, y, flip) {
+        ctx.save();
+        ctx.translate(x, y);
+        if (flip) ctx.scale(-1, 1);
+        ctx.beginPath();
+        ctx.moveTo(-7, 4);
+        ctx.lineTo(-1, -16);
+        ctx.lineTo(8, 5);
+        ctx.closePath();
+        ink("#fb923c", 2.2);
+        ctx.beginPath();
+        ctx.moveTo(-3, 2);
+        ctx.lineTo(-1, -8);
+        ctx.lineTo(4, 3);
+        ctx.closePath();
+        ctx.fillStyle = "#fda4af";
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function eye(x, y, pose) {
+        if (pose === "cheer" || (pose === "run" && Math.sin(performance.now() / 140) > 0.92)) {
+          ctx.beginPath();
+          ctx.moveTo(x - 5, y);
+          ctx.quadraticCurveTo(x, y - 5, x + 5, y);
+          ctx.strokeStyle = "#1c1917";
+          ctx.lineWidth = 2.4;
+          ctx.stroke();
+          return;
+        }
+        if (pose === "fall") {
+          ctx.strokeStyle = "#1c1917";
+          ctx.lineWidth = 2.4;
+          ctx.beginPath();
+          ctx.moveTo(x - 4, y - 4);
+          ctx.lineTo(x + 4, y + 4);
+          ctx.moveTo(x + 4, y - 4);
+          ctx.lineTo(x - 4, y + 4);
+          ctx.stroke();
+          return;
+        }
+        if (pose === "slump") {
+          ctx.beginPath();
+          ctx.moveTo(x - 5, y - 1);
+          ctx.quadraticCurveTo(x, y + 4, x + 5, y - 1);
+          ctx.strokeStyle = "#1c1917";
+          ctx.lineWidth = 2.4;
+          ctx.stroke();
+          return;
+        }
+        var wide = pose === "freeze";
+        ctx.beginPath();
+        ctx.arc(x, y, wide ? 5.4 : 4.1, 0, Math.PI * 2);
+        ctx.fillStyle = "#fff";
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "#1c1917";
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(x + (wide ? 1.4 : 0.8), y + (pose === "run" ? 0 : 0.4), wide ? 2.1 : 2, 0, Math.PI * 2);
+        ctx.fillStyle = "#1c1917";
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x + (wide ? 0.2 : -0.4), y - 1.2, 1.1, 0, Math.PI * 2);
+        ctx.fillStyle = "#fff";
+        ctx.fill();
+      }
+
+      function drawFoxFace(pose, t) {
+        eye(-2, -72, pose);
+        eye(10, -70, pose);
+        ctx.fillStyle = "rgba(251,113,133,.85)";
+        ctx.beginPath();
+        ctx.ellipse(-6, -62, 3.2, 2, 0, 0, Math.PI * 2);
+        ctx.ellipse(12, -60, 3.2, 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#1c1917";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        if (pose === "freeze") {
+          ctx.moveTo(12, -54);
+          ctx.quadraticCurveTo(16, -51 + Math.sin(t * 20) * 0.8, 20, -54);
+        } else if (pose === "slump" || pose === "fall") {
+          ctx.moveTo(12, -52);
+          ctx.quadraticCurveTo(16, -56, 21, -52);
+        } else {
+          ctx.moveTo(11, -54);
+          ctx.quadraticCurveTo(16, -49, 21, -54);
+        }
+        ctx.stroke();
+        if (pose === "freeze") {
+          var drip = (t * 40) % 18;
+          ctx.fillStyle = "#7dd3fc";
+          ctx.beginPath();
+          ctx.ellipse(24, -74 + drip, 2.2, 3.2, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = "#0369a1";
+          ctx.lineWidth = 1.4;
+          ctx.stroke();
+        }
+      }
+
+      function drawOni(x, ground, s, mood, t, flashOn) {
+        var squash = Math.abs(Math.cos(faceAmt * Math.PI));
+        var front = faceAmt >= 0.5;
+        ctx.save();
+        ctx.translate(x, ground);
+        ctx.scale(s * Math.max(0.08, squash), s);
+        var bob = Math.sin(t * (mood === "cheer" ? 8 : 3.2)) * (mood === "cheer" ? 3 : 1.4);
+        if (phase === "play" && mode === "chant") bob += Math.sin((t - sylAt / 1000) * 18) * 1.5;
+        ctx.translate(0, bob);
+        ctx.fillStyle = "rgba(28,25,23,.18)";
+        ctx.beginPath();
+        ctx.ellipse(0, -2, 20, 5.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        if (front) drawOniFront(mood, t, flashOn);
+        else drawOniBack(t);
+        ctx.restore();
+      }
+
+      function horn(x, y, flip) {
+        ctx.save();
+        ctx.translate(x, y);
+        if (flip) ctx.scale(-1, 1);
+        ctx.beginPath();
+        ctx.moveTo(-4, 4);
+        ctx.quadraticCurveTo(-2, -12, 6, -16);
+        ctx.quadraticCurveTo(2, -6, 5, 5);
+        ctx.closePath();
+        ink("#facc15", 2);
+        ctx.restore();
+      }
+
+      function drawOniBack() {
+        rr(-8, -24, 7, 20, 3);
+        ink("#7f1d1d", 2);
+        rr(3, -24, 7, 20, 3);
+        ink("#7f1d1d", 2);
+        ctx.beginPath();
+        ctx.moveTo(-20, -70);
+        ctx.quadraticCurveTo(-24, -30, -16, -26);
+        ctx.lineTo(16, -26);
+        ctx.quadraticCurveTo(24, -30, 20, -70);
+        ctx.closePath();
+        ink("#dc2626");
+        ctx.beginPath();
+        ctx.arc(0, -50, 8, 0, Math.PI * 2);
+        ctx.fillStyle = "#facc15";
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "#1c1917";
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(0, -50, 3.5, 0, Math.PI * 2);
+        ctx.fillStyle = "#fff7ed";
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(0, -92, 20, 0, Math.PI * 2);
+        ink("#1e1b4b");
+        horn(-10, -108, false);
+        horn(10, -108, true);
+        ctx.beginPath();
+        ctx.ellipse(0, -78, 8, 5, 0, 0, Math.PI * 2);
+        ctx.fillStyle = "#fecdd3";
+        ctx.fill();
+      }
+
+      function drawOniFront(mood, t, flashOn) {
+        rr(-9, -24, 8, 20, 3);
+        ink("#7f1d1d", 2);
+        rr(2, -24, 8, 20, 3);
+        ink("#7f1d1d", 2);
+        ctx.beginPath();
+        ctx.ellipse(-16, -18, 7, 3.2, 0, 0, Math.PI * 2);
+        ink("#fbbf24", 2);
+        ctx.beginPath();
+        ctx.ellipse(8, -18, 7, 3.2, 0, 0, Math.PI * 2);
+        ink("#fbbf24", 2);
+        ctx.beginPath();
+        ctx.moveTo(-22, -72);
+        ctx.quadraticCurveTo(-26, -34, -18, -28);
+        ctx.lineTo(16, -28);
+        ctx.quadraticCurveTo(24, -34, 18, -72);
+        ctx.closePath();
+        ink("#dc2626");
+        ctx.fillStyle = "#facc15";
+        ctx.fillRect(-20, -36, 36, 3.2);
+        if (mood === "cheer") {
+          arm(-22, -64, -2.5);
+          arm(18, -64, 2.5);
+        }
+        ctx.beginPath();
+        ctx.arc(-2, -90, 22, 0, Math.PI * 2);
+        ink("#ffe4e6");
+        ctx.beginPath();
+        ctx.arc(-2, -98, 20, Math.PI, 0);
+        ctx.fillStyle = "#1e1b4b";
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(-14, -92, 8, 10, -0.2, 0, Math.PI * 2);
+        ctx.ellipse(10, -92, 8, 10, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+        horn(-12, -112, false);
+        horn(8, -112, true);
+        oniEyes(mood, flashOn);
+        ctx.fillStyle = "rgba(251,113,133,.8)";
+        ctx.beginPath();
+        ctx.ellipse(-14, -82, 3.4, 2.1, 0, 0, Math.PI * 2);
+        ctx.ellipse(10, -82, 3.4, 2.1, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#1c1917";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        if (mood === "cheer") {
+          ctx.moveTo(-10, -74);
+          ctx.quadraticCurveTo(-4, -68, 4, -74);
+        } else if (mood === "smug") {
+          ctx.moveTo(-10, -72);
+          ctx.quadraticCurveTo(-2, -66, 6, -73);
+        } else {
+          ctx.moveTo(-8, -74);
+          ctx.quadraticCurveTo(-2, -70, 5, -75);
+        }
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(4, -74);
+        ctx.lineTo(7, -68);
+        ctx.lineTo(2, -70);
+        ctx.closePath();
+        ctx.fillStyle = "#fff";
+        ctx.fill();
+        ctx.stroke();
+      }
+
+      function oniEyes(mood, flashOn) {
+        if (mood === "cheer") {
+          ctx.strokeStyle = "#1c1917";
+          ctx.lineWidth = 2.4;
+          ctx.beginPath();
+          ctx.moveTo(-14, -90);
+          ctx.quadraticCurveTo(-9, -96, -4, -90);
+          ctx.moveTo(2, -90);
+          ctx.quadraticCurveTo(7, -96, 12, -90);
+          ctx.stroke();
+          return;
+        }
+        var i;
+        var xs = [-9, 7];
+        for (i = 0; i < 2; i++) {
+          var x = xs[i];
+          if (mood === "smug" && i === 0) {
+            ctx.beginPath();
+            ctx.moveTo(x - 6, -90);
+            ctx.quadraticCurveTo(x, -86, x + 6, -90);
+            ctx.strokeStyle = "#1c1917";
+            ctx.lineWidth = 2.4;
+            ctx.stroke();
+            continue;
+          }
+          ctx.beginPath();
+          ctx.ellipse(x, -90, flashOn ? 7 : 5.6, flashOn ? 6.2 : 4.6, 0, 0, Math.PI * 2);
+          ctx.fillStyle = flashOn ? "#fff" : "#fff7ed";
+          ctx.fill();
+          ctx.lineWidth = 2.2;
+          ctx.strokeStyle = "#1c1917";
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(x - 0.5, -90, flashOn ? 2.4 : 2.5, 0, Math.PI * 2);
+          ctx.fillStyle = flashOn ? "#e11d48" : "#1c1917";
+          ctx.fill();
+          if (flashOn) {
+            ctx.beginPath();
+            ctx.arc(x - 2, -92, 1.3, 0, Math.PI * 2);
+            ctx.fillStyle = "#fff";
+            ctx.fill();
+          }
+          ctx.strokeStyle = "#1c1917";
+          ctx.lineWidth = 2.3;
+          ctx.beginPath();
+          ctx.moveTo(x - 6, -98);
+          ctx.lineTo(x + 6, -94);
+          ctx.stroke();
+        }
+      }
+
+      function drawRibbon(x, ground, u, t) {
+        ctx.save();
+        ctx.translate(x, ground);
+        ctx.scale(u, u);
+        ctx.fillStyle = "#1c1917";
+        ctx.fillRect(-3, -78, 5, 78);
+        ctx.fillRect(30, -78, 5, 78);
+        var i;
+        for (i = 0; i < 8; i++) {
+          var y = -74 + Math.sin(t * 4 + i) * 1.5;
+          ctx.fillStyle = i % 2 ? "#e11d48" : "#fff";
+          ctx.beginPath();
+          ctx.moveTo(-1, y);
+          ctx.lineTo(33, y + 2);
+          ctx.lineTo(33, y + 8);
+          ctx.lineTo(-1, y + 6);
+          ctx.closePath();
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      function drawBang(x, y, s) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(s, s);
+        ctx.beginPath();
+        ctx.arc(0, 0, 15, 0, Math.PI * 2);
+        ctx.fillStyle = "#e11d48";
+        ctx.fill();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = "#fff";
+        ctx.stroke();
+        ctx.fillStyle = "#fff";
+        rr(-3.2, -9, 6.4, 11, 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(0, 7, 2.6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function drawBits(layer) {
+        var i;
+        for (i = 0; i < bits.length; i++) {
+          var b = bits[i];
+          var front = b.kind === "star" || b.kind === "confetti";
+          if (layer === "front" && !front) continue;
+          if (layer === "dust" && front) continue;
+          var k = 1 - b.age / b.life;
+          ctx.save();
+          ctx.translate(b.x, b.y);
+          ctx.rotate(b.rot || 0);
+          ctx.globalAlpha = Math.max(0, k);
+          ctx.fillStyle = b.c;
+          if (b.kind === "star") {
+            ctx.beginPath();
+            ctx.moveTo(0, -7);
+            ctx.lineTo(2, -2);
+            ctx.lineTo(7, 0);
+            ctx.lineTo(2, 2);
+            ctx.lineTo(0, 7);
+            ctx.lineTo(-2, 2);
+            ctx.lineTo(-7, 0);
+            ctx.lineTo(-2, -2);
+            ctx.closePath();
+            ctx.fill();
+          } else if (b.kind === "confetti") {
+            ctx.fillRect(-(b.w || 6) / 2, -(b.h || 8) / 2, b.w || 6, b.h || 8);
+          } else {
+            ctx.beginPath();
+            ctx.arc(0, 0, 5 * k + 2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      function draw(now) {
+        var t = now / 1000;
+        fit();
+        var L = layout();
+        foxX = L.foxX;
+        foxGround = L.ground;
+        foxU = L.u;
+        ctx.setTransform(px, 0, 0, px, 0, 0);
+        ctx.clearRect(0, 0, viewW, viewH);
+        if (shake > 0) {
+          ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
+        }
+
+        var sky = ctx.createLinearGradient(0, 0, 0, L.ground);
+        sky.addColorStop(0, "#7dd3fc");
+        sky.addColorStop(1, "#e0f2fe");
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, viewW, viewH);
+
+        ctx.fillStyle = "#fef9c3";
+        ctx.beginPath();
+        ctx.arc(viewW - 46, 36, 18, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "rgba(255,255,255,.9)";
+        ctx.beginPath();
+        ctx.ellipse(54, 48, 22, 12, 0, 0, Math.PI * 2);
+        ctx.ellipse(74, 50, 16, 10, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "#86efac";
+        ctx.fillRect(0, L.ground - 10, viewW, viewH - L.ground + 20);
+        ctx.fillStyle = "#f6d7a1";
+        rr(8, L.ground - 28, viewW - 16, 46, 16);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255,255,255,.65)";
+        ctx.lineWidth = 3;
+        ctx.setLineDash([10, 12]);
+        ctx.beginPath();
+        ctx.moveTo(16, L.ground - 4);
+        ctx.lineTo(viewW - 16, L.ground - 4);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.strokeStyle = "rgba(28,25,23,.35)";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(L.startX, L.ground - 36);
+        ctx.lineTo(L.startX, L.ground + 8);
+        ctx.stroke();
+
+        drawRibbon(L.goalX, L.ground + 6, L.u, t);
+
+        var pose = "idle";
+        if (phase === "play" && isHeld()) pose = "run";
+        else if (phase === "play") pose = "freeze";
+        else if (phase === "celebrate" || phase === "finale") pose = "cheer";
+        else if (phase === "failanim" && failKind === "out") pose = "fall";
+        else if (phase === "failanim") pose = "slump";
+        else if (phase === "result" && didClear) pose = "cheer";
+        else if (phase === "result" && failKind === "out") pose = "fall";
+        else if (phase === "result") pose = "slump";
+
+        var mood = "away";
+        if (phase === "play" && mode === "look") mood = "glare";
+        else if (phase === "celebrate" || phase === "finale" || (phase === "result" && didClear)) mood = "cheer";
+        else if (failKind === "out" && (phase === "failanim" || phase === "result")) mood = "smug";
+        else if (phase === "failanim" || (phase === "result" && !didClear)) mood = "glare";
+
+        var flashOn = phase === "play" && mode === "look" && (now - lookStart) < 320 && Math.floor((now - lookStart) / 80) % 2 === 0;
+        var fall = phase === "failanim" || (phase === "result" && failKind === "out") ? 1 : 0;
+        if (phase === "failanim" && failKind === "out") {
+          fall = clamp((now - (failUntil - 860)) / 380, 0, 1);
+        }
+
+        drawOni(L.oniX, L.ground, L.u * 1.12, mood, t, flashOn);
+        if (phase === "play" && mode === "look") {
+          var bp = clamp((now - lookStart) / 140, 0, 1);
+          drawBang(L.oniX - 10 * L.u, L.ground - 132 * L.u, L.u * (0.7 + 0.4 * bp));
+        }
+        if (pose === "run" && now - lastPuff > 90) {
+          lastPuff = now;
+          puff();
+        }
+        drawBits("dust");
+        drawFox(L.foxX, L.ground, L.u, pose, t, fall);
+        drawBits("front");
+
+        if (pose === "run") {
+          ctx.strokeStyle = "rgba(255,255,255,.8)";
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          var k;
+          for (k = 0; k < 3; k++) {
+            var yy = L.ground - 40 * L.u - k * 10 * L.u;
+            ctx.moveTo(L.foxX - 34 * L.u, yy);
+            ctx.lineTo(L.foxX - 52 * L.u, yy);
+          }
+          ctx.stroke();
+        }
+      }
+
+      function fit() {
+        var rect = stage.getBoundingClientRect();
+        var dpr = Math.min(2, window.devicePixelRatio || 1);
+        var w = Math.max(2, rect.width);
+        var h = Math.max(2, rect.height);
+        var pw = Math.round(w * dpr);
+        var ph = Math.round(h * dpr);
+        if (canvas.width !== pw || canvas.height !== ph) {
+          canvas.width = pw;
+          canvas.height = ph;
+        }
+        viewW = w;
+        viewH = h;
+        px = dpr;
+      }
+
+      function fromUi(e) {
+        var t = e.target;
+        return t && t.closest && t.closest("button, a, .sheet");
+      }
+
+      document.addEventListener("pointerdown", function (e) {
+        if (fromUi(e)) return;
+        if (e.button && e.button !== 0) return;
+        unlockAudio();
+        downs[e.pointerId] = true;
+        refreshHeld();
+      });
+      document.addEventListener("pointerup", function (e) {
+        if (!downs[e.pointerId]) return;
+        downs[e.pointerId] = false;
+        refreshHeld();
+      });
+      document.addEventListener("pointercancel", function (e) {
+        if (!downs[e.pointerId]) return;
+        downs[e.pointerId] = false;
+        refreshHeld();
+      });
+      document.addEventListener("keydown", function (e) {
+        if (e.code !== "Space" && e.key !== " ") return;
+        e.preventDefault();
+        if (e.repeat || spaceDown) return;
+        unlockAudio();
+        spaceDown = true;
+        refreshHeld();
+      });
+      document.addEventListener("keyup", function (e) {
+        if (e.code !== "Space" && e.key !== " ") return;
+        e.preventDefault();
+        if (!spaceDown) return;
+        spaceDown = false;
+        refreshHeld();
+      });
+      document.addEventListener("click", function (e) {
+        var t = e.target;
+        if (!(t && t.closest)) return;
+        if (t.closest("#btn-copy")) {
+          copyResult();
+          return;
+        }
+        if (t.closest("#btn-start") || t.closest("#btn-retry")) {
+          if (performance.now() < lockUntil) return;
+          beginRun();
+        }
+      });
+      document.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+      document.addEventListener("selectstart", function (e) {
+        if (e.target && e.target.closest && e.target.closest(".shareline")) return;
+        e.preventDefault();
+      });
+      document.addEventListener("touchmove", function (e) { e.preventDefault(); }, { passive: false });
+      window.addEventListener("blur", function () {
+        spaceDown = false;
+        downs = Object.create(null);
+        refreshHeld();
+      });
+
+      function markCopied(ok) {
+        copyBtn.textContent = ok ? "コピーした" : "コピーできなかった";
+        window.clearTimeout(copyTimer);
+        copyTimer = window.setTimeout(function () {
+          if (phase === "result") copyBtn.textContent = "結果をコピー";
+        }, 1500);
+      }
+
+      function fallbackCopy(text) {
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "fixed";
+        ta.style.top = "0";
+        ta.style.left = "0";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        try { ta.setSelectionRange(0, text.length); } catch (err) {}
+        var ok = false;
+        try { ok = document.execCommand("copy"); } catch (err2) { ok = false; }
+        document.body.removeChild(ta);
+        return ok;
+      }
+
+      function copyResult() {
+        if (phase !== "result") return;
+        var text = shareLineEl.textContent || shareString();
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function () { markCopied(true); }, function () {
+            markCopied(fallbackCopy(text));
+          });
+          return;
+        }
+        markCopied(fallbackCopy(text));
+      }
+
+      loadBest();
+      titleBest.textContent = bestText();
+      renderPhrase(-1);
+      showBig("だ", "");
+      updateHud();
+      requestAnimationFrame(function (now) {
+        lastNow = now;
+        requestAnimationFrame(function loop(t) {
+          var dt = Math.min(0.05, Math.max(0, (t - lastNow) / 1000));
+          lastNow = t;
+          update(t, dt);
+          draw(t);
+          requestAnimationFrame(loop);
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -6,6 +6,8 @@ The site is published with GitHub Pages from the `main` branch root:
 
 https://grokbot365game.github.io/daily-casual-games/
 
+Day 12: [だるまさんダッシュ — Daruma Dash](https://grokbot365game.github.io/daily-casual-games/games/2026-10-07-daruma-dash/)
+
 Day 11: [なまえずもう — Name Sumo](https://grokbot365game.github.io/daily-casual-games/games/2026-10-06-name-sumo/)
 
 Day 10: [ためジャンプ — Charge Hop](https://grokbot365game.github.io/daily-casual-games/games/2026-10-05-charge-hop/)
