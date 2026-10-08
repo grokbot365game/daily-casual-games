@@ -1,0 +1,796 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#f97316">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='8' fill='%23fb923c'/%3E%3Cpath d='M3 8h10M8 3v10' stroke='%23fff' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E">
+  <title>はんぶんカット — Half Cut</title>
+  <style>
+    :root {
+      --ink: #1c1917;
+      --muted: #57534e;
+      --card: #fffdf8;
+      --line: rgba(28,25,23,.12);
+      --ok: #059669;
+      --bad: #e11d48;
+      --accent: #ea580c;
+      --sky: #38bdf8;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none;
+    }
+    body {
+      position: fixed; inset: 0; width: 100%; height: 100%; height: 100dvh;
+      color: var(--ink);
+      background:
+        radial-gradient(80% 50% at 50% -8%, #ffedd5 0%, transparent 50%),
+        linear-gradient(165deg, #fff7ed 0%, #fed7aa 40%, #fdba74 100%);
+      font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Yu Gothic", "Meiryo", sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none; user-select: none;
+      -webkit-touch-callout: none; touch-action: none;
+    }
+    .back {
+      position: fixed; z-index: 30;
+      top: max(10px, env(safe-area-inset-top));
+      left: max(12px, env(safe-area-inset-left));
+      padding: 8px 12px; border-radius: 999px;
+      color: var(--ink); background: rgba(255,253,248,.94);
+      box-shadow: inset 0 0 0 1px var(--line);
+      font-size: .78rem; font-weight: 800; letter-spacing: .04em;
+      text-decoration: none;
+    }
+    .shell {
+      position: relative; z-index: 1; height: 100%; max-width: 560px; margin: 0 auto;
+      padding:
+        calc(max(10px, env(safe-area-inset-top)) + 40px)
+        max(12px, env(safe-area-inset-right))
+        max(12px, env(safe-area-inset-bottom))
+        max(12px, env(safe-area-inset-left));
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .hud {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding: 8px 12px; border-radius: 16px;
+      background: rgba(255,253,248,.92);
+      box-shadow: inset 0 0 0 1px var(--line), 0 8px 24px rgba(28,25,23,.08);
+      font-weight: 800; font-size: .86rem;
+    }
+    .hud .warn { color: var(--bad); }
+    .stage-wrap {
+      position: relative; flex: 1; min-height: 0;
+      border-radius: 22px; overflow: hidden;
+      background: #fff7ed;
+      box-shadow: inset 0 0 0 1px var(--line), 0 14px 36px rgba(234,88,12,.18);
+    }
+    canvas#game {
+      display: block; width: 100%; height: 100%;
+      touch-action: none; cursor: crosshair;
+    }
+    .hint {
+      position: absolute; left: 12px; right: 12px; bottom: 12px;
+      padding: 8px 12px; border-radius: 12px;
+      background: rgba(28,25,23,.78); color: #fff;
+      font-size: .78rem; font-weight: 700; text-align: center;
+      pointer-events: none;
+    }
+    .char-bubble {
+      position: absolute; top: 10px; right: 10px;
+      max-width: 46%; padding: 8px 10px; border-radius: 14px 14px 4px 14px;
+      background: #fff; color: var(--ink);
+      font-size: .72rem; font-weight: 800; line-height: 1.35;
+      box-shadow: 0 6px 18px rgba(28,25,23,.12);
+      pointer-events: none;
+    }
+    .flash {
+      position: absolute; inset: 0; display: grid; place-items: center;
+      pointer-events: none; opacity: 0; transition: opacity .15s;
+      background: rgba(5,150,105,.22); color: #065f46;
+      font-size: 1.6rem; font-weight: 900; letter-spacing: .06em;
+    }
+    .flash.show { opacity: 1; }
+    .flash.great { background: rgba(250,204,21,.35); color: #a16207; }
+    .flash.bad { background: rgba(225,29,72,.22); color: #9f1239; }
+    .overlay {
+      position: absolute; inset: 0; z-index: 10;
+      display: grid; place-items: center; padding: 16px;
+      background: rgba(28,25,23,.42); backdrop-filter: blur(4px);
+    }
+    .overlay[hidden] { display: none !important; }
+    .card {
+      width: min(100%, 380px); padding: 22px 20px 18px;
+      border-radius: 22px; background: var(--card);
+      box-shadow: 0 18px 48px rgba(28,25,23,.22);
+      text-align: center;
+    }
+    .card h1 {
+      margin: 0 0 4px; font-size: 1.55rem; letter-spacing: .04em;
+    }
+    .card .en { margin: 0 0 12px; color: var(--muted); font-size: .78rem; font-weight: 800; }
+    .card .blurb {
+      margin: 0 0 12px; color: var(--ink); font-size: .92rem; font-weight: 700; line-height: 1.55;
+      text-align: left;
+    }
+    .card .keys {
+      margin: 0 0 14px; padding: 10px 12px; border-radius: 14px;
+      background: #ffedd5; color: #9a3412;
+      font-size: .82rem; font-weight: 800; line-height: 1.5; text-align: left;
+    }
+    .card .best { margin: 0 0 14px; color: var(--muted); font-size: .84rem; font-weight: 800; }
+    .card h2 { margin: 0 0 8px; font-size: 1.35rem; }
+    .card .why {
+      margin: 0 0 10px; padding: 10px 12px; border-radius: 12px;
+      background: #fee2e2; color: #9f1239;
+      font-size: .86rem; font-weight: 800; line-height: 1.45;
+    }
+    .card .why.ok { background: #d1fae5; color: #065f46; }
+    .card .meta { margin: 0 0 6px; font-size: .88rem; font-weight: 700; color: var(--muted); }
+    .card .record {
+      margin: 0 0 10px; color: #a16207; font-weight: 900; font-size: .9rem;
+    }
+    .btns { display: grid; gap: 8px; margin-top: 8px; }
+    button {
+      appearance: none; border: 0; border-radius: 14px;
+      padding: 12px 16px; font: inherit; font-weight: 900;
+      cursor: pointer; color: #fff; background: var(--accent);
+      box-shadow: 0 6px 0 #c2410c;
+    }
+    button:active { transform: translateY(2px); box-shadow: 0 4px 0 #c2410c; }
+    button.secondary {
+      color: var(--ink); background: #fff;
+      box-shadow: inset 0 0 0 1px var(--line), 0 4px 0 rgba(28,25,23,.08);
+    }
+    button:disabled { opacity: .55; cursor: default; }
+    .mascot {
+      width: 72px; height: 72px; margin: 0 auto 10px; display: block;
+    }
+  </style>
+</head>
+<body>
+  <a class="back" href="../../index.html">ギャラリー</a>
+  <div class="shell">
+    <div class="hud">
+      <span id="hud-round">ラウンド 1 / 5</span>
+      <span id="hud-thresh">しきい値 ±8.0%</span>
+      <span id="hud-time">残り 10.0秒</span>
+    </div>
+    <div class="stage-wrap">
+      <canvas id="game" width="720" height="720"></canvas>
+      <div class="char-bubble" id="bubble">まっすぐに、半分ね！</div>
+      <div class="hint" id="hint">ゆび / マウスで線をドラッグしてカット</div>
+      <div class="flash" id="flash"></div>
+
+      <div class="overlay" id="title">
+        <div class="card">
+          <svg class="mascot" viewBox="0 0 72 72" aria-hidden="true">
+            <circle cx="36" cy="40" r="22" fill="#fb923c"/>
+            <circle cx="28" cy="36" r="3.2" fill="#1c1917"/>
+            <circle cx="44" cy="36" r="3.2" fill="#1c1917"/>
+            <path d="M28 46c4 4 12 4 16 0" stroke="#1c1917" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+            <rect x="48" y="14" width="8" height="28" rx="3" fill="#64748b" transform="rotate(28 52 28)"/>
+            <path d="M46 16l16-6-2 10-8 2z" fill="#94a3b8"/>
+            <circle cx="22" cy="18" r="5" fill="#fdba74"/>
+            <circle cx="50" cy="18" r="5" fill="#fdba74"/>
+          </svg>
+          <h1>はんぶんカット</h1>
+          <p class="en">Half Cut · Day 13</p>
+          <p class="blurb">かたちを<strong>面積ちょうど半分</strong>に、まっすぐ1本でカット！ しきい値をこえたら<strong>アウト</strong>。誤差%が小さいほどすごい。</p>
+          <p class="keys">操作: <strong>ゆび</strong> または <strong>マウス</strong>で線をドラッグ<br>制限: 各ラウンド <strong>10.0秒</strong> · 全5ラウンド</p>
+          <p class="best" id="title-best">ベスト なし</p>
+          <div class="btns">
+            <button type="button" id="btn-start">スタート</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="overlay" id="result" hidden>
+        <div class="card">
+          <h2 id="result-title">アウト</h2>
+          <p class="why" id="result-why"></p>
+          <p class="meta" id="result-meta"></p>
+          <p class="record" id="result-record" hidden>ベスト更新！</p>
+          <p class="best" id="result-best">ベスト なし</p>
+          <div class="btns">
+            <button type="button" id="btn-retry" disabled>もういちど</button>
+            <button type="button" class="secondary" id="btn-copy" disabled>結果をコピー</button>
+            <button type="button" class="secondary" id="btn-gallery" disabled>ギャラリーへ</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    "use strict";
+
+    var STORE = "half-cut-2026-10-08";
+    var PLAY_URL = "https://grokbot365game.github.io/daily-casual-games/games/2026-10-08-half-cut/";
+    var LOCK_MS = 900;
+    var ROUND_SEC = 10;
+    var TOTAL_ROUNDS = 5;
+    // Pass if abs(sidePct - 50) <= threshold (i.e. within ±threshold of half)
+    var THRESHOLDS = [8.0, 5.0, 3.5, 2.5, 1.5];
+
+    var canvas = document.getElementById("game");
+    var ctx = canvas.getContext("2d");
+    var titleEl = document.getElementById("title");
+    var resultEl = document.getElementById("result");
+    var bubble = document.getElementById("bubble");
+    var hint = document.getElementById("hint");
+    var flash = document.getElementById("flash");
+    var hudRound = document.getElementById("hud-round");
+    var hudThresh = document.getElementById("hud-thresh");
+    var hudTime = document.getElementById("hud-time");
+    var titleBest = document.getElementById("title-best");
+    var resultTitle = document.getElementById("result-title");
+    var resultWhy = document.getElementById("result-why");
+    var resultMeta = document.getElementById("result-meta");
+    var resultRecord = document.getElementById("result-record");
+    var resultBest = document.getElementById("result-best");
+    var btnStart = document.getElementById("btn-start");
+    var btnRetry = document.getElementById("btn-retry");
+    var btnCopy = document.getElementById("btn-copy");
+    var btnGallery = document.getElementById("btn-gallery");
+
+    var phase = "title"; // title | play | between | result
+    var round = 0;
+    var bestRounds = 0;
+    var bestError = null; // smallest abs error seen
+    var runBestError = null;
+    var lastShare = "";
+    var drag = null; // {x0,y0,x1,y1}
+    var cutLine = null;
+    var shape = null;
+    var shapePixels = null; // {xs:Float32Array, ys:Float32Array, n, total}
+    var deadline = 0;
+    var raf = 0;
+    var charMood = "idle"; // idle | cheer | gasp | wow
+    var charT = 0;
+    var inputLockUntil = 0;
+    var lastFailWhy = "";
+    var cleared = false;
+    var dpr = 1;
+
+    function loadBest() {
+      try {
+        var raw = localStorage.getItem(STORE);
+        if (!raw) return;
+        var data = JSON.parse(raw);
+        if (data && typeof data.bestRounds === "number") bestRounds = data.bestRounds;
+        if (data && typeof data.bestError === "number") bestError = data.bestError;
+      } catch (e) {}
+    }
+    function saveBest() {
+      try {
+        localStorage.setItem(STORE, JSON.stringify({
+          bestRounds: bestRounds,
+          bestError: bestError
+        }));
+      } catch (e) {}
+    }
+    function bestLabel() {
+      if (bestRounds <= 0 && bestError == null) return "ベスト なし";
+      var parts = [];
+      if (bestRounds > 0) parts.push("到達 " + bestRounds + " / " + TOTAL_ROUNDS + " ラウンド");
+      if (bestError != null) parts.push("最小誤差 " + bestError.toFixed(2) + "%");
+      return "ベスト " + parts.join(" · ");
+    }
+    function setBubble(t) { bubble.textContent = t; }
+
+    function resize() {
+      var wrap = canvas.parentElement;
+      var w = wrap.clientWidth;
+      var h = wrap.clientHeight;
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.max(1, Math.floor(w * dpr));
+      canvas.height = Math.max(1, Math.floor(h * dpr));
+      canvas.style.width = w + "px";
+      canvas.style.height = h + "px";
+      if (shape) bakeShapePixels();
+      draw();
+    }
+
+    // ---- shapes as polygons in normalized 0..1 space (centerish) ----
+    function polyCircle(n, rx, ry, cx, cy) {
+      var pts = [];
+      for (var i = 0; i < n; i++) {
+        var a = (i / n) * Math.PI * 2 - Math.PI / 2;
+        pts.push([cx + Math.cos(a) * rx, cy + Math.sin(a) * ry]);
+      }
+      return pts;
+    }
+    function polyPizza() {
+      // circle with a missing slice notch for visual interest but still solid
+      return polyCircle(48, 0.32, 0.32, 0.5, 0.52);
+    }
+    function polyCake() {
+      // irregular rounded square / cake top
+      var pts = [];
+      var base = [
+        [0.22,0.38],[0.38,0.28],[0.55,0.26],[0.72,0.32],[0.78,0.48],
+        [0.74,0.66],[0.58,0.76],[0.40,0.78],[0.24,0.70],[0.18,0.52]
+      ];
+      return base;
+    }
+    function polyBlob() {
+      var pts = [];
+      for (var i = 0; i < 24; i++) {
+        var a = (i / 24) * Math.PI * 2;
+        var r = 0.26 + 0.06 * Math.sin(a * 3) + 0.04 * Math.cos(a * 5);
+        pts.push([0.5 + Math.cos(a) * r, 0.52 + Math.sin(a) * r * 0.95]);
+      }
+      return pts;
+    }
+    function polyIsland() {
+      // weirder coast
+      var pts = [];
+      for (var i = 0; i < 36; i++) {
+        var a = (i / 36) * Math.PI * 2;
+        var r = 0.22 + 0.10 * Math.sin(a * 2.5) + 0.07 * Math.cos(a * 4.2) + 0.03 * Math.sin(a * 7);
+        pts.push([0.5 + Math.cos(a) * r * 1.15, 0.52 + Math.sin(a) * r]);
+      }
+      return pts;
+    }
+    function polyCreature() {
+      // cute blob with ear bumps (asymmetry!)
+      var pts = [];
+      for (var i = 0; i < 40; i++) {
+        var a = (i / 40) * Math.PI * 2 - Math.PI / 2;
+        var r = 0.24;
+        if (a > -2.2 && a < -1.4) r += 0.10; // left ear
+        if (a > -0.5 && a < 0.2) r += 0.07; // right ear smaller
+        r += 0.03 * Math.sin(a * 3);
+        pts.push([0.48 + Math.cos(a) * r, 0.54 + Math.sin(a) * r * 0.92]);
+      }
+      return pts;
+    }
+
+    var SHAPES = [
+      { name: "ピザ", colors: ["#f97316", "#fdba74"], poly: polyPizza, toppings: true },
+      { name: "ケーキ", colors: ["#f472b6", "#fecdd3"], poly: polyCake, toppings: false },
+      { name: "ぷにゅ", colors: ["#a78bfa", "#ddd6fe"], poly: polyBlob, toppings: false },
+      { name: "しま", colors: ["#34d399", "#a7f3d0"], poly: polyIsland, toppings: false },
+      { name: "みみみ", colors: ["#38bdf8", "#bae6fd"], poly: polyCreature, toppings: false }
+    ];
+
+    function toPx(pt) {
+      return [pt[0] * canvas.width, pt[1] * canvas.height];
+    }
+
+    function bakeShapePixels() {
+      if (!shape) return;
+      var off = document.createElement("canvas");
+      off.width = canvas.width;
+      off.height = canvas.height;
+      var o = off.getContext("2d");
+      o.clearRect(0, 0, off.width, off.height);
+      o.beginPath();
+      var pts = shape.poly().map(toPx);
+      o.moveTo(pts[0][0], pts[0][1]);
+      for (var i = 1; i < pts.length; i++) o.lineTo(pts[i][0], pts[i][1]);
+      o.closePath();
+      o.fillStyle = "#000";
+      o.fill();
+      var img = o.getImageData(0, 0, off.width, off.height);
+      var data = img.data;
+      // sample every 2px for speed
+      var step = Math.max(1, Math.floor(Math.min(off.width, off.height) / 220));
+      var xs = [], ys = [];
+      for (var y = 0; y < off.height; y += step) {
+        for (var x = 0; x < off.width; x += step) {
+          if (data[(y * off.width + x) * 4 + 3] > 128) {
+            xs.push(x); ys.push(y);
+          }
+        }
+      }
+      shapePixels = {
+        xs: xs, ys: ys, n: xs.length, step: step,
+        total: xs.length
+      };
+    }
+
+    function sideOfLine(x, y, x0, y0, x1, y1) {
+      return (x1 - x0) * (y - y0) - (y1 - y0) * (x - x0);
+    }
+
+    function measureCut(x0, y0, x1, y1) {
+      if (!shapePixels || shapePixels.n < 8) return null;
+      // need a real segment
+      var dx = x1 - x0, dy = y1 - y0;
+      if (dx * dx + dy * dy < 16) return null;
+      var left = 0, right = 0;
+      var xs = shapePixels.xs, ys = shapePixels.ys, n = shapePixels.n;
+      for (var i = 0; i < n; i++) {
+        var s = sideOfLine(xs[i], ys[i], x0, y0, x1, y1);
+        if (s >= 0) left++; else right++;
+      }
+      var total = left + right;
+      if (total < 1) return null;
+      var leftPct = (left / total) * 100;
+      var rightPct = (right / total) * 100;
+      var err = Math.abs(leftPct - 50); // how far from half
+      return { leftPct: leftPct, rightPct: rightPct, err: err, left: left, right: right, total: total };
+    }
+
+    function drawCharacter(cx, cy, scale) {
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.scale(scale, scale);
+      var bounce = Math.sin(charT * 0.008) * 2;
+      if (charMood === "cheer") bounce = Math.abs(Math.sin(charT * 0.02)) * 6;
+      if (charMood === "wow") bounce = Math.sin(charT * 0.03) * 8;
+      ctx.translate(0, bounce);
+      // body
+      ctx.fillStyle = "#fb923c";
+      ctx.beginPath();
+      ctx.ellipse(0, 8, 18, 16, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // ears
+      ctx.beginPath(); ctx.arc(-14, -6, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(14, -6, 6, 0, Math.PI * 2); ctx.fill();
+      // eyes
+      ctx.fillStyle = "#1c1917";
+      if (charMood === "gasp") {
+        ctx.beginPath(); ctx.arc(-6, 4, 2.2, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(6, 4, 2.2, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath();
+        ctx.arc(0, 12, 4, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (charMood === "cheer" || charMood === "wow") {
+        ctx.lineWidth = 2.2; ctx.strokeStyle = "#1c1917";
+        ctx.beginPath(); ctx.arc(-6, 5, 3, Math.PI, 0); ctx.stroke();
+        ctx.beginPath(); ctx.arc(6, 5, 3, Math.PI, 0); ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(0, 12, 5, 0.15, Math.PI - 0.15);
+        ctx.stroke();
+      } else {
+        ctx.beginPath(); ctx.arc(-6, 5, 2.4, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(6, 5, 2.4, 0, Math.PI * 2); ctx.fill();
+        ctx.lineWidth = 2; ctx.strokeStyle = "#1c1917";
+        ctx.beginPath(); ctx.arc(0, 11, 4, 0.2, Math.PI - 0.2); ctx.stroke();
+      }
+      // knife
+      ctx.save();
+      ctx.translate(16, -4);
+      ctx.rotate(charMood === "wow" ? -0.6 : -0.35);
+      ctx.fillStyle = "#64748b";
+      ctx.fillRect(-2, -2, 6, 22);
+      ctx.fillStyle = "#cbd5e1";
+      ctx.beginPath();
+      ctx.moveTo(1, -14); ctx.lineTo(14, -18); ctx.lineTo(12, -6); ctx.lineTo(1, -4);
+      ctx.closePath(); ctx.fill();
+      ctx.restore();
+      ctx.restore();
+    }
+
+    function drawShape() {
+      var pts = shape.poly().map(toPx);
+      var g = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+      g.addColorStop(0, shape.colors[0]);
+      g.addColorStop(1, shape.colors[1]);
+      ctx.beginPath();
+      ctx.moveTo(pts[0][0], pts[0][1]);
+      for (var i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+      ctx.closePath();
+      ctx.fillStyle = g;
+      ctx.fill();
+      ctx.lineWidth = 3 * dpr;
+      ctx.strokeStyle = "rgba(28,25,23,.25)";
+      ctx.stroke();
+
+      if (shape.toppings) {
+        ctx.fillStyle = "#dc2626";
+        var seeds = [[0.42,0.40],[0.58,0.44],[0.48,0.58],[0.62,0.60],[0.38,0.62]];
+        for (var s = 0; s < seeds.length; s++) {
+          var p = toPx(seeds[s]);
+          ctx.beginPath();
+          ctx.ellipse(p[0], p[1], 7 * dpr, 5 * dpr, s, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.fillStyle = "#fde68a";
+        ctx.beginPath();
+        var c = toPx([0.5, 0.52]);
+        ctx.arc(c[0], c[1], 10 * dpr, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // label
+      ctx.fillStyle = "rgba(255,253,248,.9)";
+      ctx.font = "800 " + (13 * dpr) + "px sans-serif";
+      ctx.textAlign = "center";
+      var label = shape.name;
+      var lp = toPx([0.5, 0.14]);
+      ctx.fillText(label, lp[0], lp[1]);
+    }
+
+    function drawCutOverlay(x0, y0, x1, y1, preview) {
+      // extend line across canvas for visual
+      var dx = x1 - x0, dy = y1 - y0;
+      var len = Math.sqrt(dx * dx + dy * dy) || 1;
+      var ux = dx / len, uy = dy / len;
+      var big = Math.max(canvas.width, canvas.height) * 2;
+      var ex0 = x0 - ux * big, ey0 = y0 - uy * big;
+      var ex1 = x0 + ux * big, ey1 = y0 + uy * big;
+
+      if (!preview && shapePixels) {
+        // tint sides lightly
+        var m = measureCut(x0, y0, x1, y1);
+        if (m) {
+          // draw translucent halves using clip — approximate with many dots skipped for perf; skip
+        }
+      }
+
+      ctx.strokeStyle = preview ? "rgba(28,25,23,.55)" : "#e11d48";
+      ctx.lineWidth = (preview ? 3 : 4) * dpr;
+      ctx.lineCap = "round";
+      ctx.setLineDash(preview ? [8 * dpr, 6 * dpr] : []);
+      ctx.beginPath();
+      ctx.moveTo(ex0, ey0);
+      ctx.lineTo(ex1, ey1);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // handles
+      ctx.fillStyle = "#1c1917";
+      ctx.beginPath(); ctx.arc(x0, y0, 5 * dpr, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x1, y1, 5 * dpr, 0, Math.PI * 2); ctx.fill();
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // soft table
+      ctx.fillStyle = "#ffedd5";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "rgba(255,255,255,.35)";
+      ctx.beginPath();
+      ctx.ellipse(canvas.width * 0.5, canvas.height * 0.72, canvas.width * 0.38, canvas.height * 0.12, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (shape) drawShape();
+
+      var line = cutLine || (drag ? drag : null);
+      if (line) drawCutOverlay(line.x0, line.y0, line.x1, line.y1, !!drag && !cutLine);
+
+      // character bottom-left
+      drawCharacter(56 * dpr, canvas.height - 52 * dpr, dpr);
+    }
+
+    function pointerPos(e) {
+      var r = canvas.getBoundingClientRect();
+      var x = (e.clientX - r.left) * (canvas.width / r.width);
+      var y = (e.clientY - r.top) * (canvas.height / r.height);
+      return { x: x, y: y };
+    }
+
+    function onDown(e) {
+      if (phase !== "play") return;
+      if (Date.now() < inputLockUntil) return;
+      e.preventDefault();
+      var p = pointerPos(e.touches ? e.touches[0] : e);
+      drag = { x0: p.x, y0: p.y, x1: p.x, y1: p.y };
+      cutLine = null;
+      hint.hidden = true;
+      draw();
+    }
+    function onMove(e) {
+      if (!drag || phase !== "play") return;
+      e.preventDefault();
+      var p = pointerPos(e.touches ? e.touches[0] : e);
+      drag.x1 = p.x; drag.y1 = p.y;
+      draw();
+    }
+    function onUp(e) {
+      if (!drag || phase !== "play") return;
+      e.preventDefault();
+      var p = e.changedTouches ? e.changedTouches[0] : e;
+      if (p && p.clientX != null) {
+        var q = pointerPos(p);
+        drag.x1 = q.x; drag.y1 = q.y;
+      }
+      var dx = drag.x1 - drag.x0, dy = drag.y1 - drag.y0;
+      if (dx * dx + dy * dy < (24 * dpr) * (24 * dpr)) {
+        drag = null;
+        setBubble("もうすこし長くドラッグして！");
+        draw();
+        return;
+      }
+      cutLine = { x0: drag.x0, y0: drag.y0, x1: drag.x1, y1: drag.y1 };
+      drag = null;
+      commitCut();
+    }
+
+    function showFlash(text, cls) {
+      flash.textContent = text;
+      flash.className = "flash show" + (cls ? " " + cls : "");
+      setTimeout(function () { flash.className = "flash"; }, 700);
+    }
+
+    function commitCut() {
+      var m = measureCut(cutLine.x0, cutLine.y0, cutLine.x1, cutLine.y1);
+      if (!m) {
+        setBubble("線が短すぎるよ");
+        cutLine = null;
+        draw();
+        return;
+      }
+      var thresh = THRESHOLDS[round];
+      var passed = m.err <= thresh;
+      if (runBestError == null || m.err < runBestError) runBestError = m.err;
+      if (bestError == null || m.err < bestError) {
+        bestError = m.err;
+      }
+      var reached = round + 1;
+      if (reached > bestRounds) bestRounds = reached;
+      saveBest();
+
+      if (passed) {
+        charMood = m.err <= 0.8 ? "wow" : "cheer";
+        if (m.err <= 0.8) {
+          showFlash("すごっ！ 誤差 " + m.err.toFixed(2) + "%", "great");
+          setBubble("ぴったり！天才カット！！");
+        } else {
+          showFlash("セーフ！ 誤差 " + m.err.toFixed(2) + "%", "");
+          setBubble("いいね！次いこう！");
+        }
+        phase = "between";
+        draw();
+        setTimeout(function () {
+          if (round + 1 >= TOTAL_ROUNDS) {
+            endRun(true, m, null);
+          } else {
+            round += 1;
+            startRound();
+          }
+        }, 850);
+      } else {
+        charMood = "gasp";
+        showFlash("アウト", "bad");
+        var why = "左が" + m.leftPct.toFixed(1) + "%、右が" + m.rightPct.toFixed(1) + "%｜しきい値±" + thresh.toFixed(1) + "%をこえた（誤差" + m.err.toFixed(2) + "%）";
+        endRun(false, m, why);
+      }
+    }
+
+    function endRun(won, m, why) {
+      phase = "result";
+      cleared = !!won;
+      lastFailWhy = why || (won ? "全" + TOTAL_ROUNDS + "ラウンドクリア！ 最小誤差 " + (runBestError != null ? runBestError.toFixed(2) : "?") + "%" : "");
+      if (won) {
+        resultTitle.textContent = "完全クリア！";
+        resultWhy.textContent = lastFailWhy;
+        resultWhy.className = "why ok";
+        charMood = "wow";
+        setBubble("ぜんぶ半分！やったね！！");
+      } else {
+        resultTitle.textContent = "アウト";
+        resultWhy.textContent = why;
+        resultWhy.className = "why";
+        setBubble("ざんねん…もういちど！");
+      }
+      var reached = won ? TOTAL_ROUNDS : (round + 1);
+      resultMeta.textContent = "到達 " + reached + " / " + TOTAL_ROUNDS + " ラウンド"
+        + (runBestError != null ? " · この回の最小誤差 " + runBestError.toFixed(2) + "%" : "");
+      var updated = false;
+      // already saved in commitCut / timeout path
+      // show badge when this run set/tied the stored best rounds or best error
+      resultRecord.hidden = !(
+        (bestRounds > 0 && reached >= bestRounds) ||
+        (bestError != null && runBestError != null && Math.abs(runBestError - bestError) < 1e-9)
+      );
+
+      resultBest.textContent = bestLabel();
+      titleBest.textContent = bestLabel();
+
+      lastShare = "はんぶんカット "
+        + (won ? "完全クリア" : ("到達" + reached + "/" + TOTAL_ROUNDS + "ラウンド"))
+        + (runBestError != null ? " 最小誤差" + runBestError.toFixed(2) + "%" : "")
+        + " #ねむねむゲーム部\n" + PLAY_URL;
+
+      resultEl.hidden = false;
+      inputLockUntil = Date.now() + LOCK_MS;
+      btnRetry.disabled = true;
+      btnCopy.disabled = true;
+      btnGallery.disabled = true;
+      setTimeout(function () {
+        btnRetry.disabled = false;
+        btnCopy.disabled = false;
+        btnGallery.disabled = false;
+      }, LOCK_MS);
+      draw();
+    }
+
+    function failTimeout() {
+      if (phase !== "play") return;
+      charMood = "gasp";
+      showFlash("時間切れ", "bad");
+      var reached = round + 1;
+      if (reached > bestRounds) { bestRounds = reached; saveBest(); }
+      var why = "時間切れ（" + ROUND_SEC.toFixed(1) + "秒）｜ラウンド" + (round + 1) + "でカットできず";
+      runBestError = runBestError; // keep
+      endRun(false, null, why);
+    }
+
+    function startRound() {
+      phase = "play";
+      shape = SHAPES[round];
+      cutLine = null;
+      drag = null;
+      charMood = "idle";
+      hint.hidden = false;
+      hint.textContent = "ゆび / マウスで線をドラッグしてカット";
+      hudRound.textContent = "ラウンド " + (round + 1) + " / " + TOTAL_ROUNDS;
+      hudThresh.textContent = "しきい値 ±" + THRESHOLDS[round].toFixed(1) + "%";
+      setBubble(round === 0 ? "まっすぐに、半分ね！" :
+        round === 1 ? "しきい値きつく・かたち変！" :
+        round >= 3 ? "むずかしい…慎重に！" : "いいペース！");
+      bakeShapePixels();
+      deadline = performance.now() + ROUND_SEC * 1000;
+      draw();
+      if (!raf) raf = requestAnimationFrame(tick);
+    }
+
+    function tick(now) {
+      raf = requestAnimationFrame(tick);
+      charT = now;
+      if (phase === "play") {
+        var left = Math.max(0, (deadline - now) / 1000);
+        hudTime.textContent = "残り " + left.toFixed(1) + "秒";
+        if (left <= 3) hudTime.classList.add("warn"); else hudTime.classList.remove("warn");
+        if (left <= 0) failTimeout();
+      }
+      if (phase === "play" || phase === "between" || phase === "result" || phase === "title") {
+        if (charMood !== "idle" || phase === "play") draw();
+      }
+    }
+
+    function startGame() {
+      titleEl.hidden = true;
+      resultEl.hidden = true;
+      round = 0;
+      runBestError = null;
+      cleared = false;
+      startRound();
+    }
+
+    // events
+    btnStart.addEventListener("click", function () { startGame(); });
+    btnRetry.addEventListener("click", function () {
+      if (Date.now() < inputLockUntil) return;
+      resultEl.hidden = true;
+      startGame();
+    });
+    btnCopy.addEventListener("click", function () {
+      if (Date.now() < inputLockUntil) return;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(lastShare).then(function () {
+          btnCopy.textContent = "コピーした！";
+          setTimeout(function () { btnCopy.textContent = "結果をコピー"; }, 1000);
+        });
+      } else {
+        prompt("コピーしてね", lastShare);
+      }
+    });
+    btnGallery.addEventListener("click", function () {
+      if (Date.now() < inputLockUntil) return;
+      location.href = "../../index.html";
+    });
+
+    canvas.addEventListener("mousedown", onDown);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    canvas.addEventListener("touchstart", onDown, { passive: false });
+    window.addEventListener("touchmove", onMove, { passive: false });
+    window.addEventListener("touchend", onUp, { passive: false });
+    window.addEventListener("resize", resize);
+
+    loadBest();
+    titleBest.textContent = bestLabel();
+    resultBest.textContent = bestLabel();
+    resize();
+    raf = requestAnimationFrame(tick);
+  })();
+  </script>
+</body>
+</html>
