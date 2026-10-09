@@ -1,0 +1,1335 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#2e1064">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%232e1064'/%3E%3Cpath d='M3 8a5 5 0 0 1 10 0v5l-2-1.2L8 13l-3-1.2L3 13z' fill='%23fff7ed'/%3E%3Ccircle cx='6.2' cy='8' r='1' fill='%232e1064'/%3E%3Ccircle cx='9.8' cy='8' r='1' fill='%232e1064'/%3E%3C/svg%3E">
+  <title>ほんものゴースト — Real Ghost</title>
+  <style>
+    :root {
+      --ink: #1c1428;
+      --muted: #5c5468;
+      --card: #fffdf8;
+      --line: rgba(28,20,40,.12);
+      --ok: #059669;
+      --bad: #e11d48;
+      --accent: #ea580c;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none;
+    }
+    body {
+      position: fixed; inset: 0; width: 100%; height: 100%; height: 100dvh;
+      color: var(--ink);
+      background:
+        radial-gradient(70% 42% at 88% -6%, #7c3aed66 0%, transparent 52%),
+        radial-gradient(48% 32% at 6% 0%, #f9731640 0%, transparent 48%),
+        linear-gradient(180deg, #14081f 0%, #2a1248 48%, #160a22 100%);
+      font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Yu Gothic", "Meiryo", sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none; user-select: none;
+      -webkit-touch-callout: none; touch-action: none;
+    }
+    .back {
+      position: fixed; z-index: 30;
+      top: max(10px, env(safe-area-inset-top));
+      left: max(12px, env(safe-area-inset-left));
+      padding: 8px 12px; border-radius: 999px;
+      color: var(--ink); background: rgba(255,253,248,.94);
+      box-shadow: inset 0 0 0 1px var(--line);
+      font-size: .78rem; font-weight: 800; letter-spacing: .04em;
+      text-decoration: none;
+    }
+    .shell {
+      position: relative; z-index: 1; height: 100%; max-width: 560px; margin: 0 auto;
+      padding:
+        calc(max(10px, env(safe-area-inset-top)) + 40px)
+        max(12px, env(safe-area-inset-right))
+        max(12px, env(safe-area-inset-bottom))
+        max(12px, env(safe-area-inset-left));
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .hud {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      flex-wrap: wrap;
+      padding: 8px 12px; border-radius: 16px;
+      background: rgba(255,253,248,.94);
+      box-shadow: inset 0 0 0 1px var(--line), 0 8px 24px rgba(20,8,40,.28);
+      font-weight: 800; font-size: .86rem;
+    }
+    .hud .look { color: #7c3aed; }
+    .hud .warn { color: var(--bad); }
+    .stage-wrap {
+      position: relative; flex: 1; min-height: 0;
+      border-radius: 22px; overflow: hidden;
+      background: #1a1030;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), 0 14px 36px rgba(20,8,40,.35);
+    }
+    canvas#game {
+      display: block; width: 100%; height: 100%;
+      touch-action: none; cursor: pointer;
+    }
+    .hint {
+      position: absolute; left: 84px; right: 12px; bottom: 10px;
+      padding: 8px 12px; border-radius: 12px;
+      background: rgba(28,20,40,.78); color: #fff;
+      font-size: .78rem; font-weight: 700; text-align: center;
+      pointer-events: none;
+    }
+    .hint.go { background: rgba(234,88,12,.94); }
+    .char-bubble {
+      position: absolute; top: 10px; right: 10px;
+      max-width: 54%; padding: 8px 10px; border-radius: 14px 14px 4px 14px;
+      background: #fff; color: var(--ink);
+      font-size: .72rem; font-weight: 800; line-height: 1.35;
+      box-shadow: 0 6px 18px rgba(20,8,40,.28);
+      pointer-events: none;
+    }
+    .flash {
+      position: absolute; inset: 0; display: grid; place-items: center;
+      pointer-events: none; opacity: 0; transition: opacity .15s;
+      background: rgba(5,150,105,.22); color: #ecfdf5;
+      font-size: 1.7rem; font-weight: 900; letter-spacing: .06em;
+      text-shadow: 0 2px 0 rgba(6,78,59,.35);
+    }
+    .flash.show { opacity: 1; }
+    .overlay {
+      position: absolute; inset: 0; z-index: 10;
+      display: grid; place-items: center; padding: 12px;
+      overflow: auto;
+      background: rgba(20,8,40,.46); backdrop-filter: blur(4px);
+    }
+    .overlay[hidden] { display: none !important; }
+    .card {
+      width: min(100%, 380px); margin: auto;
+      max-height: 100%; overflow: auto;
+      padding: 20px 18px 16px;
+      border-radius: 22px; background: var(--card);
+      box-shadow: 0 18px 48px rgba(20,8,40,.35);
+      text-align: center;
+    }
+    .card svg { display: block; width: 72px; height: 72px; margin: 0 auto 8px; }
+    .card h1 {
+      margin: 0 0 4px; font-size: 1.5rem; letter-spacing: .04em;
+    }
+    .card .en { margin: 0 0 12px; color: var(--muted); font-size: .78rem; font-weight: 800; }
+    .card .blurb {
+      margin: 0 0 12px; color: var(--ink); font-size: .92rem; font-weight: 700; line-height: 1.55;
+      text-align: left;
+    }
+    .card .keys {
+      margin: 0 0 14px; padding: 10px 12px; border-radius: 14px;
+      background: #ffedd5; color: #9a3412;
+      font-size: .8rem; font-weight: 800; line-height: 1.55; text-align: left;
+    }
+    .card .best { margin: 0 0 14px; color: var(--muted); font-size: .82rem; font-weight: 800; line-height: 1.45; }
+    .card h2 { margin: 0 0 8px; font-size: 1.35rem; }
+    .card .why {
+      margin: 0 0 10px; padding: 10px 12px; border-radius: 12px;
+      background: #fee2e2; color: #9f1239;
+      font-size: .86rem; font-weight: 800; line-height: 1.45;
+    }
+    .card .why.ok { background: #d1fae5; color: #065f46; }
+    .card .meta { margin: 0 0 6px; font-size: .88rem; font-weight: 700; color: var(--muted); }
+    .card .record {
+      margin: 0 0 10px; color: #a16207; font-weight: 900; font-size: .9rem;
+    }
+    .btns { display: grid; gap: 8px; margin-top: 8px; }
+    button {
+      appearance: none; border: 0; border-radius: 14px;
+      padding: 12px 16px; min-height: 46px; font: inherit; font-weight: 900;
+      cursor: pointer; color: #fff; background: var(--accent);
+      box-shadow: 0 6px 0 #c2410c;
+    }
+    button:active { transform: translateY(2px); box-shadow: 0 4px 0 #c2410c; }
+    button.secondary {
+      color: var(--ink); background: #fff;
+      box-shadow: inset 0 0 0 1px var(--line), 0 4px 0 rgba(28,20,40,.08);
+    }
+    button:disabled { opacity: .55; cursor: default; transform: none; }
+  </style>
+</head>
+<body>
+  <a class="back" href="../../index.html">ギャラリー</a>
+  <div class="shell">
+    <div class="hud">
+      <span id="hud-round">ラウンド 1 / 5</span>
+      <span id="hud-count">4人</span>
+      <span id="hud-time" class="look">みて…</span>
+    </div>
+    <div class="stage-wrap">
+      <canvas id="game" width="720" height="720"></canvas>
+      <div class="char-bubble" id="bubble">ちょうちん、かしてあげる</div>
+      <div class="hint" id="hint">みて… まだ選ばなくていい</div>
+      <div class="flash" id="flash"></div>
+
+      <div class="overlay" id="title">
+        <div class="card">
+          <svg class="mascot" viewBox="0 0 72 72" width="72" height="72" aria-hidden="true">
+            <ellipse cx="22" cy="48" rx="10" ry="6" fill="#fb923c" transform="rotate(-28 22 48)"/>
+            <circle cx="16" cy="44" r="4" fill="#fff7ed"/>
+            <ellipse cx="36" cy="46" rx="14" ry="12" fill="#fb923c"/>
+            <circle cx="40" cy="32" r="12" fill="#f97316"/>
+            <path d="M30 28l-6-14 10 6z" fill="#f97316"/>
+            <path d="M46 28l10-14-2 16z" fill="#f97316"/>
+            <path d="M31 24l-3-8 6 3z" fill="#fecdd3"/>
+            <path d="M48 23l6-8 1 8z" fill="#fecdd3"/>
+            <ellipse cx="42" cy="35" rx="7" ry="5" fill="#fff7ed"/>
+            <circle cx="36" cy="31" r="1.7" fill="#1c1428"/>
+            <circle cx="44" cy="31" r="1.7" fill="#1c1428"/>
+            <path d="M37 36c2 2 6 2 8 0" stroke="#1c1428" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+            <rect x="52" y="30" width="10" height="14" rx="2" fill="#9a3412"/>
+            <rect x="54" y="32" width="6" height="9" rx="1" fill="#fde68a"/>
+            <rect x="55.5" y="26" width="3" height="5" rx="1" fill="#9a3412"/>
+          </svg>
+          <h1>ほんものゴースト</h1>
+          <p class="en">Real Ghost · Day 14</p>
+          <p class="blurb">ハロウィンの人ごみに、ほんもののおばけは<strong>1体だけ</strong>。タップで選んで。まちがえたら<strong>その場でアウト</strong>。</p>
+          <p class="keys">見わけ: <strong>目のほのかな光</strong> / <strong>ふわふわ浮き</strong> / <strong>うすい影</strong> / <strong>すけすけ</strong><br>
+          最初はわかりやすい。進むと人がふえて、目印はうすくなる。<br>
+          操作: <strong>タップ</strong> または <strong>クリック</strong><br>
+          流れ: まず<strong>「みて…」</strong>（このあいだは失敗しない）→ それから<strong>残り秒</strong><br>
+          全5ラウンド。最後まで見抜ければ完全クリア。</p>
+          <p class="best" id="title-best">ベスト なし</p>
+          <div class="btns">
+            <button type="button" id="btn-start">スタート</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="overlay" id="result" hidden>
+        <div class="card">
+          <h2 id="result-title">アウト</h2>
+          <p class="why" id="result-why"></p>
+          <p class="meta" id="result-meta"></p>
+          <p class="record" id="result-record" hidden>ベスト更新！</p>
+          <p class="best" id="result-best">ベスト なし</p>
+          <div class="btns">
+            <button type="button" id="btn-retry" disabled>もういちど</button>
+            <button type="button" class="secondary" id="btn-copy" disabled>結果をコピー</button>
+            <button type="button" class="secondary" id="btn-gallery" disabled>ギャラリーへ</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    "use strict";
+
+    var STORE = "real-ghost-2026-10-09";
+    var PLAY_URL = "https://grokbot365game.github.io/daily-casual-games/games/2026-10-09-real-ghost/";
+    var LOCK_MS = 880;
+    var TOTAL = 5;
+    var TAU = Math.PI * 2;
+    var ROUNDS = [
+      { n: 4, look: 1800, act: 7000, strength: 0.94 },
+      { n: 5, look: 1600, act: 6200, strength: 0.70 },
+      { n: 6, look: 1450, act: 5400, strength: 0.48 },
+      { n: 7, look: 1300, act: 4800, strength: 0.34 },
+      { n: 8, look: 1200, act: 4200, strength: 0.24 }
+    ];
+    var TYPES = ["pumpkin", "bat", "witch", "candy", "cat", "sheet"];
+    var NAMES = {
+      pumpkin: "カボチャ",
+      bat: "こうもり",
+      witch: "魔女ぼうし",
+      candy: "あめ",
+      cat: "くろねこ",
+      sheet: "おばけのふく"
+    };
+    var TELL_NAME = {
+      eyes: "目のほのかな光",
+      float: "ふわふわ浮き",
+      shadow: "うすい影",
+      shimmer: "すけすけ"
+    };
+    var LOOK_LINES = ["みて…", "よく見て…", "目印はひとつ", "あわてないで…", "最後、よく見て"];
+    var ACT_LINES = ["どれがほんもの？", "いま選んで！", "人がふえた…", "目印はうすいよ", "さいご！よく見て"];
+
+    var canvas = document.getElementById("game");
+    var ctx = canvas.getContext("2d");
+    var scratch = document.createElement("canvas");
+    var sctx = scratch.getContext("2d");
+    var titleEl = document.getElementById("title");
+    var resultEl = document.getElementById("result");
+    var bubble = document.getElementById("bubble");
+    var hint = document.getElementById("hint");
+    var flash = document.getElementById("flash");
+    var hudRound = document.getElementById("hud-round");
+    var hudCount = document.getElementById("hud-count");
+    var hudTime = document.getElementById("hud-time");
+    var titleBest = document.getElementById("title-best");
+    var resultTitle = document.getElementById("result-title");
+    var resultWhy = document.getElementById("result-why");
+    var resultMeta = document.getElementById("result-meta");
+    var resultRecord = document.getElementById("result-record");
+    var resultBest = document.getElementById("result-best");
+    var btnStart = document.getElementById("btn-start");
+    var btnRetry = document.getElementById("btn-retry");
+    var btnCopy = document.getElementById("btn-copy");
+    var btnGallery = document.getElementById("btn-gallery");
+
+    var phase = "title";
+    var round = 0;
+    var bestReached = 0;
+    var bestCleared = 0;
+    var bestStreak = 0;
+    var streak = 0;
+    var snap = { bestReached: 0, bestCleared: 0, bestStreak: 0 };
+    var clearedThisRun = 0;
+    var lastShare = "";
+    var crowd = [];
+    var preview = [];
+    var tells = [];
+    var clock = 0;
+    var lookTotal = 1800;
+    var dpr = 1;
+    var raf = 0;
+    var lastTs = 0;
+    var animT = 0;
+    var charMood = "idle";
+    var inputLockUntil = 0;
+    var lockToken = 0;
+    var flashToken = 0;
+    var cheerToken = 0;
+    var hover = null;
+    var markWrong = null;
+    var markReal = null;
+    var foundFig = null;
+    var lantern = { x: 200, y: 200 };
+    var lanternTo = { x: 200, y: 200, on: false };
+    var stars = [];
+    for (var si = 0; si < 36; si++) {
+      stars.push({
+        x: Math.random(),
+        y: Math.random() * 0.48,
+        r: 0.6 + Math.random() * 1.5,
+        p: Math.random() * TAU
+      });
+    }
+
+    function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+    function shuffle(a) {
+      for (var i = a.length - 1; i > 0; i--) {
+        var j = (Math.random() * (i + 1)) | 0;
+        var t = a[i]; a[i] = a[j]; a[j] = t;
+      }
+      return a;
+    }
+    function setBubble(t) { bubble.textContent = t; }
+    function activeCrowd() { return phase === "title" ? preview : crowd; }
+
+    function loadBest() {
+      try {
+        var raw = localStorage.getItem(STORE);
+        if (!raw) return;
+        var data = JSON.parse(raw);
+        if (!data) return;
+        if (typeof data.bestReached === "number") bestReached = data.bestReached;
+        if (typeof data.bestCleared === "number") bestCleared = data.bestCleared;
+        if (typeof data.bestStreak === "number") bestStreak = data.bestStreak;
+        if (typeof data.streak === "number") streak = data.streak;
+      } catch (e) {}
+    }
+    function saveBest() {
+      try {
+        localStorage.setItem(STORE, JSON.stringify({
+          bestReached: bestReached,
+          bestCleared: bestCleared,
+          bestStreak: bestStreak,
+          streak: streak
+        }));
+      } catch (e) {}
+    }
+    function bestLabel() {
+      if (bestReached <= 0 && bestCleared <= 0 && bestStreak <= 0) return "ベスト なし";
+      return "ベスト 到達 " + bestReached + "/" + TOTAL
+        + " · クリア " + bestCleared
+        + " · 連続クリア " + bestStreak;
+    }
+    function makeTellOrder() {
+      var base = shuffle(["eyes", "float", "shadow", "shimmer"]);
+      var last = base[base.length - 1];
+      var choices = base.filter(function (t) { return t !== last; });
+      base.push(choices[(Math.random() * choices.length) | 0]);
+      return base;
+    }
+
+    function colsFor(n) {
+      var aspect = canvas.width / Math.max(1, canvas.height);
+      if (aspect > 1.15) {
+        if (n <= 6) return n;
+        return Math.ceil(n / 2);
+      }
+      if (n <= 4) return 2;
+      if (n <= 6) return 3;
+      return 4;
+    }
+    function makeSlots(n) {
+      var cols = colsFor(n);
+      var rows = Math.ceil(n / cols);
+      var slots = [];
+      var idx = 0;
+      for (var r = 0; r < rows; r++) {
+        var count = Math.min(cols, n - idx);
+        for (var c = 0; c < count; c++) {
+          var x = 0.10 + ((c + 0.5) / count) * 0.80;
+          var yNorm = (r + 0.5) / rows;
+          var y = 0.36 + yNorm * 0.36;
+          var jx = (Math.random() - 0.5) * 0.03;
+          var jy = (Math.random() - 0.5) * 0.02;
+          slots.push({
+            nx: clamp(x + jx, 0.12, 0.88),
+            ny: clamp(y + jy, 0.34, 0.74)
+          });
+          idx++;
+        }
+      }
+      return slots;
+    }
+    function spawnCrowd(n, tell, strength, allFake) {
+      var costumes = [];
+      for (var i = 0; i < n; i++) costumes.push(TYPES[(Math.random() * TYPES.length) | 0]);
+      if (!allFake) {
+        var ghostType = TYPES[(Math.random() * TYPES.length) | 0];
+        costumes[0] = ghostType;
+        if (n > 1) costumes[1] = ghostType;
+        if (n > 2 && ghostType !== "sheet") costumes[2] = "sheet";
+      }
+      var items = [];
+      for (var k = 0; k < n; k++) items.push({ type: costumes[k], real: !allFake && k === 0 });
+      shuffle(items);
+      var slots = makeSlots(n);
+      var figs = [];
+      for (var f = 0; f < n; f++) {
+        figs.push({
+          type: items[f].type,
+          real: items[f].real,
+          tell: items[f].real ? tell : null,
+          strength: items[f].real ? strength : 0,
+          nx: slots[f].nx,
+          ny: slots[f].ny,
+          phase: Math.random() * TAU,
+          flip: Math.random() < 0.5
+        });
+      }
+      if (!allFake) {
+        var reals = 0;
+        for (var q = 0; q < figs.length; q++) if (figs[q].real) reals++;
+        if (reals !== 1) {
+          for (var j = 0; j < figs.length; j++) {
+            figs[j].real = false;
+            figs[j].tell = null;
+            figs[j].strength = 0;
+          }
+          figs[0].real = true;
+          figs[0].tell = tell;
+          figs[0].strength = strength;
+        }
+      }
+      return figs;
+    }
+
+    function baseScale(n) {
+      n = Math.max(1, n);
+      var cols = colsFor(n);
+      var rows = Math.ceil(n / cols);
+      var cellW = canvas.width / cols;
+      var cellH = canvas.height * 0.52 / rows;
+      return Math.max(10 * dpr, Math.min(cellW * 0.30, cellH * 0.40, 30 * dpr));
+    }
+    function metrics(fig, t, n) {
+      var S = baseScale(n) * (0.92 + fig.ny * 0.16);
+      var lift = Math.sin(t * 0.004 + fig.phase) * S * 0.05;
+      if (fig.real && fig.tell === "float") {
+        var s = fig.strength;
+        lift = S * (0.10 + 1.05 * s)
+          + Math.sin(t * 0.0075 + fig.phase) * S * (0.03 + 0.20 * s)
+          + Math.sin(t * 0.016 + fig.phase * 1.7) * S * (0.02 + 0.08 * s);
+      }
+      var x = fig.nx * canvas.width;
+      var y = fig.ny * canvas.height;
+      return {
+        S: S,
+        lift: lift,
+        x: x,
+        y: y,
+        cx: x,
+        cy: y - lift - S * 1.45,
+        r: Math.max(18 * dpr, S * 1.42)
+      };
+    }
+    function realFig() {
+      for (var i = 0; i < crowd.length; i++) if (crowd[i].real) return crowd[i];
+      return null;
+    }
+    function figureAt(px, py) {
+      var list = crowd;
+      var n = list.length;
+      var best = null;
+      var bestD = 1e15;
+      for (var i = 0; i < n; i++) {
+        var m = metrics(list[i], animT, n);
+        var dx = px - m.cx;
+        var dy = py - m.cy;
+        var d = dx * dx + dy * dy;
+        if (d <= m.r * m.r && d < bestD) {
+          bestD = d;
+          best = list[i];
+        }
+      }
+      return best;
+    }
+
+    function resize() {
+      var wrap = canvas.parentElement;
+      var w = wrap.clientWidth;
+      var h = wrap.clientHeight;
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.max(1, Math.floor(w * dpr));
+      canvas.height = Math.max(1, Math.floor(h * dpr));
+      if (!lanternTo.on) {
+        lantern.x = canvas.width * 0.62;
+        lantern.y = canvas.height * 0.42;
+        lanternTo.x = lantern.x;
+        lanternTo.y = lantern.y;
+      }
+      if (!preview.length && canvas.width > 8) preview = spawnCrowd(5, null, 0, true);
+      draw();
+    }
+
+    function drawBackground(t) {
+      var w = canvas.width, h = canvas.height;
+      var g = ctx.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0, "#1b0d38");
+      g.addColorStop(0.42, "#3a1d6e");
+      g.addColorStop(0.72, "#4c2880");
+      g.addColorStop(1, "#241433");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+
+      var moonR = Math.min(w, h) * 0.075;
+      var mx = w * 0.78, my = h * 0.13;
+      ctx.fillStyle = "rgba(254, 243, 199, 0.22)";
+      ctx.beginPath(); ctx.arc(mx, my, moonR * 1.8, 0, TAU); ctx.fill();
+      ctx.fillStyle = "#fef3c7";
+      ctx.beginPath(); ctx.arc(mx, my, moonR, 0, TAU); ctx.fill();
+      ctx.fillStyle = "rgba(251, 191, 36, 0.45)";
+      ctx.beginPath(); ctx.arc(mx - moonR * 0.28, my - moonR * 0.1, moonR * 0.22, 0, TAU); ctx.fill();
+
+      for (var i = 0; i < stars.length; i++) {
+        var s = stars[i];
+        var tw = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * 0.003 + s.p));
+        ctx.fillStyle = "rgba(255, 251, 235, " + tw + ")";
+        ctx.beginPath();
+        ctx.arc(s.x * w, s.y * h, s.r * dpr, 0, TAU);
+        ctx.fill();
+      }
+
+      var horizon = h * 0.58;
+      ctx.fillStyle = "#2a1b45";
+      ctx.beginPath();
+      ctx.moveTo(0, horizon + h * 0.04);
+      ctx.quadraticCurveTo(w * 0.25, horizon - h * 0.03, w * 0.5, horizon + h * 0.02);
+      ctx.quadraticCurveTo(w * 0.75, horizon + h * 0.06, w, horizon - h * 0.01);
+      ctx.lineTo(w, h);
+      ctx.lineTo(0, h);
+      ctx.fill();
+
+      drawHouses(w, h, horizon);
+
+      ctx.fillStyle = "#3a2a55";
+      ctx.fillRect(0, h * 0.70, w, h * 0.30);
+      var path = ctx.createLinearGradient(0, h * 0.72, 0, h);
+      path.addColorStop(0, "#8d79a8");
+      path.addColorStop(1, "#4a3b66");
+      ctx.fillStyle = path;
+      ctx.beginPath();
+      ctx.ellipse(w * 0.5, h * 0.86, w * 0.52, h * 0.16, 0, 0, TAU);
+      ctx.fill();
+
+      var moonWash = ctx.createRadialGradient(mx, my, moonR, w * 0.55, h * 0.62, w * 0.7);
+      moonWash.addColorStop(0, "rgba(255, 228, 180, 0.16)");
+      moonWash.addColorStop(1, "rgba(255, 228, 180, 0)");
+      ctx.fillStyle = moonWash;
+      ctx.fillRect(0, 0, w, h);
+    }
+
+    function drawHouses(w, h, horizon) {
+      var specs = [
+        { x: 0.06, bw: 0.11, bh: 0.13 },
+        { x: 0.18, bw: 0.13, bh: 0.18 },
+        { x: 0.72, bw: 0.12, bh: 0.16 },
+        { x: 0.86, bw: 0.10, bh: 0.12 }
+      ];
+      for (var i = 0; i < specs.length; i++) {
+        var s = specs[i];
+        var bw = s.bw * w, bh = s.bh * h;
+        var x = s.x * w, y = horizon + h * 0.03 - bh;
+        ctx.fillStyle = "#2a1848";
+        ctx.fillRect(x, y, bw, bh + h * 0.02);
+        ctx.fillStyle = "#4c1d95";
+        ctx.beginPath();
+        ctx.moveTo(x - bw * 0.08, y + 1);
+        ctx.lineTo(x + bw * 0.5, y - bh * 0.38);
+        ctx.lineTo(x + bw * 1.08, y + 1);
+        ctx.fill();
+        ctx.fillStyle = "rgba(251, 146, 60, 0.85)";
+        var win = Math.max(3 * dpr, bw * 0.16);
+        ctx.fillRect(x + bw * 0.22, y + bh * 0.38, win, win);
+        ctx.fillRect(x + bw * 0.58, y + bh * 0.42, win, win * 0.85);
+      }
+    }
+
+    function drawShadow(fig, m) {
+      ctx.save();
+      var rx = m.S * 0.95;
+      var ry = m.S * 0.26;
+      var ox = 0;
+      var col = "rgba(12, 6, 24, 0.62)";
+      if (fig.real && fig.tell === "shadow") {
+        var s = fig.strength;
+        rx *= (1 - 0.55 * s);
+        ry *= (1 - 0.4 * s);
+        ox = m.S * (0.45 + 0.95 * s);
+        var pale = 0.22 + 0.18 * (1 - s);
+        col = "rgba(214, 196, 255, " + pale + ")";
+      }
+      ctx.fillStyle = col;
+      ctx.beginPath();
+      ctx.ellipse(m.x + ox, m.y, Math.max(2, rx), Math.max(1.5, ry), 0, 0, TAU);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function blush(c, S, y) {
+      c.fillStyle = "rgba(251, 113, 133, 0.7)";
+      c.beginPath(); c.ellipse(-S * 0.46, y, S * 0.13, S * 0.07, 0, 0, TAU); c.fill();
+      c.beginPath(); c.ellipse(S * 0.46, y, S * 0.13, S * 0.07, 0, 0, TAU); c.fill();
+    }
+    function smile(c, S, y) {
+      c.strokeStyle = "#3b2430";
+      c.lineWidth = Math.max(1.2, S * 0.07);
+      c.lineCap = "round";
+      c.beginPath();
+      c.arc(0, y, S * 0.2, 0.2, Math.PI - 0.2);
+      c.stroke();
+    }
+    function normalEyes(c, S, y) {
+      c.fillStyle = "#1c1428";
+      var r = S * 0.09;
+      c.beginPath(); c.arc(-S * 0.26, y, r, 0, TAU); c.fill();
+      c.beginPath(); c.arc(S * 0.26, y, r, 0, TAU); c.fill();
+      c.fillStyle = "#fff";
+      c.beginPath(); c.arc(-S * 0.23, y - r * 0.35, r * 0.35, 0, TAU); c.fill();
+      c.beginPath(); c.arc(S * 0.29, y - r * 0.35, r * 0.35, 0, TAU); c.fill();
+    }
+    function addEyeGlow(c, fig, S, y, spread, t) {
+      if (!(fig.real && fig.tell === "eyes")) return;
+      var s = fig.strength;
+      var sp = spread == null ? 0.26 : spread;
+      var pulse = 0.62 + 0.38 * Math.sin(t * 0.008 + fig.phase);
+      c.save();
+      c.shadowColor = "rgba(165, 243, 252, " + (0.55 + 0.4 * s) + ")";
+      c.shadowBlur = S * (0.45 + 1.25 * s) * pulse;
+      c.fillStyle = "rgba(224, 242, 254, " + (0.45 + 0.5 * s) * pulse + ")";
+      var r = S * (0.13 + 0.12 * s);
+      c.beginPath(); c.arc(-S * sp, y, r, 0, TAU); c.fill();
+      c.beginPath(); c.arc(S * sp, y, r, 0, TAU); c.fill();
+      c.restore();
+    }
+
+    function drawPumpkin(c, fig, S, t) {
+      c.fillStyle = "#3f6212";
+      c.beginPath(); c.ellipse(0, -S * 0.55, S * 0.55, S * 0.38, 0, 0, TAU); c.fill();
+      c.fillStyle = "#f97316";
+      c.beginPath(); c.ellipse(0, -S * 1.62, S * 1.02, S * 0.92, 0, 0, TAU); c.fill();
+      c.fillStyle = "rgba(255,255,255,0.22)";
+      c.beginPath(); c.ellipse(-S * 0.35, -S * 1.9, S * 0.28, S * 0.16, -0.5, 0, TAU); c.fill();
+      c.strokeStyle = "rgba(154, 52, 6, 0.4)";
+      c.lineWidth = Math.max(1, S * 0.06);
+      c.beginPath();
+      c.moveTo(-S * 0.32, -S * 2.4);
+      c.quadraticCurveTo(-S * 0.2, -S * 1.6, -S * 0.32, -S * 0.82);
+      c.moveTo(S * 0.32, -S * 2.4);
+      c.quadraticCurveTo(S * 0.22, -S * 1.6, S * 0.32, -S * 0.82);
+      c.stroke();
+      c.strokeStyle = "#166534";
+      c.lineWidth = Math.max(1.5, S * 0.14);
+      c.lineCap = "round";
+      c.beginPath();
+      c.moveTo(S * 0.05, -S * 2.45);
+      c.quadraticCurveTo(S * 0.45, -S * 2.85, S * 0.4, -S * 2.4);
+      c.stroke();
+      c.fillStyle = "#431407";
+      tri(c, -S * 0.32, -S * 1.72, S * 0.2);
+      tri(c, S * 0.32, -S * 1.72, S * 0.2);
+      c.beginPath();
+      c.moveTo(-S * 0.28, -S * 1.28);
+      c.quadraticCurveTo(0, -S * 1.05, S * 0.28, -S * 1.28);
+      c.quadraticCurveTo(0, -S * 1.18, -S * 0.28, -S * 1.28);
+      c.fill();
+      addEyeGlow(c, fig, S, -S * 1.72, 0.32, t);
+    }
+    function tri(c, x, y, s) {
+      c.beginPath();
+      c.moveTo(x, y + s * 0.55);
+      c.lineTo(x - s, y - s * 0.45);
+      c.lineTo(x + s, y - s * 0.45);
+      c.closePath();
+      c.fill();
+    }
+    function drawBat(c, fig, S, t) {
+      c.fillStyle = "#312e81";
+      c.beginPath();
+      c.moveTo(-S * 0.2, -S * 1.15);
+      c.quadraticCurveTo(-S * 1.55, -S * 2.15, -S * 1.7, -S * 0.85);
+      c.quadraticCurveTo(-S * 1.15, -S * 1.05, -S * 0.35, -S * 0.7);
+      c.fill();
+      c.beginPath();
+      c.moveTo(S * 0.2, -S * 1.15);
+      c.quadraticCurveTo(S * 1.55, -S * 2.15, S * 1.7, -S * 0.85);
+      c.quadraticCurveTo(S * 1.15, -S * 1.05, S * 0.35, -S * 0.7);
+      c.fill();
+      c.fillStyle = "#4338ca";
+      c.beginPath(); c.ellipse(0, -S * 0.62, S * 0.48, S * 0.42, 0, 0, TAU); c.fill();
+      c.fillStyle = "#3730a3";
+      c.beginPath(); c.arc(0, -S * 1.55, S * 0.78, 0, TAU); c.fill();
+      c.fillStyle = "#312e81";
+      c.beginPath();
+      c.moveTo(-S * 0.45, -S * 1.95); c.lineTo(-S * 0.7, -S * 2.55); c.lineTo(-S * 0.1, -S * 2.05);
+      c.fill();
+      c.beginPath();
+      c.moveTo(S * 0.45, -S * 1.95); c.lineTo(S * 0.7, -S * 2.55); c.lineTo(S * 0.1, -S * 2.05);
+      c.fill();
+      c.fillStyle = "#fbcfe8";
+      c.beginPath(); c.moveTo(-S * 0.42, -S * 2.0); c.lineTo(-S * 0.55, -S * 2.32); c.lineTo(-S * 0.2, -S * 2.05); c.fill();
+      c.beginPath(); c.moveTo(S * 0.42, -S * 2.0); c.lineTo(S * 0.55, -S * 2.32); c.lineTo(S * 0.2, -S * 2.05); c.fill();
+      c.fillStyle = "#fef9c3";
+      c.beginPath(); c.ellipse(-S * 0.24, -S * 1.55, S * 0.12, S * 0.14, 0, 0, TAU); c.fill();
+      c.beginPath(); c.ellipse(S * 0.24, -S * 1.55, S * 0.12, S * 0.14, 0, 0, TAU); c.fill();
+      c.fillStyle = "#1c1428";
+      c.beginPath(); c.arc(-S * 0.24, -S * 1.55, S * 0.06, 0, TAU); c.fill();
+      c.beginPath(); c.arc(S * 0.24, -S * 1.55, S * 0.06, 0, TAU); c.fill();
+      blush(c, S, -S * 1.32);
+      smile(c, S * 0.85, -S * 1.28);
+      addEyeGlow(c, fig, S, -S * 1.55, 0.24, t);
+    }
+    function drawWitch(c, fig, S, t) {
+      c.fillStyle = "#6d28d9";
+      c.beginPath();
+      c.moveTo(-S * 0.7, -S * 0.15);
+      c.lineTo(S * 0.7, -S * 0.15);
+      c.lineTo(S * 0.4, -S * 1.15);
+      c.lineTo(-S * 0.4, -S * 1.15);
+      c.closePath();
+      c.fill();
+      c.fillStyle = "#ffd7b5";
+      c.beginPath(); c.arc(0, -S * 1.62, S * 0.72, 0, TAU); c.fill();
+      c.fillStyle = "#4c1d95";
+      c.beginPath();
+      c.moveTo(-S * 0.85, -S * 1.85);
+      c.lineTo(S * 0.85, -S * 1.85);
+      c.lineTo(S * 0.15, -S * 3.15);
+      c.lineTo(-S * 0.05, -S * 3.05);
+      c.closePath();
+      c.fill();
+      c.fillStyle = "#fbbf24";
+      c.fillRect(-S * 0.55, -S * 1.98, S * 1.1, S * 0.16);
+      c.fillStyle = "#f59e0b";
+      c.fillRect(-S * 0.08, -S * 2.08, S * 0.2, S * 0.32);
+      normalEyes(c, S, -S * 1.62);
+      blush(c, S, -S * 1.4);
+      smile(c, S, -S * 1.38);
+      addEyeGlow(c, fig, S, -S * 1.62, 0.26, t);
+    }
+    function drawCandy(c, fig, S, t) {
+      c.fillStyle = "#fb7185";
+      c.beginPath();
+      c.moveTo(-S * 1.15, -S * 1.15);
+      c.lineTo(-S * 0.55, -S * 1.55);
+      c.lineTo(-S * 0.55, -S * 0.85);
+      c.fill();
+      c.beginPath();
+      c.moveTo(S * 1.15, -S * 1.15);
+      c.lineTo(S * 0.55, -S * 1.55);
+      c.lineTo(S * 0.55, -S * 0.85);
+      c.fill();
+      c.fillStyle = "#fff1f2";
+      c.beginPath(); c.ellipse(0, -S * 1.2, S * 0.72, S * 0.78, 0, 0, TAU); c.fill();
+      c.strokeStyle = "#fb7185";
+      c.lineWidth = Math.max(1.4, S * 0.1);
+      c.beginPath();
+      c.moveTo(-S * 0.45, -S * 1.85);
+      c.lineTo(S * 0.2, -S * 0.55);
+      c.moveTo(S * 0.15, -S * 1.9);
+      c.lineTo(-S * 0.35, -S * 0.5);
+      c.stroke();
+      c.fillStyle = "#fb7185";
+      c.beginPath();
+      c.moveTo(0, -S * 2.05);
+      c.quadraticCurveTo(S * 0.45, -S * 2.35, S * 0.15, -S * 1.85);
+      c.quadraticCurveTo(S * 0.55, -S * 1.7, 0, -S * 1.55);
+      c.quadraticCurveTo(-S * 0.55, -S * 1.7, -S * 0.15, -S * 1.85);
+      c.quadraticCurveTo(-S * 0.45, -S * 2.35, 0, -S * 2.05);
+      c.fill();
+      normalEyes(c, S * 0.9, -S * 1.28);
+      blush(c, S * 0.9, -S * 1.05);
+      smile(c, S * 0.8, -S * 1.02);
+      addEyeGlow(c, fig, S, -S * 1.28, 0.234, t);
+    }
+    function drawCat(c, fig, S, t) {
+      c.strokeStyle = "#1c1917";
+      c.lineWidth = Math.max(1.5, S * 0.1);
+      c.lineCap = "round";
+      c.beginPath();
+      c.moveTo(S * 0.45, -S * 0.45);
+      c.quadraticCurveTo(S * 1.25, -S * 0.2, S * 1.05, -S * 1.05);
+      c.stroke();
+      c.fillStyle = "#292524";
+      c.beginPath(); c.ellipse(0, -S * 0.55, S * 0.55, S * 0.42, 0, 0, TAU); c.fill();
+      c.beginPath(); c.arc(0, -S * 1.58, S * 0.82, 0, TAU); c.fill();
+      c.beginPath();
+      c.moveTo(-S * 0.48, -S * 2.05); c.lineTo(-S * 0.78, -S * 2.7); c.lineTo(-S * 0.08, -S * 2.15);
+      c.fill();
+      c.beginPath();
+      c.moveTo(S * 0.48, -S * 2.05); c.lineTo(S * 0.78, -S * 2.7); c.lineTo(S * 0.08, -S * 2.15);
+      c.fill();
+      c.fillStyle = "#fecdd3";
+      c.beginPath(); c.moveTo(-S * 0.42, -S * 2.08); c.lineTo(-S * 0.6, -S * 2.42); c.lineTo(-S * 0.18, -S * 2.12); c.fill();
+      c.beginPath(); c.moveTo(S * 0.42, -S * 2.08); c.lineTo(S * 0.6, -S * 2.42); c.lineTo(S * 0.18, -S * 2.12); c.fill();
+      c.fillStyle = "#fde68a";
+      c.beginPath(); c.ellipse(-S * 0.24, -S * 1.58, S * 0.13, S * 0.15, 0, 0, TAU); c.fill();
+      c.beginPath(); c.ellipse(S * 0.24, -S * 1.58, S * 0.13, S * 0.15, 0, 0, TAU); c.fill();
+      c.fillStyle = "#1c1917";
+      c.beginPath(); c.ellipse(-S * 0.24, -S * 1.58, S * 0.045, S * 0.09, 0, 0, TAU); c.fill();
+      c.beginPath(); c.ellipse(S * 0.24, -S * 1.58, S * 0.045, S * 0.09, 0, 0, TAU); c.fill();
+      c.fillStyle = "#fb7185";
+      c.beginPath(); c.moveTo(0, -S * 1.38); c.lineTo(-S * 0.06, -S * 1.28); c.lineTo(S * 0.06, -S * 1.28); c.fill();
+      c.strokeStyle = "rgba(255,255,255,0.75)";
+      c.lineWidth = Math.max(1, S * 0.045);
+      c.beginPath();
+      c.moveTo(-S * 0.45, -S * 1.42); c.lineTo(-S * 0.95, -S * 1.5);
+      c.moveTo(-S * 0.45, -S * 1.32); c.lineTo(-S * 0.95, -S * 1.28);
+      c.moveTo(S * 0.45, -S * 1.42); c.lineTo(S * 0.95, -S * 1.5);
+      c.moveTo(S * 0.45, -S * 1.32); c.lineTo(S * 0.95, -S * 1.28);
+      c.stroke();
+      addEyeGlow(c, fig, S, -S * 1.58, 0.24, t);
+    }
+    function drawSheet(c, fig, S, t) {
+      c.fillStyle = "#f8fafc";
+      c.beginPath();
+      c.arc(0, -S * 1.55, S * 0.95, Math.PI, 0);
+      c.lineTo(S * 0.95, -S * 0.35);
+      c.quadraticCurveTo(S * 0.65, -S * 0.05, S * 0.35, -S * 0.38);
+      c.quadraticCurveTo(S * 0.05, -S * 0.7, -S * 0.15, -S * 0.32);
+      c.quadraticCurveTo(-S * 0.45, 0.02, -S * 0.7, -S * 0.36);
+      c.quadraticCurveTo(-S * 0.95, -S * 0.08, -S * 0.95, -S * 0.45);
+      c.closePath();
+      c.fill();
+      c.strokeStyle = "rgba(76, 29, 149, 0.18)";
+      c.lineWidth = Math.max(1, S * 0.05);
+      c.stroke();
+      c.fillStyle = "#1c1428";
+      c.beginPath(); c.ellipse(-S * 0.28, -S * 1.5, S * 0.12, S * 0.16, 0, 0, TAU); c.fill();
+      c.beginPath(); c.ellipse(S * 0.28, -S * 1.5, S * 0.12, S * 0.16, 0, 0, TAU); c.fill();
+      blush(c, S, -S * 1.22);
+      c.fillStyle = "#fb7185";
+      c.beginPath(); c.ellipse(0, -S * 1.18, S * 0.1, S * 0.07, 0, 0, TAU); c.fill();
+      addEyeGlow(c, fig, S, -S * 1.5, 0.28, t);
+    }
+    function drawCostume(c, fig, S, t) {
+      if (fig.type === "pumpkin") drawPumpkin(c, fig, S, t);
+      else if (fig.type === "bat") drawBat(c, fig, S, t);
+      else if (fig.type === "witch") drawWitch(c, fig, S, t);
+      else if (fig.type === "candy") drawCandy(c, fig, S, t);
+      else if (fig.type === "cat") drawCat(c, fig, S, t);
+      else drawSheet(c, fig, S, t);
+    }
+    function shimmerAlpha(fig, t) {
+      var s = fig.strength;
+      var pulse = 0.5 + 0.5 * Math.sin(t * 0.006 + fig.phase);
+      return 1 - (0.16 + 0.42 * s) * (0.72 + 0.28 * pulse);
+    }
+    function renderCostume(fig, S, t) {
+      var w = Math.max(8, Math.ceil(S * 8));
+      var h = Math.max(8, Math.ceil(S * 8));
+      if (scratch.width !== w || scratch.height !== h) {
+        scratch.width = w;
+        scratch.height = h;
+      }
+      var ox = w / 2;
+      var oy = h * 0.72;
+      sctx.setTransform(1, 0, 0, 1, 0, 0);
+      sctx.clearRect(0, 0, scratch.width, scratch.height);
+      sctx.save();
+      sctx.translate(ox, oy);
+      if (fig.flip) sctx.scale(-1, 1);
+      var shimmer = fig.real && fig.tell === "shimmer";
+      sctx.globalAlpha = shimmer ? shimmerAlpha(fig, t) : 1;
+      drawCostume(sctx, fig, S, t);
+      if (shimmer) {
+        var sweep = Math.sin(t * 0.005 + fig.phase) * S * 1.2;
+        var g = sctx.createLinearGradient(sweep - S, -S * 2.2, sweep + S, -S * 0.4);
+        g.addColorStop(0, "rgba(255,255,255,0)");
+        g.addColorStop(0.5, "rgba(255,255,255,0.95)");
+        g.addColorStop(1, "rgba(255,255,255,0)");
+        sctx.globalCompositeOperation = "source-atop";
+        sctx.fillStyle = g;
+        sctx.globalAlpha = 0.34 + 0.48 * fig.strength;
+        sctx.fillRect(-S * 3.2, -S * 4.2, S * 6.4, S * 4.6);
+      }
+      sctx.restore();
+      return { ox: ox, oy: oy };
+    }
+
+    function drawFox(t) {
+      var F = Math.min(dpr, Math.max(0.7, canvas.height / 520));
+      var x = 40 * F;
+      var y = canvas.height - 12 * F;
+      ctx.save();
+      ctx.translate(x, y);
+      var bounce = Math.sin(t * 0.005) * 1.4 * F;
+      if (charMood === "cheer" || charMood === "wow") bounce = Math.abs(Math.sin(t * 0.016)) * 5 * F;
+      if (charMood === "gasp") bounce = Math.sin(t * 0.02) * 2 * F;
+      ctx.translate(0, bounce);
+      ctx.fillStyle = "rgba(18, 8, 32, 0.35)";
+      ctx.beginPath(); ctx.ellipse(6 * F, 0, 16 * F, 4 * F, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = "#fb923c";
+      ctx.beginPath(); ctx.ellipse(-8 * F, -14 * F, 9 * F, 5.5 * F, -0.7, 0, TAU); ctx.fill();
+      ctx.fillStyle = "#fff7ed";
+      ctx.beginPath(); ctx.arc(-15 * F, -17 * F, 3.2 * F, 0, TAU); ctx.fill();
+      ctx.fillStyle = "#f97316";
+      ctx.beginPath(); ctx.ellipse(4 * F, -16 * F, 13 * F, 11 * F, 0, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(8 * F, -32 * F, 11 * F, 0, TAU); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(0, -36 * F); ctx.lineTo(-6 * F, -50 * F); ctx.lineTo(4 * F, -40 * F); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(12 * F, -38 * F); ctx.lineTo(20 * F, -52 * F); ctx.lineTo(16 * F, -36 * F); ctx.fill();
+      ctx.fillStyle = "#fecdd3";
+      ctx.beginPath(); ctx.moveTo(1 * F, -38 * F); ctx.lineTo(-3 * F, -46 * F); ctx.lineTo(4 * F, -40 * F); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(13 * F, -39 * F); ctx.lineTo(17 * F, -47 * F); ctx.lineTo(15 * F, -37 * F); ctx.fill();
+      ctx.fillStyle = "#fff7ed";
+      ctx.beginPath(); ctx.ellipse(10 * F, -29 * F, 7 * F, 5 * F, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = "#1c1428";
+      if (charMood === "gasp") {
+        ctx.beginPath(); ctx.arc(5 * F, -33 * F, 1.8 * F, 0, TAU); ctx.fill();
+        ctx.beginPath(); ctx.arc(12 * F, -33 * F, 1.8 * F, 0, TAU); ctx.fill();
+        ctx.beginPath(); ctx.arc(9 * F, -26 * F, 2.4 * F, 0, TAU); ctx.fill();
+      } else if (charMood === "cheer" || charMood === "wow") {
+        ctx.strokeStyle = "#1c1428";
+        ctx.lineWidth = 1.6 * F;
+        ctx.lineCap = "round";
+        ctx.beginPath(); ctx.arc(5 * F, -32 * F, 2.2 * F, Math.PI * 0.15, Math.PI * 0.85); ctx.stroke();
+        ctx.beginPath(); ctx.arc(12 * F, -32 * F, 2.2 * F, Math.PI * 0.15, Math.PI * 0.85); ctx.stroke();
+        ctx.beginPath(); ctx.arc(9 * F, -28 * F, 3.2 * F, 0.2, Math.PI - 0.2); ctx.stroke();
+      } else if (charMood === "focus") {
+        ctx.beginPath(); ctx.ellipse(5 * F, -33 * F, 1.7 * F, 1.2 * F, 0, 0, TAU); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(12 * F, -33 * F, 1.7 * F, 1.2 * F, 0, 0, TAU); ctx.fill();
+        ctx.strokeStyle = "#1c1428";
+        ctx.lineWidth = 1.4 * F;
+        ctx.beginPath(); ctx.arc(9 * F, -27.5 * F, 2.2 * F, 0.3, Math.PI - 0.3); ctx.stroke();
+      } else {
+        ctx.beginPath(); ctx.arc(5 * F, -33 * F, 1.6 * F, 0, TAU); ctx.fill();
+        ctx.beginPath(); ctx.arc(12 * F, -33 * F, 1.6 * F, 0, TAU); ctx.fill();
+        ctx.strokeStyle = "#1c1428";
+        ctx.lineWidth = 1.4 * F;
+        ctx.lineCap = "round";
+        ctx.beginPath(); ctx.arc(9 * F, -28 * F, 2.6 * F, 0.25, Math.PI - 0.25); ctx.stroke();
+      }
+      var glow = 0.55 + 0.45 * Math.sin(t * 0.006);
+      ctx.fillStyle = "rgba(253, 224, 138, " + (0.35 * glow) + ")";
+      ctx.beginPath(); ctx.arc(24 * F, -22 * F, 12 * F, 0, TAU); ctx.fill();
+      ctx.fillStyle = "#9a3412";
+      ctx.fillRect(19 * F, -28 * F, 10 * F, 13 * F);
+      ctx.fillStyle = "#fde68a";
+      ctx.fillRect(21 * F, -26 * F, 6 * F, 9 * F);
+      ctx.fillStyle = "#9a3412";
+      ctx.fillRect(22.2 * F, -32 * F, 3.4 * F, 5 * F);
+      ctx.restore();
+    }
+
+    function drawSpotlight() {
+      if (phase === "title") return;
+      var x = lantern.x, y = lantern.y;
+      var rad = Math.max(canvas.width, canvas.height) * 0.36;
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      var g = ctx.createRadialGradient(x, y, rad * 0.04, x, y, rad);
+      g.addColorStop(0, "rgba(255, 214, 150, 0.30)");
+      g.addColorStop(0.45, "rgba(255, 150, 50, 0.10)");
+      g.addColorStop(1, "rgba(255, 120, 20, 0)");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.restore();
+    }
+
+    function drawMarks(list) {
+      var n = list.length;
+      if (phase === "play" && hover) {
+        var hm = metrics(hover, animT, n);
+        ctx.strokeStyle = "rgba(254, 215, 170, 0.95)";
+        ctx.lineWidth = 2.2 * dpr;
+        ctx.beginPath();
+        ctx.arc(hm.cx, hm.cy, hm.r * 0.92, 0, TAU);
+        ctx.stroke();
+      }
+      if ((phase === "cheer" || phase === "result") && foundFig && phase === "cheer") {
+        var fm = metrics(foundFig, animT, n);
+        ctx.strokeStyle = "rgba(167, 243, 208, 0.95)";
+        ctx.lineWidth = 3 * dpr;
+        ctx.beginPath();
+        ctx.arc(fm.cx, fm.cy, fm.r * (0.9 + 0.08 * Math.sin(animT * 0.02)), 0, TAU);
+        ctx.stroke();
+      }
+      if (phase === "result" && markReal) {
+        var rm = metrics(markReal, animT, n);
+        ctx.strokeStyle = "rgba(253, 224, 138, 0.95)";
+        ctx.lineWidth = 3 * dpr;
+        ctx.beginPath();
+        ctx.arc(rm.cx, rm.cy, rm.r, 0, TAU);
+        ctx.stroke();
+      }
+      if (phase === "result" && markWrong) {
+        var wm = metrics(markWrong, animT, n);
+        ctx.strokeStyle = "#fb7185";
+        ctx.lineWidth = 3.2 * dpr;
+        ctx.lineCap = "round";
+        var s = wm.r * 0.38;
+        ctx.beginPath();
+        ctx.moveTo(wm.cx - s, wm.cy - s);
+        ctx.lineTo(wm.cx + s, wm.cy + s);
+        ctx.moveTo(wm.cx + s, wm.cy - s);
+        ctx.lineTo(wm.cx - s, wm.cy + s);
+        ctx.stroke();
+      }
+    }
+
+    function draw() {
+      var list = activeCrowd();
+      var appear = 1;
+      if (phase === "look") {
+        var elapsed = lookTotal - clock;
+        appear = clamp(elapsed / 240, 0, 1);
+      }
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawBackground(animT);
+      var order = list.slice().sort(function (a, b) { return a.ny - b.ny; });
+      for (var i = 0; i < order.length; i++) drawShadow(order[i], metrics(order[i], animT, list.length));
+      for (var k = 0; k < order.length; k++) {
+        var fig = order[k];
+        var m = metrics(fig, animT, list.length);
+        var bmp = renderCostume(fig, m.S, animT);
+        ctx.save();
+        if (fig.real && fig.tell === "shimmer" && fig.strength > 0.45) {
+          ctx.globalAlpha = appear * 0.22;
+          ctx.drawImage(scratch, m.x - bmp.ox + m.S * 0.14, m.y - m.lift - bmp.oy - m.S * 0.05);
+        }
+        ctx.globalAlpha = appear;
+        ctx.drawImage(scratch, m.x - bmp.ox, m.y - m.lift - bmp.oy);
+        ctx.restore();
+      }
+      var vg = ctx.createRadialGradient(canvas.width * 0.5, canvas.height * 0.5, canvas.width * 0.2, canvas.width * 0.5, canvas.height * 0.48, canvas.width * 0.78);
+      vg.addColorStop(0, "rgba(0,0,0,0)");
+      vg.addColorStop(1, "rgba(10, 4, 24, 0.28)");
+      ctx.fillStyle = vg;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      drawSpotlight();
+      drawMarks(list);
+      drawFox(animT);
+    }
+
+    function pointerPos(e) {
+      var r = canvas.getBoundingClientRect();
+      return {
+        x: (e.clientX - r.left) * (canvas.width / r.width),
+        y: (e.clientY - r.top) * (canvas.height / r.height)
+      };
+    }
+    function aimLantern(p, pointerType) {
+      var y = p.y;
+      if (pointerType === "touch") y -= 36 * dpr;
+      lanternTo.x = p.x;
+      lanternTo.y = y;
+      lanternTo.on = true;
+    }
+    function onPointerMove(e) {
+      if (!canvas.width) return;
+      var p = pointerPos(e);
+      aimLantern(p, e.pointerType);
+      if (phase === "play") hover = figureAt(p.x, p.y);
+      else hover = null;
+    }
+    function onPointerDown(e) {
+      if (e.cancelable) e.preventDefault();
+      var p = pointerPos(e);
+      aimLantern(p, e.pointerType);
+      if (phase === "look") {
+        setBubble("まだみてて…");
+        charMood = "focus";
+        return;
+      }
+      if (phase !== "play") return;
+      var hit = figureAt(p.x, p.y);
+      if (!hit) {
+        setBubble("おばけをタップして");
+        return;
+      }
+      if (hit.real) succeed(hit);
+      else failPick(hit);
+    }
+
+    function showFlash(text) {
+      flashToken++;
+      var my = flashToken;
+      flash.textContent = text;
+      flash.className = "flash show";
+      setTimeout(function () {
+        if (flashToken !== my) return;
+        flash.className = "flash";
+        flash.textContent = "";
+      }, 700);
+    }
+    function clearFlash() {
+      flashToken++;
+      flash.className = "flash";
+      flash.textContent = "";
+    }
+
+    function hudLook() {
+      hudTime.textContent = "みて…";
+      hudTime.classList.add("look");
+      hudTime.classList.remove("warn");
+      hint.classList.remove("go");
+      hint.textContent = "みて… まだ選ばなくていい";
+    }
+    function hudPlay(left) {
+      hudTime.textContent = "残り " + Math.max(0, left).toFixed(1) + "秒";
+      hudTime.classList.remove("look");
+      if (left <= 2.5) hudTime.classList.add("warn");
+      else hudTime.classList.remove("warn");
+    }
+
+    function startRound() {
+      var cfg = ROUNDS[round];
+      var tell = tells[round];
+      crowd = spawnCrowd(cfg.n, tell, cfg.strength, false);
+      foundFig = null;
+      markWrong = null;
+      markReal = null;
+      hover = null;
+      clearFlash();
+      phase = "look";
+      lookTotal = cfg.look;
+      clock = cfg.look;
+      charMood = "focus";
+      var reached = round + 1;
+      if (reached > bestReached) bestReached = reached;
+      saveBest();
+      hudRound.textContent = "ラウンド " + reached + " / " + TOTAL;
+      hudCount.textContent = cfg.n + "人";
+      hudLook();
+      setBubble(LOOK_LINES[round] || "みて…");
+    }
+    function beginAction() {
+      phase = "play";
+      clock = ROUNDS[round].act;
+      charMood = "idle";
+      hint.classList.add("go");
+      hint.textContent = "タップ / クリックで選ぶ";
+      setBubble(ACT_LINES[round] || "どれがほんもの？");
+      hudPlay(clock / 1000);
+    }
+    function startGame() {
+      cheerToken++;
+      titleEl.hidden = true;
+      resultEl.hidden = true;
+      round = 0;
+      clearedThisRun = 0;
+      tells = makeTellOrder();
+      snap.bestReached = bestReached;
+      snap.bestCleared = bestCleared;
+      snap.bestStreak = bestStreak;
+      foundFig = null;
+      markWrong = null;
+      markReal = null;
+      btnCopy.textContent = "結果をコピー";
+      startRound();
+    }
+    function succeed(fig) {
+      if (phase !== "play") return;
+      phase = "cheer";
+      foundFig = fig;
+      hover = null;
+      clearedThisRun += 1;
+      if (clearedThisRun > bestCleared) bestCleared = clearedThisRun;
+      saveBest();
+      charMood = "cheer";
+      showFlash("見つけた！");
+      setBubble(["見つけた！", "それだ！", "するどい！"][(Math.random() * 3) | 0]);
+      hint.textContent = "見つけた！";
+      cheerToken++;
+      var my = cheerToken;
+      setTimeout(function () {
+        if (my !== cheerToken || phase !== "cheer") return;
+        if (round + 1 >= TOTAL) {
+          streak += 1;
+          if (streak > bestStreak) bestStreak = streak;
+          saveBest();
+          charMood = "wow";
+          endRun(true, "5ラウンドぜんぶ、ほんものを見抜いた！", "");
+        } else {
+          round += 1;
+          startRound();
+        }
+      }, 820);
+    }
+    function failPick(fig) {
+      if (phase !== "play") return;
+      phase = "result";
+      markWrong = fig;
+      markReal = realFig();
+      foundFig = null;
+      hover = null;
+      charMood = "gasp";
+      var left = Math.max(0, clock / 1000);
+      var tell = TELL_NAME[tells[round]] || "目印";
+      var why = "ラウンド" + (round + 1)
+        + "｜ニセモノを選んだ（" + (NAMES[fig.type] || "？") + "）"
+        + "｜残り" + left.toFixed(1) + "秒"
+        + "｜目印は「" + tell + "」";
+      streak = 0;
+      saveBest();
+      setBubble("それはニセモノ…");
+      endRun(false, why, "ニセモノを選んだ");
+    }
+    function failTimeout() {
+      if (phase !== "play") return;
+      phase = "result";
+      markWrong = null;
+      markReal = realFig();
+      foundFig = null;
+      hover = null;
+      charMood = "gasp";
+      var lim = (ROUNDS[round].act / 1000).toFixed(1);
+      var tell = TELL_NAME[tells[round]] || "目印";
+      var why = "ラウンド" + (round + 1)
+        + "｜時間切れ（制限" + lim + "秒）"
+        + "｜目印は「" + tell + "」";
+      streak = 0;
+      saveBest();
+      setBubble("時間切れ…");
+      endRun(false, why, "時間切れ");
+    }
+    function endRun(won, why, shortWhy) {
+      phase = "result";
+      cheerToken++;
+      clearFlash();
+      var reached = won ? TOTAL : (round + 1);
+      if (won) {
+        resultTitle.textContent = "完全クリア";
+        resultWhy.textContent = why;
+        resultWhy.className = "why ok";
+        resultMeta.textContent = "クリア " + TOTAL + " / " + TOTAL;
+        setBubble("ぜんぶ見ぬいた！");
+        lastShare = "ほんものゴースト 完全クリア " + TOTAL + "/" + TOTAL
+          + " 連続" + streak
+          + " #ねむねむゲーム部\n" + PLAY_URL;
+      } else {
+        resultTitle.textContent = "アウト";
+        resultWhy.textContent = why;
+        resultWhy.className = "why";
+        resultMeta.textContent = "クリア " + clearedThisRun + " / " + TOTAL + " · 到達 " + reached + " ラウンド";
+        lastShare = "ほんものゴースト 到達 " + reached + "/" + TOTAL
+          + " クリア " + clearedThisRun
+          + " " + shortWhy
+          + " #ねむねむゲーム部\n" + PLAY_URL;
+      }
+      var improved = bestReached > snap.bestReached || bestCleared > snap.bestCleared || bestStreak > snap.bestStreak;
+      resultRecord.hidden = !improved;
+      var label = bestLabel();
+      resultBest.textContent = label;
+      titleBest.textContent = label;
+      resultEl.hidden = false;
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+      lockToken++;
+      var my = lockToken;
+      inputLockUntil = Date.now() + LOCK_MS;
+      btnRetry.disabled = true;
+      btnCopy.disabled = true;
+      btnGallery.disabled = true;
+      setTimeout(function () {
+        if (my !== lockToken) return;
+        btnRetry.disabled = false;
+        btnCopy.disabled = false;
+        btnGallery.disabled = false;
+      }, LOCK_MS);
+    }
+
+    function tick(now) {
+      raf = requestAnimationFrame(tick);
+      var dt = lastTs ? Math.min(48, now - lastTs) : 0;
+      lastTs = now;
+      animT = now;
+      lantern.x += (lanternTo.x - lantern.x) * 0.18;
+      lantern.y += (lanternTo.y - lantern.y) * 0.18;
+      if (phase === "look") {
+        clock -= dt;
+        hudLook();
+        if (clock <= 0) beginAction();
+      } else if (phase === "play") {
+        clock -= dt;
+        var left = clock / 1000;
+        hudPlay(left);
+        if (clock <= 0) failTimeout();
+      }
+      draw();
+    }
+
+    btnStart.addEventListener("click", function () {
+      btnStart.blur();
+      startGame();
+    });
+    btnRetry.addEventListener("click", function () {
+      if (btnRetry.disabled || Date.now() < inputLockUntil) return;
+      startGame();
+    });
+    btnCopy.addEventListener("click", function () {
+      if (btnCopy.disabled || Date.now() < inputLockUntil) return;
+      var done = function () {
+        btnCopy.textContent = "コピーした！";
+        setTimeout(function () { btnCopy.textContent = "結果をコピー"; }, 1000);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(lastShare).then(done).catch(function () {
+          window.prompt("コピーしてね", lastShare);
+        });
+      } else {
+        window.prompt("コピーしてね", lastShare);
+      }
+    });
+    btnGallery.addEventListener("click", function () {
+      if (btnGallery.disabled || Date.now() < inputLockUntil) return;
+      location.href = "../../index.html";
+    });
+    window.addEventListener("keydown", function (e) {
+      if (e.key === " " || e.code === "Space") e.preventDefault();
+    });
+    canvas.addEventListener("pointerdown", onPointerDown, { passive: false });
+    window.addEventListener("pointermove", onPointerMove, { passive: true });
+    canvas.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+    window.addEventListener("resize", resize);
+
+    loadBest();
+    titleBest.textContent = bestLabel();
+    resultBest.textContent = bestLabel();
+    resize();
+    raf = requestAnimationFrame(tick);
+  })();
+  </script>
+</body>
+</html>
