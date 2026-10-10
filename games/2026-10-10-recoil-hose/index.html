@@ -349,7 +349,7 @@
     { x: 2865, y: 390, name: "G" },
     { x: 3780, y: 488, name: "I" }
   ];
-  var GOAL = { x: 3900, top: 516, h: 180, r: 86 };
+  var GOAL = { x: 3900, top: 516, h: 180, r: 120 };
   var MOVE = 5;
 
   var canvas = document.getElementById("game");
@@ -369,7 +369,7 @@
 
   var platforms = [];
   var fires = [];
-  var fox = { x: 400, y: 540, vx: 0, vy: 0, ground: 0 };
+  var fox = { x: 540, y: 540, vx: 0, vy: 0, ground: 0 };
   var aim = { x: 1, y: 0 };
   var input = { spray: false, target: null, dir: null };
   var mode = "title";
@@ -446,7 +446,7 @@
   function resetWorld() {
     platforms = clonePlatforms();
     fires = cloneFires();
-    fox.x = 400; fox.y = 540; fox.vx = 0; fox.vy = 0; fox.ground = 0;
+    fox.x = 540; fox.y = 540; fox.vx = 0; fox.vy = 0; fox.ground = 0;
     aim.x = 1; aim.y = 0;
     input.spray = false; input.target = null; input.dir = null;
     elapsed = 0;
@@ -654,7 +654,7 @@
       input.target = null;
       input.dir = null;
     }
-    input.spray = !!((pointer.down || spaceDown) && !suppressSpace);
+    input.spray = !!(pointer.down || (spaceDown && !suppressSpace));
   }
 
   function pointerWorld() {
@@ -1085,15 +1085,13 @@
     drawStream(ctx);
     var faceAimX = aim.x, faceAimY = aim.y;
     drawFox(ctx, fox.x, fox.y, faceAimX, faceAimY, input.spray && mode === "play", t);
-    if (Math.hypot(fox.x - 180, fox.y - 540) < 30 || fox.x < 520) {
-      ctx.fillStyle = "#fff7ed";
-      roundRect(ctx, 150, 492, 92, 26, 6);
-      ctx.fill();
-      ctx.fillStyle = "#9a3412";
-      ctx.font = "900 14px " + FONT;
-      ctx.textAlign = "center";
-      ctx.fillText("スタート", 196, 510);
-    }
+    ctx.fillStyle = "#fff7ed";
+    roundRect(ctx, 248, 512, 96, 28, 6);
+    ctx.fill();
+    ctx.fillStyle = "#9a3412";
+    ctx.font = "900 15px " + FONT;
+    ctx.textAlign = "center";
+    ctx.fillText("スタート", 296, 532);
     drawPopups(ctx);
     ctx.restore();
   }
@@ -1297,12 +1295,10 @@
   }
 
   document.getElementById("btn-start").addEventListener("click", function () {
-    suppressSpace = true;
     startGame();
   });
   document.getElementById("btn-retry").addEventListener("click", function () {
     if (actions.classList.contains("locked")) return;
-    suppressSpace = true;
     startGame();
   });
   document.getElementById("btn-copy").addEventListener("click", function () {
@@ -1330,26 +1326,38 @@
     ta.remove();
   }
 
-  canvas.addEventListener("pointerdown", function (e) {
+  function pressAt(e) {
     if (mode !== "play") return;
     pointer.down = true;
-    pointer.id = e.pointerId;
+    pointer.valid = true;
+    if (e.pointerId != null) pointer.id = e.pointerId;
+    setPointer(e);
+  }
+  function moveAt(e) {
+    if (mode !== "play") return;
     pointer.valid = true;
     setPointer(e);
+  }
+  canvas.addEventListener("pointerdown", function (e) {
+    pressAt(e);
     try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
     e.preventDefault();
   });
-  canvas.addEventListener("pointermove", function (e) {
-    if (mode !== "play") return;
-    pointer.valid = true;
-    setPointer(e);
+  canvas.addEventListener("mousedown", function (e) {
+    if (e.button !== 0) return;
+    pressAt(e);
+    e.preventDefault();
   });
+  canvas.addEventListener("pointermove", moveAt);
+  canvas.addEventListener("mousemove", moveAt);
   function endPointer(e) {
-    if (pointer.id != null && e.pointerId !== pointer.id) return;
+    if (e.pointerId != null && pointer.id != null && e.pointerId !== pointer.id) return;
     pointer.down = false;
   }
   canvas.addEventListener("pointerup", endPointer);
   canvas.addEventListener("pointercancel", endPointer);
+  canvas.addEventListener("mouseup", function () { pointer.down = false; });
+  window.addEventListener("mouseup", function () { pointer.down = false; });
   function setPointer(e) {
     var rect = canvas.getBoundingClientRect();
     pointer.sx = e.clientX - rect.left;
@@ -1420,6 +1428,13 @@
         var r = step();
         if (r !== "ok") break;
       }
+    },
+    screen: function (wx, wy) {
+      var rect = canvas.getBoundingClientRect();
+      return {
+        x: rect.left + ((wx - cam.x) / viewW) * rect.width,
+        y: rect.top + ((wy - cam.y) / viewH) * rect.height
+      };
     },
     state: function () {
       return {
