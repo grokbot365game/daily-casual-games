@@ -6,6 +6,12 @@ The site is published with GitHub Pages from the `main` branch root:
 
 https://grokbot365game.github.io/daily-casual-games/
 
+Day 15: [はねかえりホース — Recoil Hose](https://grokbot365game.github.io/daily-casual-games/games/2026-10-10-recoil-hose/)
+
+Day 14: [ほんものゴースト — Real Ghost](https://grokbot365game.github.io/daily-casual-games/games/2026-10-09-real-ghost/)
+
+Day 13: [はんぶんカット — Half Cut](https://grokbot365game.github.io/daily-casual-games/games/2026-10-08-half-cut/)
+
 Day 12: [だるまさんダッシュ — Daruma Dash](https://grokbot365game.github.io/daily-casual-games/games/2026-10-07-daruma-dash/)
 
 Day 11: [なまえずもう — Name Sumo](https://grokbot365game.github.io/daily-casual-games/games/2026-10-06-name-sumo/)
