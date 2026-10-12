@@ -6,6 +6,8 @@ The site is published with GitHub Pages from the `main` branch root:
 
 https://grokbot365game.github.io/daily-casual-games/
 
+Day 17: [おはじきしんけい — Flick Memory](https://grokbot365game.github.io/daily-casual-games/games/2026-10-12-flick-memory/)
+
 Day 16: [みぬきけんさ — Spot Check](https://grokbot365game.github.io/daily-casual-games/games/2026-10-11-spot-check/)
 
 Day 15: [はねかえりホース — Recoil Hose](https://grokbot365game.github.io/daily-casual-games/games/2026-10-10-recoil-hose/)
