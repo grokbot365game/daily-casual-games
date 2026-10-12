@@ -1,0 +1,1316 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#7ec8ea">
+  <meta name="description" content="おはじきしんけい — Flick Memory. おはじきをはじいてカードをめくれ。ペアそろえ、場外はミス。">
+  <title>おはじきしんけい — Flick Memory</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%237ec8ea'/%3E%3Ccircle cx='8' cy='9' r='5' fill='%236ed45f' stroke='%231d6b38' stroke-width='.7'/%3E%3Ccircle cx='6.2' cy='8.2' r='1.1' fill='%23fff'/%3E%3Ccircle cx='9.8' cy='8.2' r='1.1' fill='%23fff'/%3E%3Ccircle cx='12.2' cy='12.2' r='2' fill='%237ee0d6' stroke='%230e6e68' stroke-width='.5'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      --ink: #163028;
+      --muted: #3e6556;
+      --cream: #fff8ec;
+      --coral: #ef3b3b;
+      --coral-dark: #b42330;
+      --gold: #e6a100;
+      --teal: #0f766e;
+      --line: rgba(22, 48, 40, .12);
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+    body {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      color: var(--ink);
+      background:
+        radial-gradient(90% 40% at 50% 100%, #b7ebc6 0%, transparent 55%),
+        radial-gradient(40% 28% at 100% 0%, #fff1b8 0%, transparent 50%),
+        linear-gradient(180deg, #7ec8ea 0%, #b7e4c7 58%, #8fd19a 100%);
+      font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Yu Gothic", "WenQuanYi Micro Hei", "Droid Sans Fallback", "Meiryo", sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: none;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      z-index: 0;
+      left: 8%;
+      top: 12%;
+      width: 90px;
+      height: 34px;
+      border-radius: 40px;
+      background: rgba(255, 255, 255, .55);
+      box-shadow:
+        46px 8px 0 8px rgba(255, 255, 255, .42),
+        160px 36px 0 14px rgba(255, 255, 255, .35);
+      pointer-events: none;
+    }
+    [hidden] { display: none !important; }
+    button, a { -webkit-tap-highlight-color: transparent; font: inherit; }
+    button:focus-visible, a:focus-visible {
+      outline: 3px solid #fff3b0;
+      outline-offset: 2px;
+    }
+    .back {
+      position: fixed;
+      z-index: 50;
+      top: max(10px, env(safe-area-inset-top));
+      left: max(12px, env(safe-area-inset-left));
+      padding: 8px 12px;
+      border-radius: 999px;
+      color: var(--ink);
+      background: rgba(255, 248, 236, .94);
+      box-shadow: inset 0 0 0 1px var(--line);
+      font-size: .78rem;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-decoration: none;
+    }
+    .shell {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      max-width: 460px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding:
+        calc(max(10px, env(safe-area-inset-top)) + 42px)
+        max(12px, env(safe-area-inset-right))
+        max(12px, env(safe-area-inset-bottom))
+        max(12px, env(safe-area-inset-left));
+      min-height: 0;
+    }
+    .hud {
+      flex: none;
+      padding: 8px 10px 8px;
+      border-radius: 18px;
+      background: rgba(255, 248, 236, .96);
+      box-shadow: inset 0 0 0 1px var(--line), 0 8px 20px rgba(20, 60, 40, .12);
+    }
+    .hud-main {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .hud-frog { width: 52px; height: 58px; flex: none; }
+    .hud-frog .frog { width: 52px; height: auto; display: block; }
+    .titles { flex: 1; min-width: 0; line-height: 1.15; }
+    .titles b { display: block; font-size: 1.02rem; letter-spacing: .03em; }
+    .titles span { color: var(--muted); font-size: .78rem; font-weight: 800; }
+    .shotbox { text-align: right; flex: none; }
+    .shot-label {
+      display: block;
+      font-size: .85rem;
+      font-weight: 900;
+      letter-spacing: .12em;
+      color: var(--teal);
+    }
+    .shot-num {
+      display: block;
+      font-size: 1.7rem;
+      font-weight: 900;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+    .shot-num.low { color: var(--coral); }
+    .shot-num.pop { animation: numpop .28s ease; }
+    @keyframes numpop {
+      0% { transform: scale(1.25); }
+      100% { transform: scale(1); }
+    }
+    .dots {
+      margin-top: 3px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2px;
+      justify-content: flex-end;
+      max-width: 118px;
+    }
+    .dots i {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #d9fff8, #14b8a6 55%, #0f766e);
+      box-shadow: inset -1px -1px 0 rgba(0, 0, 0, .18);
+    }
+    .pairs {
+      margin: 6px 0 0;
+      font-size: 1.2rem;
+      font-weight: 900;
+      letter-spacing: .02em;
+    }
+    .pairs b {
+      font-size: 1.45rem;
+      font-variant-numeric: tabular-nums;
+    }
+    .tip {
+      flex: none;
+      height: 72px;
+      margin: 0;
+      padding: 6px 12px;
+      display: grid;
+      place-items: center;
+      border-radius: 16px;
+      background: rgba(255, 248, 236, .96);
+      box-shadow: inset 0 0 0 1px var(--line);
+      text-align: center;
+      font-size: 1.28rem;
+      font-weight: 900;
+      line-height: 1.25;
+    }
+    .tip[data-kind="good"] { background: #e7f8df; color: #145c32; }
+    .tip[data-kind="bad"] { background: #ffe1e4; color: #9f1239; }
+    .tip[data-kind="warn"] { background: #ffe8cc; color: #9a3412; }
+    .tip[data-kind="pair"] { background: #fff1b8; color: #8a5a00; font-size: 1.85rem; }
+    .tip[data-kind="off"] { background: #ffd7c2; color: #9a3412; font-size: 1.85rem; }
+    .board {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: minmax(36px, 12%) 1fr 112px;
+      border-radius: 22px;
+      background-color: #147a5c;
+      background-image: radial-gradient(rgba(255, 255, 255, .06) 1px, transparent 1.4px);
+      background-size: 11px 11px;
+      box-shadow:
+        0 0 0 7px #e0a15a,
+        0 0 0 12px #8a4e22,
+        0 16px 28px rgba(20, 50, 30, .22);
+      touch-action: none;
+    }
+    .lip {
+      border-bottom: 2px dashed rgba(255, 248, 236, .5);
+      border-radius: 16px 16px 0 0;
+    }
+    .cards {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 8px;
+      padding: 8px 10px;
+    }
+    .card {
+      position: relative;
+      height: 100%;
+      min-height: 0;
+      perspective: 700px;
+    }
+    .card .inner {
+      position: absolute;
+      inset: 0;
+      display: block;
+      transform-style: preserve-3d;
+      transition: transform .32s ease;
+    }
+    .card.is-up .inner,
+    .card.is-gone .inner { transform: rotateY(180deg); }
+    .card .face {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+    .card .back {
+      background:
+        radial-gradient(circle at 50% 42%, rgba(255, 255, 255, .16), transparent 46%),
+        linear-gradient(180deg, #0f6d56, #0b4e40);
+      box-shadow: inset 0 0 0 2px rgba(255, 248, 236, .28);
+    }
+    .card .front {
+      background: var(--cream);
+      transform: rotateY(180deg);
+      box-shadow: inset 0 0 0 2px rgba(22, 48, 40, .08);
+    }
+    .card .back svg { width: 54%; height: 54%; }
+    .card .front svg { width: 74%; height: 74%; }
+    .card.is-up .front { box-shadow: inset 0 0 0 3px var(--teal); }
+    .card.is-hot { z-index: 2; }
+    .card.is-hot .inner { transform: rotateY(180deg) scale(1.04); }
+    .card.is-hot .front { box-shadow: inset 0 0 0 4px var(--gold); }
+    .card.is-gone { opacity: .42; }
+    .card.is-gone .front { box-shadow: inset 0 0 0 3px rgba(230, 161, 0, .85); }
+    .lane {
+      position: relative;
+      border-radius: 0 0 16px 16px;
+      background: linear-gradient(#1c946c, #0f684c);
+      border-top: 2px solid rgba(255, 255, 255, .18);
+    }
+    .tee {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 40px;
+      height: 40px;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      border: 2px dashed rgba(255, 248, 236, .75);
+      box-shadow: inset 0 0 0 6px rgba(255, 255, 255, .06);
+    }
+    .lane-frog {
+      position: absolute;
+      left: 2px;
+      bottom: 2px;
+      z-index: 4;
+      width: 84px;
+      height: 100px;
+      display: flex;
+      align-items: flex-end;
+      pointer-events: none;
+    }
+    .lane-frog .frog { width: 84px; height: auto; display: block; }
+    #marble {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 0;
+      height: 0;
+      z-index: 6;
+      pointer-events: none;
+    }
+    #marble .body {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 34% 30%, #ffffff 0 8%, #c8fff4 16%, #2ec4b6 48%, #0c6e6a 78%);
+      box-shadow:
+        inset -4px -5px 0 rgba(0, 0, 0, .16),
+        0 7px 0 rgba(0, 40, 30, .18);
+      transform: translate(-50%, -50%);
+    }
+    #marble.hot .body { box-shadow: 0 0 0 7px rgba(255, 243, 176, .45), inset -4px -5px 0 rgba(0, 0, 0, .16); }
+    #aim {
+      position: absolute;
+      width: 0;
+      height: 0;
+      z-index: 7;
+      pointer-events: none;
+    }
+    #aim-shaft {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 10px;
+      border-radius: 999px;
+      transform-origin: left center;
+      background: #ffe56a;
+      box-shadow: 0 2px 0 rgba(0, 0, 0, .12);
+    }
+    #aim-shaft::after {
+      content: "";
+      position: absolute;
+      right: -7px;
+      top: 50%;
+      width: 18px;
+      height: 18px;
+      margin-top: -9px;
+      border-radius: 50%;
+      background: inherit;
+      box-shadow: inset 0 0 0 3px rgba(255, 255, 255, .75);
+    }
+    #burst {
+      position: absolute;
+      left: 50%;
+      top: 46%;
+      width: 0;
+      height: 0;
+      z-index: 8;
+      pointer-events: none;
+    }
+    #burst i {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--gold);
+      opacity: 0;
+    }
+    #burst i:nth-child(3n) { background: #fff; }
+    #burst i:nth-child(3n+1) { background: var(--coral); }
+    #burst.go i { animation: burst .62s ease-out forwards; }
+    @keyframes burst {
+      0% { transform: translate(-50%, -50%) scale(.3); opacity: 1; }
+      100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1); opacity: 0; }
+    }
+    .overlay {
+      position: fixed;
+      z-index: 30;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding:
+        calc(max(12px, env(safe-area-inset-top)) + 46px)
+        16px
+        max(12px, env(safe-area-inset-bottom));
+      background: rgba(18, 60, 48, .28);
+      overflow: auto;
+    }
+    .panel {
+      width: min(100%, 420px);
+      max-height: 100%;
+      overflow: auto;
+      padding: 16px 18px 18px;
+      border-radius: 26px;
+      background: var(--cream);
+      text-align: center;
+      box-shadow: 0 18px 50px rgba(16, 40, 30, .28);
+    }
+    .title-frog .frog,
+    .result-frog .frog { width: min(168px, 46vw); height: auto; }
+    .panel h1 {
+      margin: 4px 0 0;
+      font-size: clamp(1.7rem, 8vw, 2.15rem);
+      letter-spacing: .04em;
+      line-height: 1.15;
+    }
+    .en {
+      margin: 2px 0 0;
+      color: var(--muted);
+      font-weight: 800;
+    }
+    .dayline {
+      margin: 2px 0 0;
+      color: var(--teal);
+      font-size: .86rem;
+      font-weight: 900;
+      letter-spacing: .06em;
+    }
+    .cue {
+      margin: 12px 0 0;
+      font-size: 1.42rem;
+      font-weight: 900;
+      line-height: 1.35;
+    }
+    .stake {
+      margin: 6px 0 0;
+      font-size: 1.08rem;
+      font-weight: 800;
+      line-height: 1.4;
+    }
+    .why {
+      margin: 8px 0 0;
+      font-size: 1.12rem;
+      font-weight: 800;
+      line-height: 1.4;
+    }
+    .primary {
+      appearance: none;
+      width: 100%;
+      min-height: 58px;
+      margin-top: 14px;
+      border: 0;
+      border-radius: 16px;
+      background: var(--coral);
+      color: white;
+      font-size: 1.4rem;
+      font-weight: 900;
+      letter-spacing: .08em;
+      box-shadow: 0 6px 0 var(--coral-dark);
+      cursor: pointer;
+    }
+    .primary:active { transform: translateY(2px); box-shadow: 0 4px 0 var(--coral-dark); }
+    .primary:disabled { opacity: .5; transform: none; }
+    .panel[data-kind="win"] h1 { color: #0f7a45; }
+    .panel[data-kind="off"] h1 { color: #c2410c; }
+    .panel[data-kind="empty"] h1 { color: #be123c; }
+    .frog .face,
+    .frog .arms-yay,
+    .frog .spark { display: none; }
+    .frog.is-idle .face-idle,
+    .frog.is-aim .face-aim,
+    .frog.is-fly .face-aim,
+    .frog.is-pair .face-yay,
+    .frog.is-win .face-yay,
+    .frog.is-miss .face-miss,
+    .frog.is-out .face-out { display: block; }
+    .frog.is-pair .arms-idle,
+    .frog.is-win .arms-idle { display: none; }
+    .frog.is-pair .arms-yay,
+    .frog.is-win .arms-yay { display: block; }
+    .frog.is-pair .spark,
+    .frog.is-win .spark { display: block; }
+    .frog.is-idle { animation: bob 1.8s ease-in-out infinite; }
+    .frog.is-aim { animation: bob .55s ease-in-out infinite; }
+    .frog.is-pair,
+    .frog.is-win { animation: hop .55s ease-in-out infinite; }
+    .frog.is-miss { animation: shudder .42s linear 2; }
+    .frog.is-out { transform: translateY(4px) rotate(3deg); }
+    @keyframes bob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+    @keyframes hop {
+      0%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-14px); }
+    }
+    @keyframes shudder {
+      0%, 100% { transform: translateX(0); }
+      30% { transform: translateX(-5px) rotate(-4deg); }
+      70% { transform: translateX(5px) rotate(4deg); }
+    }
+    @media (max-height: 700px) {
+      .title-frog .frog, .result-frog .frog { width: min(120px, 34vw); }
+      .cue { font-size: 1.22rem; margin-top: 8px; }
+      .stake { font-size: 1rem; }
+      .board { grid-template-rows: 32px 1fr 92px; }
+      .lane-frog { width: 66px; height: 82px; }
+      .lane-frog .frog { width: 66px; }
+      .tip { height: 60px; font-size: 1.12rem; }
+      .tip[data-kind="pair"], .tip[data-kind="off"] { font-size: 1.5rem; }
+      .pairs { font-size: 1.05rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .frog,
+      .shot-num.pop,
+      #burst.go i,
+      .card .inner { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body data-phase="title" data-shots="18" data-pairs="6" data-land="" data-tip="">
+  <a class="back" href="../../index.html">ギャラリー</a>
+  <main class="shell">
+    <header class="hud">
+      <div class="hud-main">
+        <div class="hud-frog" id="hud-frog"></div>
+        <div class="titles">
+          <b>おはじきしんけい</b>
+          <span>Day 17 · 2026-10-12</span>
+        </div>
+        <div class="shotbox">
+          <span class="shot-label">のこり</span>
+          <strong class="shot-num" id="shot-num">18</strong>
+          <div class="dots" id="dots"></div>
+        </div>
+      </div>
+      <p class="pairs">あと <b id="pairs-left">6</b> ペア</p>
+    </header>
+    <p class="tip" id="tip" role="status" data-kind="idle">いきたいほうへ はじいてはなす</p>
+    <div class="board" id="board">
+      <div class="lip" aria-hidden="true"></div>
+      <div class="cards" id="cards"></div>
+      <div class="lane" id="lane">
+        <div class="tee" id="tee"></div>
+        <div class="lane-frog" id="lane-frog"></div>
+      </div>
+      <div id="marble" aria-hidden="true"><div class="body"></div></div>
+      <div id="aim" hidden><div id="aim-shaft"></div></div>
+      <div id="burst" aria-hidden="true"></div>
+    </div>
+  </main>
+
+  <section class="overlay" id="title">
+    <div class="panel">
+      <div class="title-frog" id="title-frog"></div>
+      <h1>おはじきしんけい</h1>
+      <p class="en">Flick Memory</p>
+      <p class="dayline">Day 17 · 2026-10-12</p>
+      <p class="cue">いきたいほうへ、はじいてはなす</p>
+      <p class="stake">止まったカードが開く。場外はミス</p>
+      <p class="stake">のこりは18。0になったら はじき切れ</p>
+      <button type="button" class="primary" id="btn-start">はじめる</button>
+    </div>
+  </section>
+
+  <section class="overlay" id="result" hidden>
+    <div class="panel" id="result-panel">
+      <div class="result-frog" id="result-frog"></div>
+      <h1 id="result-title">はじき切れ！</h1>
+      <p class="why" id="result-why"></p>
+      <button type="button" class="primary" id="btn-retry" disabled>もういちど</button>
+    </div>
+  </section>
+
+  <template id="frog-tpl">
+    <svg class="frog is-idle" viewBox="0 0 200 230" aria-hidden="true">
+      <ellipse cx="100" cy="214" rx="46" ry="8" fill="#000" opacity=".16"/>
+      <ellipse cx="68" cy="196" rx="24" ry="13" fill="#3caa4e" stroke="#1d6b38" stroke-width="3"/>
+      <ellipse cx="134" cy="196" rx="24" ry="13" fill="#3caa4e" stroke="#1d6b38" stroke-width="3"/>
+      <g fill="none" stroke="#1d6b38" stroke-width="2" stroke-linecap="round">
+        <path d="M50 190c-8 2-10 8-6 10M60 198c-2 6 2 8 5 6M80 200c3 6 8 5 10 2"/>
+        <path d="M116 200c3 6 8 5 10 2M136 198c2 6 6 6 8 2M150 190c6 2 8 8 4 10"/>
+      </g>
+      <ellipse cx="100" cy="158" rx="50" ry="40" fill="#6ed45f" stroke="#1d6b38" stroke-width="3.5"/>
+      <ellipse cx="100" cy="168" rx="28" ry="22" fill="#f4ffd4" stroke="#1d6b38" stroke-width="2.5"/>
+      <circle cx="100" cy="166" r="7" fill="#7ee0d6" stroke="#0e6e68" stroke-width="2"/>
+      <circle cx="97.5" cy="163.5" r="2" fill="#fff"/>
+      <g class="arms-idle">
+        <ellipse cx="50" cy="150" rx="16" ry="12" fill="#6ed45f" stroke="#1d6b38" stroke-width="3" transform="rotate(-24 50 150)"/>
+        <ellipse cx="152" cy="148" rx="16" ry="12" fill="#6ed45f" stroke="#1d6b38" stroke-width="3" transform="rotate(22 152 148)"/>
+        <circle cx="166" cy="140" r="9" fill="#7ee0d6" stroke="#0e6e68" stroke-width="2.4"/>
+        <circle cx="163" cy="137" r="2.6" fill="#fff"/>
+      </g>
+      <g class="arms-yay">
+        <ellipse cx="46" cy="112" rx="15" ry="11" fill="#6ed45f" stroke="#1d6b38" stroke-width="3" transform="rotate(-58 46 112)"/>
+        <ellipse cx="154" cy="112" rx="15" ry="11" fill="#6ed45f" stroke="#1d6b38" stroke-width="3" transform="rotate(58 154 112)"/>
+      </g>
+      <circle cx="100" cy="86" r="50" fill="#7be06a" stroke="#1d6b38" stroke-width="3.5"/>
+      <path d="M60 62c10-24 70-24 82 0" fill="none" stroke="#ef3b3b" stroke-width="12" stroke-linecap="round"/>
+      <path d="M72 54c10-10 24-12 34-8" fill="none" stroke="#ffd0d0" stroke-width="3.5" stroke-linecap="round"/>
+      <circle cx="146" cy="60" r="6.5" fill="#ef3b3b" stroke="#9f1239" stroke-width="2"/>
+      <path d="M150 66c7 10 8 16 4 18" fill="none" stroke="#ef3b3b" stroke-width="5" stroke-linecap="round"/>
+      <path d="M78 118 l22 6 22-6 -6 14 h-32 z" fill="#ef4d4d" stroke="#1d6b38" stroke-width="2.5" stroke-linejoin="round"/>
+      <ellipse cx="62" cy="104" rx="9" ry="5.5" fill="#ff8aa0"/>
+      <ellipse cx="138" cy="104" rx="9" ry="5.5" fill="#ff8aa0"/>
+      <g class="face face-idle">
+        <ellipse cx="78" cy="82" rx="14" ry="15" fill="#fff" stroke="#1d6b38" stroke-width="2.6"/>
+        <ellipse cx="122" cy="82" rx="14" ry="15" fill="#fff" stroke="#1d6b38" stroke-width="2.6"/>
+        <circle cx="80" cy="84" r="6.4" fill="#243028"/>
+        <circle cx="124" cy="84" r="6.4" fill="#243028"/>
+        <circle cx="82.4" cy="81.4" r="2.3" fill="#fff"/>
+        <circle cx="126.4" cy="81.4" r="2.3" fill="#fff"/>
+        <path d="M86 112c6 8 22 8 28 0" fill="none" stroke="#1d6b38" stroke-width="3" stroke-linecap="round"/>
+      </g>
+      <g class="face face-aim">
+        <ellipse cx="78" cy="82" rx="14" ry="14" fill="#fff" stroke="#1d6b38" stroke-width="2.6"/>
+        <ellipse cx="122" cy="82" rx="14" ry="14" fill="#fff" stroke="#1d6b38" stroke-width="2.6"/>
+        <circle cx="80" cy="78" r="6.2" fill="#243028"/>
+        <circle cx="124" cy="78" r="6.2" fill="#243028"/>
+        <circle cx="82" cy="76" r="2.2" fill="#fff"/>
+        <circle cx="126" cy="76" r="2.2" fill="#fff"/>
+        <path d="M90 112h20" fill="none" stroke="#1d6b38" stroke-width="3" stroke-linecap="round"/>
+      </g>
+      <g class="face face-yay">
+        <path d="M64 84c8-12 18-12 26 0" fill="none" stroke="#1d6b38" stroke-width="4" stroke-linecap="round"/>
+        <path d="M110 84c8-12 18-12 26 0" fill="none" stroke="#1d6b38" stroke-width="4" stroke-linecap="round"/>
+        <path d="M82 106c8 14 28 14 36 0" fill="none" stroke="#1d6b38" stroke-width="3.2" stroke-linecap="round"/>
+        <ellipse cx="62" cy="100" rx="8" ry="4.5" fill="#ff8aa0"/>
+        <ellipse cx="138" cy="100" rx="8" ry="4.5" fill="#ff8aa0"/>
+      </g>
+      <g class="face face-miss">
+        <ellipse cx="78" cy="84" rx="15" ry="16" fill="#fff" stroke="#1d6b38" stroke-width="2.6"/>
+        <ellipse cx="122" cy="84" rx="15" ry="16" fill="#fff" stroke="#1d6b38" stroke-width="2.6"/>
+        <circle cx="78" cy="86" r="5.4" fill="#243028"/>
+        <circle cx="122" cy="86" r="5.4" fill="#243028"/>
+        <circle cx="80" cy="84" r="2" fill="#fff"/>
+        <circle cx="124" cy="84" r="2" fill="#fff"/>
+        <ellipse cx="100" cy="114" rx="7" ry="8" fill="#1d6b38"/>
+        <path d="M154 70c0 8 6 12 6 12s6-4 6-12-6-12-6-12-6 4-6 12z" fill="#b9ecff" stroke="#1d6b38" stroke-width="2"/>
+      </g>
+      <g class="face face-out">
+        <path d="M64 68l20 8" fill="none" stroke="#1d6b38" stroke-width="3.2" stroke-linecap="round"/>
+        <path d="M136 68l-20 8" fill="none" stroke="#1d6b38" stroke-width="3.2" stroke-linecap="round"/>
+        <ellipse cx="78" cy="86" rx="14" ry="15" fill="#fff" stroke="#1d6b38" stroke-width="2.6"/>
+        <ellipse cx="122" cy="86" rx="14" ry="15" fill="#fff" stroke="#1d6b38" stroke-width="2.6"/>
+        <circle cx="78" cy="90" r="6.2" fill="#243028"/>
+        <circle cx="122" cy="90" r="6.2" fill="#243028"/>
+        <circle cx="80" cy="88" r="2.1" fill="#fff"/>
+        <circle cx="124" cy="88" r="2.1" fill="#fff"/>
+        <path d="M86 116c6-7 22-7 28 0" fill="none" stroke="#1d6b38" stroke-width="3" stroke-linecap="round"/>
+      </g>
+      <g class="spark" fill="#f0b429" stroke="#a16207" stroke-width="1.4" stroke-linejoin="round">
+        <path d="M24 48l4 9 9 2-9 3-2 9-3-9-9-2 9-3z"/>
+        <path d="M172 40l3 7 7 1-7 2-1 7-2-7-7-1 7-2z"/>
+      </g>
+    </svg>
+  </template>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const SHOTS = 18;
+      const COLS = 4;
+      const PAIRS = 6;
+      const R = 15;
+      const DECEL = 1250;
+      const EXIT_DRAG = 168;
+      const CURVE = 1.62;
+      const GAIN = 1.08;
+      const MIN_DRAG = 28;
+      const PAIR_MS = 760;
+      const MISS_MS = 900;
+      const WHIFF_MS = 520;
+      const OFF_MS = 700;
+      const RESULT_LOCK = 560;
+      const IDLE_TIP = "いきたいほうへ はじいてはなす";
+      const ROW_NAME = ["おく列", "まん中", "てまえ"];
+
+      const ICONS = {
+        sun: '<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="22" fill="#fff3c4"/><circle cx="32" cy="32" r="11" fill="#f4a300"/><g stroke="#f4a300" stroke-width="4" stroke-linecap="round"><path d="M32 8v7M32 49v7M8 32h7M49 32h7M14 14l5 5M45 45l5 5M50 14l-5 5M19 45l-5 5"/></g></svg>',
+        fish: '<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="22" fill="#d7f6f8"/><path d="M10 32c8-12 20-14 32-8l12-8-4 16 4 16-12-8c-12 6-24 4-32-8z" fill="#14828f"/><circle cx="40" cy="30" r="2.2" fill="#fff"/><path d="M18 32h8" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>',
+        flower: '<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="22" fill="#ffe0ee"/><g fill="#ef4d8b"><circle cx="32" cy="16" r="8"/><circle cx="16" cy="26" r="8"/><circle cx="48" cy="26" r="8"/><circle cx="20" cy="44" r="8"/><circle cx="44" cy="44" r="8"/></g><circle cx="32" cy="32" r="7" fill="#ffd15c"/></svg>',
+        star: '<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="22" fill="#fff4cc"/><path d="M32 8l6.2 14.8H54l-12.4 9.2 4.6 15L32 38.8 17.8 47l4.6-15L10 22.8h15.8z" fill="#f0b429"/></svg>',
+        mushroom: '<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="22" fill="#ffe0e0"/><path d="M10 36c0-14 10-24 22-24s22 10 22 24z" fill="#e23b4a"/><circle cx="24" cy="28" r="4" fill="#fff"/><circle cx="38" cy="24" r="3" fill="#fff"/><rect x="26" y="34" width="12" height="16" rx="5" fill="#fff3d6" stroke="#e0a15a" stroke-width="2"/></svg>',
+        acorn: '<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="34" r="22" fill="#f6e4c4"/><path d="M32 30c-12 0-18 8-18 16 0 10 8 14 18 14s18-4 18-14c0-8-6-16-18-16z" fill="#e0a15a"/><path d="M12 32c2-12 12-16 20-16s18 4 20 16c-10 4-30 4-40 0z" fill="#8a4e22"/><path d="M32 16v-4" stroke="#6b3a16" stroke-width="3" stroke-linecap="round"/></svg>'
+      };
+      const BACK = '<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="34" r="20" fill="#f4e1b5"/><circle cx="32" cy="34" r="12" fill="#ef4d4d"/><circle cx="32" cy="34" r="5.5" fill="#fff8ec"/></svg>';
+
+      const SYMBOLS = ["sun", "fish", "flower", "star", "mushroom", "acorn"];
+
+      const body = document.body;
+      const board = document.getElementById("board");
+      const cardsEl = document.getElementById("cards");
+      const lane = document.getElementById("lane");
+      const teeEl = document.getElementById("tee");
+      const marbleEl = document.getElementById("marble");
+      const aim = document.getElementById("aim");
+      const shaft = document.getElementById("aim-shaft");
+      const tip = document.getElementById("tip");
+      const shotNum = document.getElementById("shot-num");
+      const dots = document.getElementById("dots");
+      const pairsEl = document.getElementById("pairs-left");
+      const titleEl = document.getElementById("title");
+      const resultEl = document.getElementById("result");
+      const resultPanel = document.getElementById("result-panel");
+      const resultTitle = document.getElementById("result-title");
+      const resultWhy = document.getElementById("result-why");
+      const btnRetry = document.getElementById("btn-retry");
+      const burst = document.getElementById("burst");
+
+      let phase = "title";
+      let cards = [];
+      let open = [];
+      let matched = 0;
+      let shots = SHOTS;
+      let marble = { x: 0, y: 0 };
+      let tee = { x: 0, y: 0 };
+      let vx = 0;
+      let vy = 0;
+      let boardW = 0;
+      let boardH = 0;
+      let launchTop = 0;
+      let drag = null;
+      let homing = null;
+      let timer = 0;
+      let aimLock = 0;
+      let retryAt = 0;
+      let landSeq = 0;
+      let audioCtx = null;
+
+      function setPhase(next) {
+        phase = next;
+        body.dataset.phase = next;
+      }
+
+      function frog(mood) {
+        const node = document.getElementById("frog-tpl").content.firstElementChild.cloneNode(true);
+        node.setAttribute("class", "frog is-" + mood);
+        return node;
+      }
+
+      function mountFrog(id, mood) {
+        document.getElementById(id).replaceChildren(frog(mood));
+      }
+
+      function setMood(mood) {
+        document.querySelectorAll("svg.frog").forEach((svg) => {
+          svg.setAttribute("class", "frog is-" + mood);
+        });
+      }
+
+      function setTip(text, kind) {
+        tip.textContent = text;
+        tip.dataset.kind = kind || "idle";
+        body.dataset.tip = text;
+      }
+
+      function later(fn, ms) {
+        clearTimeout(timer);
+        timer = setTimeout(fn, ms);
+      }
+
+      function shuffle(list) {
+        const a = list.slice();
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          const tmp = a[i];
+          a[i] = a[j];
+          a[j] = tmp;
+        }
+        return a;
+      }
+
+      function deal() {
+        const faces = shuffle(SYMBOLS.concat(SYMBOLS));
+        cardsEl.replaceChildren();
+        cards = faces.map((sym, i) => {
+          const el = document.createElement("div");
+          el.className = "card";
+          el.dataset.sym = sym;
+          el.dataset.i = String(i);
+          el.innerHTML = '<span class="inner"><span class="face back">' + BACK + '</span><span class="face front">' + ICONS[sym] + '</span></span>';
+          cardsEl.appendChild(el);
+          return { el: el, sym: sym, i: i, row: Math.floor(i / COLS), up: false, gone: false, box: null };
+        });
+        open = [];
+      }
+
+      function measure() {
+        const br = board.getBoundingClientRect();
+        if (br.width < 40 || br.height < 40) return false;
+        boardW = br.width;
+        boardH = br.height;
+        const laneR = lane.getBoundingClientRect();
+        launchTop = laneR.top - br.top;
+        cards.forEach((c) => {
+          const r = c.el.getBoundingClientRect();
+          c.box = {
+            x: r.left - br.left,
+            y: r.top - br.top,
+            w: r.width,
+            h: r.height
+          };
+        });
+        const guide = cards.find((c) => c.i % COLS === 1 && c.box);
+        tee.x = guide ? guide.box.x + guide.box.w / 2 : boardW / 2;
+        tee.y = launchTop + (boardH - launchTop) * 0.58;
+        teeEl.style.left = tee.x + "px";
+        teeEl.style.top = tee.y + "px";
+        return true;
+      }
+
+      function placeMarble() {
+        marbleEl.style.left = marble.x + "px";
+        marbleEl.style.top = marble.y + "px";
+        const speed = Math.hypot(vx, vy);
+        const squash = Math.min(0.16, speed / 5000);
+        const ang = speed > 20 ? Math.atan2(vy, vx) : 0;
+        marbleEl.firstElementChild.style.transform =
+          "translate(-50%, -50%) rotate(" + ang + "rad) scale(" + (1 + squash) + ", " + (1 - squash) + ")";
+        board.dataset.mx = marble.x.toFixed(1);
+        board.dataset.my = marble.y.toFixed(1);
+      }
+
+      function parkMarble() {
+        marble.x = tee.x;
+        marble.y = tee.y;
+        vx = 0;
+        vy = 0;
+        placeMarble();
+      }
+
+      function renderHud() {
+        shotNum.textContent = String(shots);
+        shotNum.classList.toggle("low", shots <= 3 && phase !== "title");
+        shotNum.classList.remove("pop");
+        void shotNum.offsetWidth;
+        shotNum.classList.add("pop");
+        dots.replaceChildren();
+        for (let i = 0; i < shots; i++) {
+          const dot = document.createElement("i");
+          dots.appendChild(dot);
+        }
+        pairsEl.textContent = String(PAIRS - matched);
+        body.dataset.shots = String(shots);
+        body.dataset.pairs = String(PAIRS - matched);
+      }
+
+      function isOob(x, y) {
+        return x < R || y < R || x > boardW - R || y > boardH - R;
+      }
+
+      function exitSpan() {
+        return Math.max(90, marble.y - R);
+      }
+
+      function travelDistance(dragLen) {
+        const u = Math.min(Math.max(dragLen, 0), 340) / EXIT_DRAG;
+        return GAIN * Math.pow(u, CURVE) * exitSpan();
+      }
+
+      function hitTest(x, y) {
+        if (isOob(x, y)) return { type: "off" };
+        for (let i = 0; i < cards.length; i++) {
+          const b = cards[i].box;
+          if (!b) continue;
+          if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) {
+            return { type: "card", card: cards[i] };
+          }
+        }
+        if (!cards.length || !cards[0].box) return { type: "gap" };
+        let top = Infinity;
+        let bottom = -Infinity;
+        cards.forEach((c) => {
+          top = Math.min(top, c.box.y);
+          bottom = Math.max(bottom, c.box.y + c.box.h);
+        });
+        if (y < top) return { type: "margin" };
+        if (y > bottom) return { type: "lane" };
+        return { type: "gap" };
+      }
+
+      function rowBand(row) {
+        let top = Infinity;
+        let bot = -Infinity;
+        cards.forEach((c) => {
+          if (c.row !== row || !c.box) return;
+          top = Math.min(top, c.box.y);
+          bot = Math.max(bot, c.box.y + c.box.h);
+        });
+        return { top: top, bot: bot };
+      }
+
+      function labelForPoint(x, y) {
+        if (isOob(x, y)) return { kind: "warn", text: "とびだしそう" };
+        for (let row = 0; row < 3; row++) {
+          const band = rowBand(row);
+          if (y >= band.top && y <= band.bot) {
+            return { kind: "good", text: ROW_NAME[row] + "ではなす" };
+          }
+        }
+        const far = rowBand(0);
+        const near = rowBand(2);
+        if (y < far.top) return { kind: "warn", text: "とびすぎ" };
+        if (y > near.bot) return { kind: "bad", text: "とどかない" };
+        return { kind: "warn", text: "カードのあいだ" };
+      }
+
+      function aimColor(lab) {
+        if (lab.text === "とびだしそう") return "#ff4d4f";
+        if (lab.kind === "warn") return "#ff9f1c";
+        if (lab.kind === "bad") return "#b7efe4";
+        return "#ffe56a";
+      }
+
+      function hideAim() {
+        aim.hidden = true;
+      }
+
+      function showAim(ux, uy, len, color) {
+        const ang = Math.atan2(uy, ux);
+        const shown = Math.max(42, Math.min(128, 18 + len * 0.62));
+        aim.hidden = false;
+        aim.style.left = marble.x + "px";
+        aim.style.top = marble.y + "px";
+        shaft.style.width = shown + "px";
+        shaft.style.background = color;
+        shaft.style.transform = "translateY(-50%) rotate(" + ang + "rad)";
+      }
+
+      function updateAim() {
+        const dx = drag.x - drag.x0;
+        const dy = drag.y - drag.y0;
+        const len = Math.hypot(dx, dy);
+        if (len < 10) {
+          hideAim();
+          setTip("はじいてはなす", "idle");
+          return;
+        }
+        const dist = travelDistance(len);
+        const ux = dx / len;
+        const uy = dy / len;
+        const lab = labelForPoint(marble.x + ux * dist, marble.y + uy * dist);
+        setTip(lab.text, lab.kind);
+        showAim(ux, uy, len, aimColor(lab));
+      }
+
+      function localPoint(e) {
+        const r = board.getBoundingClientRect();
+        return { x: e.clientX - r.left, y: e.clientY - r.top };
+      }
+
+      function onDown(e) {
+        if (e.button !== undefined && e.button !== 0) return;
+        if (phase !== "aim") return;
+        if (performance.now() < aimLock) return;
+        if (shots <= 0) return;
+        const p = localPoint(e);
+        const nearMarble = Math.hypot(p.x - marble.x, p.y - marble.y) < 58;
+        const inLane = p.y >= launchTop - 8;
+        if (!nearMarble && !inLane) return;
+        e.preventDefault();
+        try { board.setPointerCapture(e.pointerId); } catch (err) { /* pointer may be synthetic */ }
+        drag = { id: e.pointerId, x0: p.x, y0: p.y, x: p.x, y: p.y };
+        setPhase("drag");
+        setMood("aim");
+        marbleEl.classList.add("hot");
+        updateAim();
+      }
+
+      function onMove(e) {
+        if (!drag || e.pointerId !== drag.id) return;
+        e.preventDefault();
+        const p = localPoint(e);
+        drag.x = p.x;
+        drag.y = p.y;
+        updateAim();
+      }
+
+      function endDrag(cancel) {
+        if (!drag) return;
+        const dx = drag.x - drag.x0;
+        const dy = drag.y - drag.y0;
+        drag = null;
+        hideAim();
+        marbleEl.classList.remove("hot");
+        const len = Math.hypot(dx, dy);
+        if (cancel || len < MIN_DRAG) {
+          setPhase("aim");
+          setMood("idle");
+          setTip(IDLE_TIP, "idle");
+          return;
+        }
+        shots -= 1;
+        renderHud();
+        const dist = travelDistance(len);
+        const speed = Math.sqrt(2 * DECEL * Math.max(dist, 1));
+        vx = (dx / len) * speed;
+        vy = (dy / len) * speed;
+        setPhase("fly");
+        setMood("fly");
+        setTip("すべってる", "idle");
+        sfx("flick");
+      }
+
+      function onUp(e) {
+        if (!drag || e.pointerId !== drag.id) return;
+        endDrag(false);
+      }
+
+      function onCancel(e) {
+        if (!drag || e.pointerId !== drag.id) return;
+        endDrag(true);
+      }
+
+      function goHome() {
+        if (phase === "result") return;
+        setPhase("hold");
+        homing = { sx: marble.x, sy: marble.y, t0: performance.now(), dur: 190 };
+      }
+
+      function arriveHome() {
+        homing = null;
+        parkMarble();
+        if (phase === "result") return;
+        setPhase("aim");
+        setMood("idle");
+        setTip(IDLE_TIP, "idle");
+        aimLock = performance.now() + 140;
+      }
+
+      function burstAt() {
+        burst.replaceChildren();
+        for (let i = 0; i < 10; i++) {
+          const bit = document.createElement("i");
+          const ang = (Math.PI * 2 * i) / 10;
+          bit.style.setProperty("--dx", Math.cos(ang) * 78 + "px");
+          bit.style.setProperty("--dy", Math.sin(ang) * 54 + "px");
+          burst.appendChild(bit);
+        }
+        burst.classList.remove("go");
+        void burst.offsetWidth;
+        burst.classList.add("go");
+      }
+
+      function finish(kind) {
+        if (phase === "result") return;
+        setPhase("result");
+        homing = null;
+        vx = 0;
+        vy = 0;
+        clearTimeout(timer);
+        hideAim();
+        const left = PAIRS - matched;
+        let title = "はじき切れ！";
+        let why = "のこりが 0。あと " + left + "ペア";
+        let mood = "out";
+        let kindName = "empty";
+        if (kind === "win") {
+          title = "ぜんぶペア！";
+          why = shots > 0 ? "6ペアそろった。のこり " + shots : "最後の1こでそろった";
+          mood = "win";
+          kindName = "win";
+          sfx("win");
+        } else if (kind === "off") {
+          title = "おはじきが場外！";
+          why = "そとはミス。あと " + left + "ペア";
+          mood = "miss";
+          kindName = "off";
+          sfx("off");
+        } else {
+          sfx("out");
+        }
+        resultPanel.dataset.kind = kindName;
+        resultTitle.textContent = title;
+        resultWhy.textContent = why;
+        mountFrog("result-frog", mood);
+        setMood(mood);
+        resultEl.hidden = false;
+        retryAt = performance.now() + RESULT_LOCK;
+        btnRetry.disabled = true;
+        later(() => {
+          if (phase === "result") btnRetry.disabled = false;
+        }, RESULT_LOCK);
+        body.dataset.result = kind;
+      }
+
+      function noteLand(name) {
+        landSeq += 1;
+        body.dataset.seq = String(landSeq);
+        body.dataset.land = name;
+        board.dataset.lx = marble.x.toFixed(1);
+        board.dataset.ly = marble.y.toFixed(1);
+      }
+
+      function onOff() {
+        setPhase("hold");
+        vx = 0;
+        vy = 0;
+        noteLand("off");
+        setMood("miss");
+        setTip("場外！", "off");
+        if (shots <= 0) {
+          later(() => finish("off"), 420);
+          return;
+        }
+        sfx("off");
+        later(() => goHome(), OFF_MS);
+      }
+
+      function onWhiff(hit) {
+        let text = "カードのあいだ";
+        if (hit.type === "lane") text = "とどかない";
+        else if (hit.type === "margin") text = "とびすぎ";
+        else if (hit.type === "card" && hit.card.gone) text = "もうない";
+        else if (hit.type === "card" && hit.card.up) text = "もう開いてる";
+        setMood("miss");
+        setTip(text, "bad");
+        sfx("miss");
+        if (shots <= 0) {
+          later(() => finish("empty"), 620);
+          return;
+        }
+        later(() => goHome(), WHIFF_MS);
+      }
+
+      function reveal(card) {
+        card.up = true;
+        card.el.classList.add("is-up");
+        sfx("flip");
+        open.push(card);
+        if (open.length < 2) {
+          if (shots <= 0) later(() => finish("empty"), 460);
+          else later(() => goHome(), 280);
+          return;
+        }
+        const a = open[0];
+        const b = open[1];
+        if (a.sym === b.sym) {
+          a.el.classList.add("is-hot");
+          b.el.classList.add("is-hot");
+          setMood("pair");
+          setTip("ペア！", "pair");
+          burstAt();
+          sfx("pair");
+          later(() => {
+            a.gone = true;
+            b.gone = true;
+            a.up = false;
+            b.up = false;
+            a.el.classList.remove("is-hot", "is-up");
+            b.el.classList.remove("is-hot", "is-up");
+            a.el.classList.add("is-gone");
+            b.el.classList.add("is-gone");
+            open = [];
+            matched += 1;
+            renderHud();
+            if (matched >= PAIRS) finish("win");
+            else if (shots <= 0) finish("empty");
+            else goHome();
+          }, PAIR_MS);
+          return;
+        }
+        setMood("miss");
+        setTip("ちがう。おぼえて", "bad");
+        later(() => {
+          if (shots <= 0) {
+            finish("empty");
+            return;
+          }
+          a.up = false;
+          b.up = false;
+          a.el.classList.remove("is-up");
+          b.el.classList.remove("is-up");
+          open = [];
+          setMood("idle");
+          goHome();
+        }, MISS_MS);
+      }
+
+      function resolveLanding() {
+        const hit = hitTest(marble.x, marble.y);
+        noteLand(hit.type === "card" ? "card-" + hit.card.i : hit.type);
+        if (hit.type === "off") {
+          onOff();
+          return;
+        }
+        if (hit.type !== "card" || hit.card.gone || hit.card.up) {
+          onWhiff(hit);
+          return;
+        }
+        reveal(hit.card);
+      }
+
+      function onStop() {
+        setPhase("hold");
+        vx = 0;
+        vy = 0;
+        resolveLanding();
+      }
+
+      function stepFly(dt) {
+        let left = dt;
+        while (left > 0) {
+          const h = Math.min(left, 1 / 90);
+          const speed = Math.hypot(vx, vy);
+          if (speed < 1) {
+            onStop();
+            return;
+          }
+          const ux = vx / speed;
+          const uy = vy / speed;
+          let travel;
+          if (DECEL * h >= speed) {
+            travel = (speed * speed) / (2 * DECEL);
+            vx = 0;
+            vy = 0;
+          } else {
+            const ns = speed - DECEL * h;
+            travel = ((speed + ns) / 2) * h;
+            vx = ux * ns;
+            vy = uy * ns;
+          }
+          const nx = marble.x + ux * travel;
+          const ny = marble.y + uy * travel;
+          marble.x = nx;
+          marble.y = ny;
+          if (isOob(nx, ny)) {
+            placeMarble();
+            onOff();
+            return;
+          }
+          if (vx === 0 && vy === 0) {
+            placeMarble();
+            onStop();
+            return;
+          }
+          left -= h;
+        }
+        placeMarble();
+      }
+
+      function stepHome(now) {
+        const p = Math.min(1, (now - homing.t0) / homing.dur);
+        const e = 1 - Math.pow(1 - p, 3);
+        marble.x = homing.sx + (tee.x - homing.sx) * e;
+        marble.y = homing.sy + (tee.y - homing.sy) * e;
+        placeMarble();
+        if (p >= 1) arriveHome();
+      }
+
+      let last = performance.now();
+      function frame(now) {
+        const dt = Math.min(0.034, (now - last) / 1000);
+        last = now;
+        if (phase === "fly") stepFly(dt);
+        else if (homing) stepHome(now);
+        requestAnimationFrame(frame);
+      }
+
+      function sfx(name) {
+        try {
+          audioCtx = audioCtx || new AudioContext();
+          if (audioCtx.state === "suspended") audioCtx.resume();
+          const notes = {
+            flick: [[520, 0.07, "triangle", 0.035]],
+            flip: [[680, 0.06, "sine", 0.03]],
+            miss: [[196, 0.14, "sine", 0.04]],
+            off: [[150, 0.2, "triangle", 0.04]],
+            out: [[240, 0.14, "sine", 0.04], [170, 0.22, "sine", 0.04, 0.12]],
+            pair: [[523, 0.1, "triangle", 0.045], [659, 0.1, "triangle", 0.045, 0.09], [784, 0.16, "triangle", 0.05, 0.18]],
+            win: [[523, 0.1, "triangle", 0.05], [659, 0.1, "triangle", 0.05, 0.1], [784, 0.1, "triangle", 0.05, 0.2], [1046, 0.22, "triangle", 0.05, 0.3]]
+          };
+          (notes[name] || []).forEach((n) => {
+            const o = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            o.type = n[2];
+            o.frequency.value = n[0];
+            const start = audioCtx.currentTime + (n[4] || 0);
+            g.gain.setValueAtTime(n[3], start);
+            g.gain.exponentialRampToValueAtTime(0.001, start + n[1]);
+            o.connect(g);
+            g.connect(audioCtx.destination);
+            o.start(start);
+            o.stop(start + n[1] + 0.02);
+          });
+        } catch (err) { /* audio is optional */ }
+      }
+
+      function startGame() {
+        clearTimeout(timer);
+        homing = null;
+        drag = null;
+        hideAim();
+        matched = 0;
+        shots = SHOTS;
+        deal();
+        measure();
+        parkMarble();
+        setPhase("aim");
+        aimLock = performance.now() + 180;
+        setMood("idle");
+        setTip(IDLE_TIP, "idle");
+        renderHud();
+        titleEl.hidden = true;
+        resultEl.hidden = true;
+        btnRetry.disabled = true;
+        landSeq = 0;
+        body.dataset.seq = "0";
+        body.dataset.land = "";
+        try {
+          audioCtx = audioCtx || new AudioContext();
+          if (audioCtx.state === "suspended") audioCtx.resume();
+        } catch (err) { /* ignore */ }
+      }
+
+      document.getElementById("btn-start").addEventListener("click", startGame);
+      btnRetry.addEventListener("click", () => {
+        if (performance.now() < retryAt) return;
+        startGame();
+      });
+      board.addEventListener("pointerdown", onDown, { passive: false });
+      window.addEventListener("pointermove", onMove, { passive: false });
+      window.addEventListener("pointerup", onUp);
+      window.addEventListener("pointercancel", onCancel);
+      board.addEventListener("contextmenu", (e) => e.preventDefault());
+
+      new ResizeObserver(() => {
+        const aiming = phase === "aim" || phase === "title" || phase === "drag";
+        if (!measure()) return;
+        if (aiming) parkMarble();
+      }).observe(board);
+
+      mountFrog("title-frog", "idle");
+      mountFrog("hud-frog", "idle");
+      mountFrog("lane-frog", "idle");
+      deal();
+      measure();
+      parkMarble();
+      renderHud();
+      setTip(IDLE_TIP, "idle");
+      requestAnimationFrame(frame);
+    })();
+  </script>
+</body>
+</html>
