@@ -215,10 +215,10 @@
     }
     .cloth {
       position: absolute;
-      left: 16%;
-      top: 40%;
-      width: 78%;
-      height: 56%;
+      left: 18%;
+      top: 38%;
+      width: 64%;
+      height: 58%;
       border-radius: 18px;
       background:
         radial-gradient(circle at 50% 58%, rgba(15, 118, 110, .05), transparent 60%),
@@ -227,8 +227,8 @@
     }
     .legend {
       position: absolute;
-      left: 18%;
-      top: 41.5%;
+      left: 20%;
+      top: 39%;
       z-index: 2;
       padding: 1px 6px;
       border-radius: 999px;
@@ -244,10 +244,26 @@
       transform: translate(-50%, -50%);
       z-index: 2;
     }
-    .marker { z-index: 1; width: 54px; height: 54px; pointer-events: none; }
+    .marker { z-index: 1; width: 50px; height: 50px; pointer-events: none; }
     .marker svg, .prop svg, .piece svg { width: 100%; height: 100%; display: block; overflow: visible; }
     .marker.gone { opacity: 0; }
     #g-napkin { z-index: 5; }
+    .marker::after {
+      content: attr(data-label);
+      position: absolute;
+      left: 50%;
+      top: calc(100% - 2px);
+      transform: translateX(-50%);
+      padding: 0 5px;
+      border-radius: 999px;
+      background: rgba(255, 250, 243, .96);
+      color: var(--teal);
+      font-size: .75rem;
+      font-weight: 900;
+      white-space: nowrap;
+      line-height: 1.35;
+    }
+    #g-napkin::after { top: auto; bottom: calc(100% - 4px); }
     .prop { pointer-events: none; text-align: center; }
     #wan { width: 52px; height: 52px; }
     #chair { width: 62px; height: 70px; }
@@ -266,8 +282,8 @@
       line-height: 1.3;
     }
     .piece {
-      width: 54px;
-      height: 54px;
+      width: 48px;
+      height: 48px;
       padding: 0;
       border: 0;
       background: transparent;
@@ -283,6 +299,8 @@
       filter: drop-shadow(0 3px 0 rgba(58, 38, 24, .18));
     }
     .piece.is-placed { z-index: 4; }
+    .piece .tag { display: none; }
+    .piece.hot .tag { display: block; }
     .piece.is-placed .tag { display: none; }
     .piece.is-mess { z-index: 6; }
     .piece.is-mess .body { transform: rotate(-16deg) scale(1.06); }
@@ -304,8 +322,8 @@
     .kid-slot {
       position: absolute;
       left: 0;
-      bottom: -4px;
-      width: 78px;
+      bottom: 0;
+      width: 58px;
       z-index: 5;
       pointer-events: none;
     }
@@ -639,9 +657,10 @@
       .parrot-slot { width: 68px; }
       .line { font-size: 1.22rem; }
       .do, .lie { min-height: 54px; }
-      .piece { width: 46px; height: 46px; }
-      .marker { width: 46px; height: 46px; }
-      .kid-slot { width: 64px; }
+      .piece { width: 42px; height: 42px; }
+      .marker { width: 40px; height: 40px; }
+      .marker::after { display: none; }
+      .kid-slot { width: 52px; }
       .hud { padding: 6px 10px 8px; }
       .callout.scold b { font-size: 1.25rem; }
     }
@@ -681,11 +700,11 @@
       <div class="floor" id="floor">
         <div class="cloth"></div>
         <div class="legend">点線 = しるし</div>
-        <div class="marker" id="g-hashi"></div>
-        <div class="marker" id="g-sara"></div>
-        <div class="marker" id="g-napkin"></div>
-        <div class="marker" id="g-spoon"></div>
-        <div class="marker" id="g-koppu"></div>
+        <div class="marker" id="g-hashi" data-label="おはし"></div>
+        <div class="marker" id="g-sara" data-label="おさら"></div>
+        <div class="marker" id="g-napkin" data-label="ナプキン"></div>
+        <div class="marker" id="g-spoon" data-label="スプーン"></div>
+        <div class="marker" id="g-koppu" data-label="コップ"></div>
         <div class="prop" id="wan"></div>
         <div class="prop" id="chair"></div>
         <button type="button" class="piece" id="p-hashi" tabindex="-1" aria-label="おはし"><span class="body"></span><span class="tag">おはし</span></button>
@@ -879,23 +898,23 @@
     ];
 
     var HOME = {
-      hashi: [8, 13],
-      sara: [24, 13],
-      koppu: [40, 13],
-      soup: [56, 13],
-      napkin: [74, 13],
-      spoon: [90, 13]
+      hashi: [10, 14],
+      sara: [26, 14],
+      koppu: [42, 14],
+      soup: [58, 14],
+      napkin: [74, 14],
+      spoon: [90, 14]
     };
     var PLACE = {
-      hashi: [50, 78],
-      sara: [50, 62],
-      napkin: [50, 56],
-      spoon: [32, 66],
-      koppu: [70, 64]
+      hashi: [46, 88],
+      sara: [46, 68],
+      napkin: [46, 54],
+      spoon: [26, 70],
+      koppu: [68, 70]
     };
     var PROPS = {
-      wan: [64, 48],
-      chair: [86, 42],
+      wan: [70, 44],
+      chair: [90, 48],
       "g-hashi": PLACE.hashi,
       "g-sara": PLACE.sara,
       "g-napkin": PLACE.napkin,
