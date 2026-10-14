@@ -1,0 +1,1552 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ffb15a">
+  <meta name="description" content="ウソつきおてつだい — Lying Chores. オウムの指示が点線のしるしどおりならやる。ちがう指示は「それはウソ！」。">
+  <meta property="og:title" content="ウソつきおてつだい — Lying Chores">
+  <meta property="og:description" content="点線のしるしどおりなら緑のまる。ちがう指示は「それはウソ！」。ハート3つ、8回。">
+  <title>ウソつきおてつだい — Lying Chores</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%23ffb15a'/%3E%3Cellipse cx='8' cy='9' rx='5' ry='3.2' fill='%23fff6ea' stroke='%235c3b22' stroke-width='.8'/%3E%3Cpath d='M5 6.5c1.2-2 4.8-2 6 0' fill='none' stroke='%232fbe6a' stroke-width='1.2' stroke-linecap='round'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      --ink: #3a2618;
+      --muted: #7a5b40;
+      --cream: #fff8ec;
+      --line: rgba(58, 38, 24, .14);
+      --green: #16a34a;
+      --green-dark: #166534;
+      --red: #e11d48;
+      --red-dark: #9f1239;
+      --amber: #f59e0b;
+      --amber-dark: #b45309;
+      --teal: #0f766e;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+    body {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      color: var(--ink);
+      background:
+        radial-gradient(80% 40% at 50% 0%, #ffe7b8 0%, transparent 60%),
+        linear-gradient(180deg, #ffd18a 0%, #f3b56a 45%, #e0974e 100%);
+      font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Yu Gothic", "WenQuanYi Micro Hei", "Droid Sans Fallback", "Meiryo", sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: manipulation;
+    }
+    [hidden] { display: none !important; }
+    button, a { -webkit-tap-highlight-color: transparent; font: inherit; color: inherit; }
+    button:focus-visible, a:focus-visible { outline: 3px solid #ffe08a; outline-offset: 2px; }
+    .back {
+      position: fixed;
+      z-index: 50;
+      top: max(10px, env(safe-area-inset-top));
+      left: max(12px, env(safe-area-inset-left));
+      padding: 8px 12px;
+      border-radius: 999px;
+      color: var(--ink);
+      background: rgba(255, 248, 236, .94);
+      box-shadow: inset 0 0 0 1px var(--line);
+      font-size: .78rem;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-decoration: none;
+    }
+    .shell {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      max-width: 480px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding:
+        calc(max(10px, env(safe-area-inset-top)) + 42px)
+        max(12px, env(safe-area-inset-right))
+        max(10px, env(safe-area-inset-bottom))
+        max(12px, env(safe-area-inset-left));
+      min-height: 0;
+    }
+    .hud {
+      flex: none;
+      padding: 8px 12px 10px;
+      border-radius: 18px;
+      background: rgba(255, 248, 236, .96);
+      box-shadow: inset 0 0 0 1px var(--line), 0 8px 20px rgba(90, 50, 20, .12);
+    }
+    .hud-top { display: flex; align-items: center; gap: 8px; }
+    .titles { flex: 1; min-width: 0; line-height: 1.1; }
+    .titles b { display: block; font-size: 1.02rem; letter-spacing: .03em; }
+    .titles span {
+      color: var(--muted);
+      font-size: .95rem;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+    }
+    .hearts { display: flex; gap: 4px; flex: none; }
+    .hearts svg { width: 26px; height: 26px; display: block; }
+    .hearts .break { animation: popheart .35s ease; }
+    @keyframes popheart {
+      0% { transform: scale(1.35); }
+      100% { transform: scale(1); }
+    }
+    .time-row { margin-top: 6px; display: flex; align-items: center; gap: 8px; }
+    .time-row strong {
+      flex: none;
+      min-width: 2.6em;
+      font-size: 1.15rem;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: .02em;
+    }
+    .time-row.warn strong { color: var(--red); }
+    .bar {
+      flex: 1;
+      height: 14px;
+      border-radius: 999px;
+      background: #efe4d4;
+      box-shadow: inset 0 0 0 1px rgba(58, 38, 24, .08);
+      overflow: hidden;
+    }
+    .bar > div {
+      height: 100%;
+      width: 100%;
+      transform-origin: left center;
+      transform: scaleX(1);
+      border-radius: inherit;
+      background: linear-gradient(90deg, #16a34a, #f5c518 70%, #ef4444);
+    }
+    .time-row.warn .bar > div { animation: heatpulse .28s ease-in-out infinite alternate; }
+    @keyframes heatpulse { to { filter: brightness(1.25); } }
+    .pips { margin-top: 6px; display: flex; gap: 5px; }
+    .pips i {
+      flex: 1;
+      height: 8px;
+      border-radius: 999px;
+      background: #ead9c2;
+      display: block;
+    }
+    .pips i.now { background: var(--teal); }
+    .pips i.ok { background: var(--green); }
+    .pips i.bad { background: var(--red); }
+    .stage {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 8px;
+      border-radius: 22px;
+      overflow: hidden;
+      background:
+        radial-gradient(50% 30% at 90% 0%, #fff 0%, transparent 70%),
+        linear-gradient(180deg, #fff6ea 0%, #ffe6c4 38%, #f0c48a 38.2%, #e7b36a 100%);
+      box-shadow: inset 0 0 0 2px rgba(255, 248, 236, .55), 0 14px 30px rgba(70, 40, 16, .16);
+    }
+    .toprow {
+      flex: none;
+      display: grid;
+      grid-template-columns: 84px 1fr;
+      gap: 6px;
+      align-items: center;
+      min-height: 96px;
+      position: relative;
+      z-index: 2;
+    }
+    .parrot-slot { width: 84px; align-self: end; }
+    .bubble {
+      margin: 0;
+      padding: 8px 12px 10px;
+      border-radius: 8px 18px 18px 18px;
+      background:
+        linear-gradient(#e11d48, #e11d48) 0 0 / 8px 100% no-repeat,
+        repeating-linear-gradient(#fffdf8, #fffdf8 27px, #f3e2c4 28px);
+      box-shadow: 0 8px 0 rgba(92, 59, 34, .12), inset 0 0 0 2px #f0d7b0;
+      transform-origin: left center;
+    }
+    .bubble.pop { animation: cardpop .28s cubic-bezier(.2, 1.4, .3, 1); }
+    @keyframes cardpop {
+      0% { transform: rotate(-2deg) scale(.92); }
+      100% { transform: rotate(0) scale(1); }
+    }
+    .bubble.urgent {
+      box-shadow: 0 0 0 3px #ef4444, 0 8px 0 rgba(92, 59, 34, .12);
+      animation: urgent .32s ease-in-out infinite alternate;
+    }
+    @keyframes urgent { to { transform: rotate(-.6deg); } }
+    .bubble small {
+      display: block;
+      margin: 0 0 2px 6px;
+      color: var(--red);
+      font-size: .72rem;
+      font-weight: 900;
+      letter-spacing: .16em;
+    }
+    .line {
+      margin: 0 0 0 6px;
+      font-size: clamp(1.45rem, 6.4vw, 2.05rem);
+      font-weight: 900;
+      line-height: 1.25;
+      letter-spacing: .01em;
+    }
+    .floor {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      border-radius: 16px;
+      background:
+        linear-gradient(#c9843d, #e0a15a);
+      box-shadow: inset 0 0 0 3px #a86b32, inset 0 10px 0 rgba(255, 255, 255, .12);
+      overflow: hidden;
+    }
+    .cloth {
+      position: absolute;
+      left: 18%;
+      top: 38%;
+      width: 64%;
+      height: 58%;
+      border-radius: 18px;
+      background:
+        radial-gradient(circle at 50% 58%, rgba(15, 118, 110, .05), transparent 60%),
+        #fffaf3;
+      box-shadow: inset 0 0 0 3px #f0d2a4;
+    }
+    .legend {
+      position: absolute;
+      left: 20%;
+      top: 39%;
+      z-index: 2;
+      padding: 1px 6px;
+      border-radius: 999px;
+      background: rgba(255, 250, 243, .92);
+      color: var(--teal);
+      font-size: .72rem;
+      font-weight: 900;
+      letter-spacing: .06em;
+      pointer-events: none;
+    }
+    .marker, .prop, .piece, #splash {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      z-index: 2;
+    }
+    .marker { z-index: 1; width: 50px; height: 50px; pointer-events: none; }
+    .marker svg, .prop svg, .piece svg { width: 100%; height: 100%; display: block; overflow: visible; }
+    .marker.gone { opacity: 0; }
+    #g-napkin { z-index: 5; }
+    .marker::after {
+      content: attr(data-label);
+      position: absolute;
+      left: 50%;
+      top: calc(100% - 2px);
+      transform: translateX(-50%);
+      padding: 0 5px;
+      border-radius: 999px;
+      background: rgba(255, 250, 243, .96);
+      color: var(--teal);
+      font-size: .75rem;
+      font-weight: 900;
+      white-space: nowrap;
+      line-height: 1.35;
+    }
+    #g-napkin::after { top: auto; bottom: calc(100% - 4px); }
+    .prop { pointer-events: none; text-align: center; }
+    #wan { width: 52px; height: 52px; }
+    #chair { width: 62px; height: 70px; }
+    .prop .tag, .piece .tag {
+      position: absolute;
+      left: 50%;
+      top: 100%;
+      transform: translate(-50%, 1px);
+      padding: 0 4px;
+      border-radius: 6px;
+      background: rgba(255, 248, 236, .94);
+      color: #5c3b22;
+      font-size: .72rem;
+      font-weight: 900;
+      white-space: nowrap;
+      line-height: 1.3;
+    }
+    .piece {
+      width: 48px;
+      height: 48px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      z-index: 3;
+      touch-action: manipulation;
+      transition: left .34s cubic-bezier(.2, .8, .2, 1), top .34s cubic-bezier(.2, .8, .2, 1);
+    }
+    .piece .body {
+      display: grid;
+      place-items: center;
+      width: 100%;
+      height: 100%;
+      filter: drop-shadow(0 3px 0 rgba(58, 38, 24, .18));
+    }
+    .piece.is-placed { z-index: 4; }
+    .piece .tag { display: none; }
+    .piece.hot .tag { display: block; }
+    .piece.is-placed .tag { display: none; }
+    .piece.is-mess { z-index: 6; }
+    .piece.is-mess .body { transform: rotate(-16deg) scale(1.06); }
+    .piece.hot .body { animation: hotpulse .55s ease-in-out infinite; }
+    .piece.snapping .body { animation: snap .36s cubic-bezier(.2, 1.5, .3, 1); }
+    @keyframes hotpulse {
+      50% { transform: scale(1.1); filter: drop-shadow(0 0 0 #16a34a) drop-shadow(0 3px 0 rgba(58, 38, 24, .18)); }
+    }
+    @keyframes snap {
+      0% { transform: scale(.55); }
+      100% { transform: scale(1); }
+    }
+    #splash {
+      width: 74px;
+      height: 74px;
+      z-index: 5;
+      pointer-events: none;
+    }
+    .kid-slot {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 58px;
+      z-index: 5;
+      pointer-events: none;
+    }
+    .callout {
+      position: absolute;
+      left: 10px;
+      right: 10px;
+      top: 42%;
+      z-index: 8;
+      text-align: center;
+      pointer-events: none;
+    }
+    .callout.beat b {
+      display: inline-block;
+      padding: .08em .42em .12em;
+      border-radius: 16px;
+      background: var(--green);
+      color: #fff;
+      font-size: clamp(2.3rem, 11vw, 3.4rem);
+      letter-spacing: .08em;
+      line-height: 1.15;
+      transform: rotate(-7deg);
+      box-shadow: 0 6px 0 var(--green-dark);
+      animation: stampin .26s cubic-bezier(.2, 1.5, .3, 1) both;
+    }
+    .callout.scold {
+      top: 36%;
+      padding: 10px 12px 12px;
+      border-radius: 18px;
+      background: rgba(255, 250, 242, .97);
+      box-shadow: 0 12px 28px rgba(58, 38, 24, .2);
+    }
+    .callout.scold .ico { width: 64px; height: 64px; margin: 0 auto 2px; }
+    .callout.scold .ico svg { width: 100%; height: 100%; display: block; }
+    .callout.scold b {
+      display: block;
+      font-size: clamp(1.35rem, 6vw, 1.85rem);
+      line-height: 1.2;
+      letter-spacing: .02em;
+    }
+    .callout.scold span {
+      display: block;
+      margin-top: 4px;
+      font-size: clamp(1.02rem, 4.4vw, 1.2rem);
+      font-weight: 800;
+      line-height: 1.35;
+    }
+    .callout.scold-lie { box-shadow: inset 0 0 0 4px #c026d3, 0 12px 28px rgba(58, 38, 24, .2); }
+    .callout.scold-lie b { color: #a21caf; }
+    .callout.scold-truth { box-shadow: inset 0 0 0 4px #ea580c, 0 12px 28px rgba(58, 38, 24, .2); }
+    .callout.scold-truth b { color: #c2410c; }
+    .callout.scold-time { box-shadow: inset 0 0 0 4px #2563eb, 0 12px 28px rgba(58, 38, 24, .2); }
+    .callout.scold-time b { color: #1d4ed8; }
+    @keyframes stampin {
+      0% { transform: scale(1.6) rotate(-16deg); opacity: 0; }
+      100% { transform: scale(1) rotate(-7deg); opacity: 1; }
+    }
+    .controls {
+      flex: none;
+      display: grid;
+      gap: 8px;
+      padding: 0 2px 2px;
+    }
+    .do, .lie {
+      appearance: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      min-height: 66px;
+      padding: 8px 14px;
+      font-weight: 900;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .do {
+      border: 0;
+      border-radius: 999px;
+      background: var(--green);
+      color: #fff;
+      box-shadow: 0 6px 0 var(--green-dark);
+      font-size: clamp(1.15rem, 5vw, 1.45rem);
+      letter-spacing: .03em;
+    }
+    .do-ico {
+      flex: none;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: #fff;
+      display: grid;
+      place-items: center;
+      box-shadow: inset 0 0 0 2px rgba(22, 101, 52, .15);
+    }
+    .do-ico svg { width: 30px; height: 30px; }
+    .lie {
+      border-radius: 8px;
+      border: 3px dashed #fff;
+      background: var(--red);
+      color: #fff;
+      box-shadow: 0 0 0 3px var(--red), 0 6px 0 var(--red-dark);
+      font-size: clamp(1.3rem, 5.8vw, 1.7rem);
+      letter-spacing: .08em;
+      transform: rotate(-1deg);
+    }
+    .lie-ico {
+      flex: none;
+      width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+    }
+    .lie-ico svg { width: 32px; height: 32px; display: block; }
+    .do:active { transform: translateY(2px); box-shadow: 0 4px 0 var(--green-dark); }
+    .lie:active { transform: rotate(-1deg) translateY(2px); box-shadow: 0 0 0 3px var(--red), 0 4px 0 var(--red-dark); }
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: grid;
+      place-items: center;
+      padding:
+        calc(max(10px, env(safe-area-inset-top)) + 46px)
+        14px
+        max(12px, env(safe-area-inset-bottom));
+      overflow: auto;
+      background:
+        radial-gradient(80% 40% at 100% 0%, rgba(255, 214, 140, .45), transparent 50%),
+        linear-gradient(180deg, rgba(255, 176, 90, .94), rgba(196, 104, 48, .94));
+    }
+    #result { z-index: 24; background: rgba(58, 32, 16, .55); }
+    #result.is-locked .actions a,
+    #result.is-locked .actions button { pointer-events: none; }
+    .panel {
+      width: min(100%, 420px);
+      margin: auto;
+      padding: 14px 16px 16px;
+      border-radius: 22px;
+      background: var(--cream);
+      box-shadow: 0 18px 48px rgba(48, 28, 16, .35);
+      text-align: center;
+    }
+    .cast { display: flex; justify-content: center; align-items: end; gap: 8px; }
+    .cast .actor { width: 112px; }
+    .panel h1 {
+      margin: 4px 0 0;
+      font-size: clamp(1.7rem, 8vw, 2.3rem);
+      letter-spacing: .04em;
+      line-height: 1.15;
+    }
+    .en { margin: 2px 0 0; color: var(--muted); font-weight: 800; }
+    .dayline { margin: 2px 0 0; color: #c2410c; font-size: .86rem; font-weight: 900; letter-spacing: .06em; }
+    .rules { margin: 10px 0 0; display: grid; gap: 8px; text-align: left; }
+    .rule {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 14px;
+      background: #fff;
+      font-weight: 900;
+      font-size: clamp(1rem, 4.4vw, 1.15rem);
+      line-height: 1.3;
+    }
+    .swatch {
+      flex: none;
+      display: grid;
+      place-items: center;
+      min-width: 74px;
+      height: 36px;
+      padding: 0 8px;
+      font-size: .85rem;
+      letter-spacing: .04em;
+    }
+    .swatch.do {
+      min-height: 36px;
+      width: auto;
+      border-radius: 999px;
+      box-shadow: 0 3px 0 var(--green-dark);
+      font-size: .85rem;
+    }
+    .swatch.lie {
+      min-height: 36px;
+      width: auto;
+      border-radius: 6px;
+      box-shadow: 0 0 0 2px var(--red), 0 3px 0 var(--red-dark);
+      transform: none;
+      font-size: .85rem;
+      letter-spacing: .04em;
+    }
+    .stake { margin: 8px 0 0; font-size: 1.02rem; font-weight: 800; line-height: 1.45; }
+    .fine { margin: 6px 0 0; color: var(--muted); font-size: .78rem; font-weight: 800; }
+    .primary, .xbtn, .ghost {
+      appearance: none;
+      border: 0;
+      border-radius: 16px;
+      min-height: 54px;
+      font-weight: 900;
+      letter-spacing: .06em;
+      cursor: pointer;
+      touch-action: manipulation;
+      text-decoration: none;
+      display: grid;
+      place-items: center;
+    }
+    .primary {
+      width: 100%;
+      margin-top: 12px;
+      background: var(--amber);
+      color: #3a2618;
+      box-shadow: 0 6px 0 var(--amber-dark);
+      font-size: 1.3rem;
+    }
+    .primary:active { transform: translateY(2px); box-shadow: 0 4px 0 var(--amber-dark); }
+    .primary:disabled, .ghost:disabled, .xbtn.is-off {
+      opacity: .45;
+      cursor: default;
+    }
+    .kicker {
+      margin: 6px 0 0;
+      font-size: .95rem;
+      font-weight: 900;
+      letter-spacing: .14em;
+      color: var(--muted);
+    }
+    .result-ico { width: 72px; height: 72px; margin: 4px auto 0; }
+    .result-ico svg { width: 100%; height: 100%; display: block; }
+    .why {
+      margin: 8px 0 0;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: #fff;
+      font-size: 1.05rem;
+      font-weight: 800;
+      line-height: 1.4;
+    }
+    .rounds {
+      margin: 8px 0 0;
+      font-size: 1.2rem;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+    }
+    .obeyline {
+      margin: 2px 0 0;
+      font-size: clamp(1.05rem, 4.6vw, 1.25rem);
+      font-weight: 900;
+      line-height: 1.35;
+    }
+    .share {
+      margin: 10px 0 0;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: #fff;
+      box-shadow: inset 0 0 0 1.5px #efd7b4;
+      font-size: .95rem;
+      font-weight: 800;
+      line-height: 1.45;
+      text-align: left;
+      white-space: pre-wrap;
+      user-select: text;
+      -webkit-user-select: text;
+    }
+    .actions { display: flex; gap: 8px; margin-top: 10px; }
+    .actions .ghost { flex: .8; background: #fff; color: var(--ink); box-shadow: 0 5px 0 #e4d3bc; font-size: 1rem; }
+    .actions .xbtn {
+      flex: 1.3;
+      background: #111;
+      color: #fff;
+      box-shadow: 0 5px 0 #000;
+      font-size: 1.05rem;
+      letter-spacing: .04em;
+    }
+    .ghost:active, .xbtn:active { transform: translateY(2px); }
+    .panel[data-kind="clear"] h1 { color: #0f7a45; }
+    .panel[data-kind="lie"] h1 { color: #a21caf; }
+    .panel[data-kind="truth"] h1 { color: #c2410c; }
+    .panel[data-kind="time"] h1 { color: #1d4ed8; }
+    .panel[data-kind="clear"] .why { background: #e8f8ee; }
+    .panel[data-kind="lie"] .why { background: #fae8ff; }
+    .panel[data-kind="truth"] .why { background: #ffedd5; }
+    .panel[data-kind="time"] .why { background: #dbeafe; }
+    .actor svg { width: 100%; height: auto; display: block; overflow: visible; }
+    .actor .face, .actor .sweat, .actor .stamp-prop { display: none; }
+    .actor.is-idle .face-idle,
+    .actor.is-yay .face-yay,
+    .actor.is-sad .face-sad,
+    .actor.is-stamp .face-stamp,
+    .actor.is-panic .face-panic,
+    .actor.is-nod .face-nod,
+    .actor.is-fluster .face-fluster,
+    .actor.is-laugh .face-laugh,
+    .actor.is-huh .face-huh { display: block; }
+    .actor.is-stamp .stamp-prop,
+    .actor.is-fluster .sweat,
+    .actor.is-panic .sweat { display: block; }
+    .actor.is-idle { animation: bob 2.2s ease-in-out infinite; }
+    .actor.is-yay, .actor.is-nod { animation: hop .48s ease-in-out 2; }
+    .actor.is-laugh { animation: hop .28s ease-in-out 3; }
+    .actor.is-sad, .actor.is-panic, .actor.is-fluster, .actor.is-huh { animation: shudder .36s linear 2; }
+    .actor.is-stamp { animation: squish .32s ease; }
+    .actor.is-idle .eye {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: blink 4.8s infinite;
+    }
+    @keyframes bob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+    @keyframes hop {
+      0%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-8px); }
+    }
+    @keyframes shudder {
+      0%, 100% { transform: translateX(0); }
+      30% { transform: translateX(-4px) rotate(-2deg); }
+      70% { transform: translateX(4px) rotate(2deg); }
+    }
+    @keyframes squish {
+      0% { transform: translateY(0) scale(1, 1); }
+      40% { transform: translateY(4px) scale(1.06, .9); }
+      100% { transform: translateY(0) scale(1, 1); }
+    }
+    @keyframes blink {
+      0%, 92%, 100% { transform: scaleY(1); }
+      96% { transform: scaleY(.12); }
+    }
+    @media (max-height: 740px) {
+      .toprow { min-height: 78px; grid-template-columns: 68px 1fr; }
+      .parrot-slot { width: 68px; }
+      .line { font-size: 1.22rem; }
+      .do, .lie { min-height: 54px; }
+      .piece { width: 42px; height: 42px; }
+      .marker { width: 40px; height: 40px; }
+      .marker::after { display: none; }
+      .kid-slot { width: 52px; }
+      .hud { padding: 6px 10px 8px; }
+      .callout.scold b { font-size: 1.25rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .actor, .piece.hot .body, .piece.snapping .body, .bubble, .time-row.warn .bar > div, .callout.beat b, .hearts .break {
+        animation: none !important;
+      }
+      .piece { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <a class="back" href="../../index.html">ギャラリー</a>
+  <main class="shell">
+    <header class="hud">
+      <div class="hud-top">
+        <div class="titles">
+          <b>ウソつきおてつだい</b>
+          <span id="round-label">1 / 8</span>
+        </div>
+        <div class="hearts" id="hearts" aria-label="ライフ"></div>
+      </div>
+      <div class="time-row" id="time-row">
+        <strong id="time-label">5.0</strong>
+        <div class="bar" aria-hidden="true"><div id="time-fill"></div></div>
+      </div>
+      <div class="pips" id="pips" aria-hidden="true"></div>
+    </header>
+    <div class="stage" id="stage">
+      <div class="toprow">
+        <div class="parrot-slot actor is-idle" id="parrot"></div>
+        <div class="bubble" id="bubble">
+          <small>レシピ</small>
+          <p class="line" id="line" aria-live="polite">おはしを ならべて</p>
+        </div>
+      </div>
+      <div class="floor" id="floor">
+        <div class="cloth"></div>
+        <div class="legend">点線 = しるし</div>
+        <div class="marker" id="g-hashi" data-label="おはし"></div>
+        <div class="marker" id="g-sara" data-label="おさら"></div>
+        <div class="marker" id="g-napkin" data-label="ナプキン"></div>
+        <div class="marker" id="g-spoon" data-label="スプーン"></div>
+        <div class="marker" id="g-koppu" data-label="コップ"></div>
+        <div class="prop" id="wan"></div>
+        <div class="prop" id="chair"></div>
+        <button type="button" class="piece" id="p-hashi" tabindex="-1" aria-label="おはし"><span class="body"></span><span class="tag">おはし</span></button>
+        <button type="button" class="piece" id="p-sara" tabindex="-1" aria-label="おさら"><span class="body"></span><span class="tag">おさら</span></button>
+        <button type="button" class="piece" id="p-koppu" tabindex="-1" aria-label="コップ"><span class="body"></span><span class="tag">コップ</span></button>
+        <button type="button" class="piece" id="p-soup" tabindex="-1" aria-label="スープ"><span class="body"></span><span class="tag">スープ</span></button>
+        <button type="button" class="piece" id="p-napkin" tabindex="-1" aria-label="ナプキン"><span class="body"></span><span class="tag">ナプキン</span></button>
+        <button type="button" class="piece" id="p-spoon" tabindex="-1" aria-label="スプーン"><span class="body"></span><span class="tag">スプーン</span></button>
+        <div id="splash" hidden></div>
+        <div class="kid-slot actor is-idle" id="kid"></div>
+        <div class="callout" id="callout" hidden></div>
+      </div>
+    </div>
+    <div class="controls">
+      <button type="button" class="do" id="btn-do">
+        <span class="do-ico" id="do-ico"></span>
+        <span class="do-label" id="do-label">おはしを ならべる</span>
+      </button>
+      <button type="button" class="lie" id="btn-lie" aria-label="それはウソ">
+        <span class="lie-ico" aria-hidden="true">
+          <svg viewBox="0 0 32 32"><rect x="2" y="2" width="28" height="28" rx="3" fill="#fff"/><path d="M9 9 L23 23 M23 9 L9 23" stroke="#e11d48" stroke-width="4" stroke-linecap="round"/></svg>
+        </span>
+        それはウソ！
+      </button>
+    </div>
+  </main>
+
+  <section class="overlay" id="title">
+    <div class="panel">
+      <div class="cast">
+        <div class="actor is-idle" id="title-parrot"></div>
+        <div class="actor is-yay" id="title-kid"></div>
+      </div>
+      <h1>ウソつきおてつだい</h1>
+      <p class="en">Lying Chores</p>
+      <p class="dayline">Day 19 · 2026-10-14</p>
+      <div class="rules">
+        <div class="rule"><span class="swatch do">緑のまる</span><span>点線のしるしと おなじ指示を やる</span></div>
+        <div class="rule"><span class="swatch lie">ウソ！</span><span>しるしと ちがう指示は ことわる</span></div>
+      </div>
+      <p class="stake">♥が3つ なくなると ゲームオーバー。8回のりきればクリア。</p>
+      <p class="fine">タップ ／ Enterでやる ／ Spaceでウソ</p>
+      <button type="button" class="primary" id="btn-start">はじめる</button>
+    </div>
+  </section>
+
+  <section class="overlay" id="result" hidden>
+    <div class="panel" id="result-panel" data-kind="clear">
+      <div class="cast">
+        <div class="actor is-idle" id="result-parrot"></div>
+        <div class="actor is-idle" id="result-kid"></div>
+      </div>
+      <p class="kicker" id="result-kicker">ゲームオーバー</p>
+      <div class="result-ico" id="result-ico"></div>
+      <h1 id="result-title">クリア！</h1>
+      <p class="why" id="result-why"></p>
+      <p class="rounds" id="result-rounds">0/8 ラウンドクリア</p>
+      <p class="obeyline" id="result-obey">あなたは 0/8回 したがった</p>
+      <p class="share" id="share-text"></p>
+      <div class="actions">
+        <button type="button" class="ghost" id="btn-copy" disabled>コピー</button>
+        <a class="xbtn is-off" id="share-x" href="https://x.com/intent/post" target="_blank" rel="noopener noreferrer">Xにポスト</a>
+      </div>
+      <button type="button" class="primary" id="btn-retry" disabled>もういちど</button>
+    </div>
+  </section>
+
+  <template id="tpl-kid">
+    <svg viewBox="0 0 140 180" aria-hidden="true">
+      <ellipse cx="70" cy="172" rx="28" ry="6" fill="#000" opacity=".12"/>
+      <rect x="50" y="128" width="14" height="32" rx="7" fill="#5b4636"/>
+      <rect x="76" y="128" width="14" height="32" rx="7" fill="#5b4636"/>
+      <ellipse cx="57" cy="160" rx="11" ry="6" fill="#3a2a22"/>
+      <ellipse cx="83" cy="160" rx="11" ry="6" fill="#3a2a22"/>
+      <path d="M40 96 h60 l8 40 h-76 z" fill="#ff8a3d" stroke="#3a2618" stroke-width="3"/>
+      <path d="M48 112 h44 M46 126 h50 M50 140 h40" stroke="#fff" stroke-width="3" opacity=".75"/>
+      <circle cx="38" cy="102" r="10" fill="#fff6ea" stroke="#3a2618" stroke-width="3"/>
+      <circle cx="102" cy="102" r="10" fill="#fff6ea" stroke="#3a2618" stroke-width="3"/>
+      <rect x="16" y="98" width="26" height="11" rx="5" fill="#ffd0b0" stroke="#3a2618" stroke-width="3"/>
+      <rect x="98" y="98" width="26" height="11" rx="5" fill="#ffd0b0" stroke="#3a2618" stroke-width="3"/>
+      <g class="stamp-prop">
+        <rect x="108" y="86" width="22" height="22" rx="3" fill="#e11d48" stroke="#3a2618" stroke-width="2" transform="rotate(-14 119 97)"/>
+        <path d="M113 93 l10 10 M123 93 l-10 10" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+      </g>
+      <circle cx="70" cy="58" r="32" fill="#ffd0b0" stroke="#3a2618" stroke-width="3"/>
+      <path d="M42 54 Q44 24 70 26 Q98 24 100 54 Q90 40 70 42 Q52 40 42 54" fill="#5b3a29" stroke="#3a2618" stroke-width="3"/>
+      <path d="M70 26 Q78 8 68 8 Q82 16 74 28" fill="#5b3a29" stroke="#3a2618" stroke-width="3"/>
+      <circle cx="40" cy="60" r="6" fill="#ffd0b0" stroke="#3a2618" stroke-width="3"/>
+      <circle cx="100" cy="60" r="6" fill="#ffd0b0" stroke="#3a2618" stroke-width="3"/>
+      <ellipse cx="52" cy="70" rx="6" ry="3.5" fill="#ff9b9b" opacity=".85"/>
+      <ellipse cx="88" cy="70" rx="6" ry="3.5" fill="#ff9b9b" opacity=".85"/>
+      <g class="sweat">
+        <path d="M108 46 q6 10 0 16 q-8-4 0-16" fill="#8fd3ff" stroke="#3a2618" stroke-width="2"/>
+      </g>
+      <g class="face face-idle">
+        <ellipse class="eye" cx="58" cy="58" rx="4.2" ry="5" fill="#2a2118"/>
+        <ellipse class="eye" cx="82" cy="58" rx="4.2" ry="5" fill="#2a2118"/>
+        <circle cx="59.5" cy="56.4" r="1.4" fill="#fff"/>
+        <circle cx="83.5" cy="56.4" r="1.4" fill="#fff"/>
+        <path d="M60 74 q10 8 20 0" fill="none" stroke="#2a2118" stroke-width="3" stroke-linecap="round"/>
+      </g>
+      <g class="face face-yay">
+        <path d="M50 58 q8 -8 16 0" fill="none" stroke="#2a2118" stroke-width="3" stroke-linecap="round"/>
+        <path d="M74 58 q8 -8 16 0" fill="none" stroke="#2a2118" stroke-width="3" stroke-linecap="round"/>
+        <path d="M58 72 q12 12 24 0" fill="none" stroke="#2a2118" stroke-width="3" stroke-linecap="round"/>
+      </g>
+      <g class="face face-sad">
+        <path d="M50 52 q8 6 16 0" fill="none" stroke="#2a2118" stroke-width="3" stroke-linecap="round"/>
+        <path d="M74 52 q8 6 16 0" fill="none" stroke="#2a2118" stroke-width="3" stroke-linecap="round"/>
+        <ellipse cx="58" cy="62" rx="3.4" ry="4" fill="#2a2118"/>
+        <ellipse cx="82" cy="62" rx="3.4" ry="4" fill="#2a2118"/>
+        <path d="M62 78 q8 -7 16 0" fill="none" stroke="#2a2118" stroke-width="3" stroke-linecap="round"/>
+      </g>
+      <g class="face face-stamp">
+        <path d="M50 54 q8 -4 16 2" fill="none" stroke="#2a2118" stroke-width="3" stroke-linecap="round"/>
+        <path d="M74 56 q8 -6 16 0" fill="none" stroke="#2a2118" stroke-width="3" stroke-linecap="round"/>
+        <ellipse cx="58" cy="62" rx="3.6" ry="4" fill="#2a2118"/>
+        <ellipse cx="82" cy="62" rx="3.6" ry="4" fill="#2a2118"/>
+        <path d="M64 76 h14" stroke="#2a2118" stroke-width="3" stroke-linecap="round"/>
+      </g>
+      <g class="face face-panic">
+        <circle cx="58" cy="60" r="6" fill="#fff" stroke="#2a2118" stroke-width="2"/>
+        <circle cx="82" cy="60" r="6" fill="#fff" stroke="#2a2118" stroke-width="2"/>
+        <circle cx="58" cy="60" r="2.4" fill="#2a2118"/>
+        <circle cx="82" cy="60" r="2.4" fill="#2a2118"/>
+        <ellipse cx="70" cy="76" rx="7" ry="6" fill="#2a2118"/>
+      </g>
+    </svg>
+  </template>
+
+  <template id="tpl-parrot">
+    <svg viewBox="0 0 160 150" aria-hidden="true">
+      <path d="M28 96 Q8 70 20 42 Q34 72 46 96" fill="#1f8a4c" stroke="#1d3b28" stroke-width="3"/>
+      <ellipse cx="78" cy="100" rx="36" ry="28" fill="#2fbe6a" stroke="#1d3b28" stroke-width="3"/>
+      <ellipse cx="86" cy="108" rx="18" ry="14" fill="#fff4c2"/>
+      <ellipse cx="58" cy="102" rx="16" ry="12" fill="#178a45" stroke="#1d3b28" stroke-width="3"/>
+      <circle cx="108" cy="62" r="26" fill="#2fbe6a" stroke="#1d3b28" stroke-width="3"/>
+      <path d="M96 40 Q104 16 114 36" fill="#ff5d73" stroke="#1d3b28" stroke-width="3"/>
+      <ellipse cx="116" cy="66" rx="14" ry="12" fill="#fff6ea"/>
+      <path d="M126 62 L158 70 L126 82 Z" fill="#ffb703" stroke="#1d3b28" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M70 126 l-8 12 M80 128 v14 M90 126 l8 12" fill="none" stroke="#ffb703" stroke-width="4" stroke-linecap="round"/>
+      <g class="sweat">
+        <path d="M92 36 q5 8 0 13 q-7-3 0-13" fill="#8fd3ff" stroke="#1d3b28" stroke-width="2"/>
+      </g>
+      <g class="face face-idle">
+        <path d="M104 48 q10 -8 18 2" fill="none" stroke="#1d3b28" stroke-width="3" stroke-linecap="round"/>
+        <circle class="eye" cx="116" cy="58" r="5.5" fill="#fff" stroke="#1d3b28" stroke-width="2"/>
+        <circle cx="118" cy="58" r="2.4" fill="#1d3b28"/>
+      </g>
+      <g class="face face-nod">
+        <path d="M104 50 q8 -6 16 0" fill="none" stroke="#1d3b28" stroke-width="3" stroke-linecap="round"/>
+        <path d="M108 58 q8 -8 14 0" fill="none" stroke="#1d3b28" stroke-width="3" stroke-linecap="round"/>
+      </g>
+      <g class="face face-fluster">
+        <path d="M102 46 q12 4 20 -2" fill="none" stroke="#1d3b28" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="116" cy="58" r="6.5" fill="#fff" stroke="#1d3b28" stroke-width="2"/>
+        <circle cx="118" cy="58" r="2.6" fill="#1d3b28"/>
+      </g>
+      <g class="face face-laugh">
+        <path d="M106 56 q8 -8 16 0" fill="none" stroke="#1d3b28" stroke-width="3" stroke-linecap="round"/>
+        <path d="M128 74 q10 6 18 -2" fill="none" stroke="#1d3b28" stroke-width="3" stroke-linecap="round"/>
+      </g>
+      <g class="face face-huh">
+        <path d="M104 46 q14 -10 18 4" fill="none" stroke="#1d3b28" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="116" cy="60" r="5" fill="#fff" stroke="#1d3b28" stroke-width="2"/>
+        <circle cx="116" cy="60" r="2.2" fill="#1d3b28"/>
+        <path d="M132 86 q6 4 2 8" fill="none" stroke="#1d3b28" stroke-width="2" stroke-linecap="round"/>
+      </g>
+    </svg>
+  </template>
+
+  <script>
+  (function () {
+    "use strict";
+
+    var PLAY_URL = "https://grokbot365game.github.io/daily-casual-games/games/2026-10-14-lying-chores/";
+    var LOCK_MS = 700;
+    var BEAT_MS = 560;
+    var SCOLD_MS = 1200;
+    var TOTAL = 8;
+
+    var ROUNDS = [
+      { say: "おはしを ならべて", truth: true, sec: 5.0, item: "hashi", verb: "おはしを ならべる", detail: "おはしはしるしのところ" },
+      { say: "おさらを まんなかに", truth: true, sec: 4.6, item: "sara", verb: "おさらを まんなかへ", detail: "おさらはまんなか" },
+      { say: "スープを コップに いれて", truth: false, sec: 4.1, item: "soup", verb: "スープを コップへ", detail: "スープはコップに入れない", mess: "koppu" },
+      { say: "コップを みぎの しるしへ", truth: true, sec: 3.7, item: "koppu", verb: "コップを みぎへ", detail: "コップは右のしるし" },
+      { say: "スープを ぼうしに いれて", truth: false, sec: 3.3, item: "soup", verb: "スープを ぼうしへ", detail: "スープはぼうしに入れない", mess: "hat" },
+      { say: "ナプキンを おさらの うえに", truth: true, sec: 3.0, item: "napkin", verb: "ナプキンを うえへ", detail: "ナプキンはおさらのうえ" },
+      { say: "おさらを やねに のせて", truth: false, sec: 2.7, item: "sara", verb: "おさらを やねへ", detail: "おさらは屋根にのせない", mess: "roof" },
+      { say: "スプーンを ひだりの しるしへ", truth: true, sec: 2.5, item: "spoon", verb: "スプーンを ひだりへ", detail: "スプーンは左のしるし" }
+    ];
+
+    var HOME = {
+      hashi: [10, 14],
+      sara: [26, 14],
+      koppu: [42, 14],
+      soup: [58, 14],
+      napkin: [74, 14],
+      spoon: [90, 14]
+    };
+    var PLACE = {
+      hashi: [46, 88],
+      sara: [46, 68],
+      napkin: [46, 54],
+      spoon: [26, 70],
+      koppu: [68, 70]
+    };
+    var PROPS = {
+      wan: [70, 44],
+      chair: [90, 48],
+      "g-hashi": PLACE.hashi,
+      "g-sara": PLACE.sara,
+      "g-napkin": PLACE.napkin,
+      "g-spoon": PLACE.spoon,
+      "g-koppu": PLACE.koppu
+    };
+
+    var PIECES = ["hashi", "sara", "koppu", "soup", "napkin", "spoon"];
+
+    var titleEl = document.getElementById("title");
+    var resultEl = document.getElementById("result");
+    var resultPanel = document.getElementById("result-panel");
+    var bubble = document.getElementById("bubble");
+    var lineEl = document.getElementById("line");
+    var callout = document.getElementById("callout");
+    var timeLabel = document.getElementById("time-label");
+    var timeFill = document.getElementById("time-fill");
+    var timeRow = document.getElementById("time-row");
+    var roundLabel = document.getElementById("round-label");
+    var heartsEl = document.getElementById("hearts");
+    var pipsEl = document.getElementById("pips");
+    var splash = document.getElementById("splash");
+    var btnDo = document.getElementById("btn-do");
+    var btnLie = document.getElementById("btn-lie");
+    var btnRetry = document.getElementById("btn-retry");
+    var btnCopy = document.getElementById("btn-copy");
+    var shareLink = document.getElementById("share-x");
+    var doIco = document.getElementById("do-ico");
+    var doLabel = document.getElementById("do-label");
+
+    var phase = "title";
+    var index = 0;
+    var lives = 3;
+    var correct = 0;
+    var obeyed = 0;
+    var marks = [];
+    var spot = {};
+    var deadline = 0;
+    var roundMs = 5000;
+    var lastTick = 0;
+    var token = 0;
+    var resultReadyAt = 0;
+    var held = { Space: false, Enter: false };
+    var needRelease = false;
+    var lastFail = null;
+    var won = false;
+    var audioCtx = null;
+    var copyTimer = 0;
+
+    function pieceSvg(name) {
+      var body = {
+        hashi: '<rect x="14" y="8" width="7" height="48" rx="3" fill="#f0d7a2" stroke="#5c3b22" stroke-width="2" transform="rotate(-8 18 32)"/><rect x="26" y="8" width="7" height="48" rx="3" fill="#e7c48a" stroke="#5c3b22" stroke-width="2" transform="rotate(6 30 32)"/>',
+        sara: '<ellipse cx="32" cy="36" rx="22" ry="14" fill="#fff" stroke="#5c3b22" stroke-width="3"/><ellipse cx="32" cy="36" rx="12" ry="7" fill="none" stroke="#f0c36a" stroke-width="3"/>',
+        koppu: '<path d="M20 18 h24 l-3 28 a10 8 0 0 1-18 0 z" fill="#d7f4ff" stroke="#5c3b22" stroke-width="3"/><path d="M44 22 h8 a8 10 0 0 1 0 16 h-6" fill="none" stroke="#5c3b22" stroke-width="3"/><path d="M24 24 h12" stroke="#fff" stroke-width="3" stroke-linecap="round"/>',
+        soup: '<rect x="14" y="28" width="32" height="18" rx="8" fill="#c9843d" stroke="#5c3b22" stroke-width="3"/><ellipse cx="30" cy="28" rx="16" ry="8" fill="#ffb15a" stroke="#5c3b22" stroke-width="3"/><path d="M18 24 a8 8 0 0 1 8-8 M36 24 a8 8 0 0 0 8-8" fill="none" stroke="#5c3b22" stroke-width="3"/><path d="M40 18 q14 2 8 16" fill="none" stroke="#5c3b22" stroke-width="3"/><circle cx="48" cy="34" r="3" fill="#e7c48a" stroke="#5c3b22" stroke-width="2"/>',
+        napkin: '<rect x="14" y="16" width="34" height="30" rx="4" fill="#fff" stroke="#5c3b22" stroke-width="3"/><path d="M14 26 h34" stroke="#7dd3c7" stroke-width="4"/><path d="M31 16 v30" stroke="#f0d2a4" stroke-width="2"/>',
+        spoon: '<ellipse cx="24" cy="22" rx="10" ry="12" fill="#f4f7fb" stroke="#5c3b22" stroke-width="3"/><rect x="28" y="28" width="8" height="26" rx="4" fill="#d5dde8" stroke="#5c3b22" stroke-width="3" transform="rotate(28 32 40)"/>'
+      };
+      return '<svg viewBox="0 0 64 64" aria-hidden="true">' + body[name] + "</svg>";
+    }
+
+    function ghostSvg(name) {
+      var body = {
+        hashi: '<rect x="16" y="10" width="6" height="44" rx="3" fill="none" stroke="#0f766e" stroke-width="3" stroke-dasharray="4 3" transform="rotate(-8 19 32)"/><rect x="28" y="10" width="6" height="44" rx="3" fill="none" stroke="#0f766e" stroke-width="3" stroke-dasharray="4 3" transform="rotate(6 31 32)"/>',
+        sara: '<ellipse cx="32" cy="34" rx="22" ry="14" fill="none" stroke="#0f766e" stroke-width="3" stroke-dasharray="5 4"/>',
+        napkin: '<rect x="16" y="18" width="32" height="26" rx="4" fill="none" stroke="#0f766e" stroke-width="3" stroke-dasharray="4 3"/>',
+        spoon: '<ellipse cx="24" cy="24" rx="9" ry="11" fill="none" stroke="#0f766e" stroke-width="3" stroke-dasharray="4 3"/><path d="M30 32 q16 10 8 22" fill="none" stroke="#0f766e" stroke-width="3" stroke-dasharray="4 3" stroke-linecap="round"/>',
+        koppu: '<path d="M20 16 h24 l-3 30 a10 8 0 0 1-18 0 z" fill="none" stroke="#0f766e" stroke-width="3" stroke-dasharray="4 3"/>'
+      };
+      return '<svg viewBox="0 0 64 64" aria-hidden="true">' + body[name] + "</svg>";
+    }
+
+    function propSvg(name) {
+      if (name === "wan") {
+        return '<svg viewBox="0 0 64 72" aria-hidden="true"><path d="M10 28 h44 l-6 22 a16 10 0 0 1-32 0 z" fill="#fff" stroke="#5c3b22" stroke-width="3"/><ellipse cx="32" cy="28" rx="22" ry="8" fill="#e7f6ff" stroke="#5c3b22" stroke-width="3"/><path d="M24 16 q4 -8 8 0 M32 14 q4 -8 8 0" fill="none" stroke="#9ad" stroke-width="3" stroke-linecap="round"/></svg><span class="tag">わん</span>';
+      }
+      return '<svg viewBox="0 0 70 84" aria-hidden="true"><rect x="18" y="8" width="34" height="28" rx="8" fill="#c9843d" stroke="#5c3b22" stroke-width="3"/><rect x="10" y="36" width="50" height="12" rx="4" fill="#e0a15a" stroke="#5c3b22" stroke-width="3"/><path d="M16 48 v16 M54 48 v16" stroke="#5c3b22" stroke-width="3"/><ellipse cx="35" cy="22" rx="16" ry="8" fill="#f5d76e" stroke="#5c3b22" stroke-width="3"/><path d="M22 22 h26" stroke="#e7b84a" stroke-width="2"/><rect x="31" y="10" width="8" height="8" rx="2" fill="#e11d48"/></svg><span class="tag">ぼうし</span>';
+    }
+
+    function iconSvg(kind) {
+      if (kind === "lie") {
+        return '<svg viewBox="0 0 72 72" aria-hidden="true"><circle cx="36" cy="36" r="32" fill="#fae8ff" stroke="#c026d3" stroke-width="4"/><ellipse cx="36" cy="40" rx="16" ry="8" fill="#f5d76e" stroke="#5c3b22" stroke-width="3"/><path d="M24 28 q12 -16 24 0" fill="#e11d48" stroke="#5c3b22" stroke-width="3"/><path d="M30 44 q4 8 0 12 M40 44 q4 8 0 12" fill="none" stroke="#fb7185" stroke-width="3" stroke-linecap="round"/><path d="M18 18 l10 10 M28 18 l-10 10" stroke="#c026d3" stroke-width="4" stroke-linecap="round"/></svg>';
+      }
+      if (kind === "truth") {
+        return '<svg viewBox="0 0 72 72" aria-hidden="true"><rect x="6" y="6" width="60" height="60" rx="16" fill="#ffedd5" stroke="#ea580c" stroke-width="4"/><path d="M20 38 l10 10 l22 -24" fill="none" stroke="#16a34a" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M46 50 l12 8 M52 48 l10 -2" stroke="#ea580c" stroke-width="4" stroke-linecap="round"/></svg>';
+      }
+      if (kind === "time") {
+        return '<svg viewBox="0 0 72 72" aria-hidden="true"><circle cx="36" cy="38" r="26" fill="#dbeafe" stroke="#2563eb" stroke-width="4"/><rect x="30" y="6" width="12" height="8" rx="2" fill="#2563eb"/><path d="M36 38 V24" stroke="#1d4ed8" stroke-width="4" stroke-linecap="round"/><path d="M36 38 l12 6" stroke="#1d4ed8" stroke-width="4" stroke-linecap="round"/><circle cx="36" cy="38" r="3" fill="#1d4ed8"/></svg>';
+      }
+      return '<svg viewBox="0 0 72 72" aria-hidden="true"><circle cx="36" cy="36" r="32" fill="#e8f8ee" stroke="#16a34a" stroke-width="4"/><path d="M20 38 l10 10 l22 -24" fill="none" stroke="#16a34a" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    }
+
+    function splashSvg() {
+      return '<svg viewBox="0 0 74 74" aria-hidden="true"><path d="M37 8 l4 14 -12 4 14 6 -6 14 10 -8 8 12 -2 -14 14 -2 -12 -8 8 -10 -14 4 z" fill="#fb7185" stroke="#9f1239" stroke-width="2"/></svg>';
+    }
+
+    function mount(hostId, tplId) {
+      var host = document.getElementById(hostId);
+      host.replaceChildren(document.getElementById(tplId).content.cloneNode(true));
+    }
+
+    function setMood(hostId, mood) {
+      document.getElementById(hostId).className = hostClass(hostId) + " actor is-" + mood;
+    }
+
+    function hostClass(hostId) {
+      if (hostId === "kid") return "kid-slot";
+      if (hostId === "parrot") return "parrot-slot";
+      return "";
+    }
+
+    function movePiece(id, xy, animate) {
+      var el = document.getElementById("p-" + id);
+      if (!animate) el.style.transition = "none";
+      el.style.left = xy[0] + "%";
+      el.style.top = xy[1] + "%";
+      if (!animate) {
+        void el.offsetWidth;
+        el.style.transition = "";
+      }
+    }
+
+    function placeProp(id, xy) {
+      var el = document.getElementById(id);
+      el.style.left = xy[0] + "%";
+      el.style.top = xy[1] + "%";
+    }
+
+    function syncGhosts() {
+      ["hashi", "sara", "koppu", "napkin", "spoon"].forEach(function (id) {
+        var g = document.getElementById("g-" + id);
+        if (g) g.classList.toggle("gone", spot[id] === "place");
+      });
+    }
+
+    function resetTable(animate) {
+      PIECES.forEach(function (id) {
+        spot[id] = "home";
+        var el = document.getElementById("p-" + id);
+        el.classList.remove("is-placed", "is-mess", "hot", "snapping");
+        movePiece(id, HOME[id], animate);
+      });
+      syncGhosts();
+      splash.hidden = true;
+    }
+
+    function paintHearts(justLost) {
+      heartsEl.replaceChildren();
+      for (var i = 0; i < 3; i++) {
+        var on = i < lives;
+        var wrap = document.createElement("span");
+        wrap.className = "heart" + (!on && justLost && i === lives ? " break" : "");
+        wrap.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-9a4 4 0 0 1 7-2 4 4 0 0 1 7 2c0 4.6-7 9-7 9z" fill="' + (on ? "#e11d48" : "#e7d3b8") + '"/></svg>';
+        heartsEl.appendChild(wrap);
+      }
+    }
+
+    function paintPips() {
+      var nodes = pipsEl.children;
+      for (var i = 0; i < TOTAL; i++) {
+        var cls = marks[i] || "";
+        if (!cls && i === index && (phase === "play" || phase === "beat" || phase === "scold")) cls = "now";
+        nodes[i].className = cls;
+      }
+    }
+
+    function paintTime(leftMs) {
+      var left = Math.max(0, leftMs);
+      var p = roundMs > 0 ? left / roundMs : 0;
+      timeFill.style.transform = "scaleX(" + Math.max(0, Math.min(1, p)) + ")";
+      timeLabel.textContent = (left / 1000).toFixed(1);
+      timeRow.classList.toggle("warn", left <= 1500 && phase === "play");
+      bubble.classList.toggle("urgent", left <= 1500 && phase === "play");
+    }
+
+    function later(fn, ms) {
+      var my = ++token;
+      setTimeout(function () {
+        if (my === token) fn();
+      }, ms);
+    }
+
+    function cancelLater() { token++; }
+
+    function blurFocus() {
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    }
+
+    function ensureAudio() {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      if (!audioCtx) {
+        try { audioCtx = new AC(); } catch (e) { return; }
+      }
+      if (audioCtx.state === "suspended") audioCtx.resume();
+    }
+
+    function tone(freq, dur, type, gain, delay) {
+      if (!audioCtx) return;
+      var t = audioCtx.currentTime + (delay || 0);
+      var end = t + Math.max(0.04, dur);
+      var o = audioCtx.createOscillator();
+      var g = audioCtx.createGain();
+      o.type = type || "sine";
+      o.frequency.setValueAtTime(freq, t);
+      g.gain.setValueAtTime(Math.max(gain, 0.0001), t);
+      g.gain.exponentialRampToValueAtTime(0.0001, end);
+      o.connect(g).connect(audioCtx.destination);
+      o.start(t);
+      o.stop(end + 0.02);
+    }
+
+    function noise(dur, gain, freq) {
+      if (!audioCtx) return;
+      var sr = audioCtx.sampleRate;
+      var len = Math.max(1, Math.floor(sr * dur));
+      var buf = audioCtx.createBuffer(1, len, sr);
+      var data = buf.getChannelData(0);
+      for (var i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+      var src = audioCtx.createBufferSource();
+      src.buffer = buf;
+      var filter = audioCtx.createBiquadFilter();
+      filter.type = "bandpass";
+      filter.frequency.value = freq || 900;
+      var g = audioCtx.createGain();
+      var t = audioCtx.currentTime;
+      g.gain.setValueAtTime(Math.max(gain, 0.0001), t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      src.connect(filter).connect(g).connect(audioCtx.destination);
+      src.start();
+    }
+
+    function sfxOk() {
+      tone(523, 0.08, "triangle", 0.07, 0);
+      tone(659, 0.09, "triangle", 0.07, 0.07);
+      tone(784, 0.14, "triangle", 0.06, 0.14);
+    }
+    function sfxBad() {
+      tone(196, 0.14, "sawtooth", 0.035, 0);
+      tone(130, 0.2, "square", 0.03, 0.08);
+    }
+    function sfxStamp() { noise(0.07, 0.05, 420); tone(160, 0.09, "square", 0.04, 0.01); }
+    function sfxSnap() { tone(520, 0.05, "sine", 0.06, 0); tone(740, 0.07, "sine", 0.05, 0.04); }
+    function sfxTick() { tone(980, 0.035, "square", 0.025, 0); }
+    function sfxTime() { tone(660, 0.07, "square", 0.04, 0); tone(440, 0.12, "square", 0.04, 0.09); }
+    function sfxStart() { tone(392, 0.06, "triangle", 0.05, 0); tone(523, 0.08, "triangle", 0.05, 0.06); }
+
+    function showBeat() {
+      callout.className = "callout beat";
+      callout.innerHTML = "<b>せいかい！</b>";
+      callout.hidden = false;
+    }
+
+    function showScold(type, headline, detail) {
+      callout.className = "callout scold scold-" + type;
+      callout.innerHTML = '<div class="ico">' + iconSvg(type) + "</div><b>" + headline + "</b><span>" + detail + "</span>";
+      callout.hidden = false;
+    }
+
+    function hideCallout() { callout.hidden = true; }
+
+    function currentRound() { return ROUNDS[index]; }
+
+    function beginRound() {
+      var round = currentRound();
+      phase = "play";
+      roundMs = round.sec * 1000;
+      deadline = performance.now() + roundMs;
+      lastTick = 0;
+      hideCallout();
+      splash.hidden = true;
+      lineEl.textContent = round.say;
+      doLabel.textContent = round.verb;
+      doIco.innerHTML = pieceSvg(round.item);
+      btnDo.setAttribute("aria-label", round.verb);
+      roundLabel.textContent = (index + 1) + " / " + TOTAL;
+      PIECES.forEach(function (id) {
+        var el = document.getElementById("p-" + id);
+        el.classList.toggle("hot", id === round.item);
+        el.classList.remove("is-mess", "snapping");
+      });
+      bubble.classList.remove("pop");
+      void bubble.offsetWidth;
+      bubble.classList.add("pop");
+      setMood("kid", "idle");
+      setMood("parrot", "idle");
+      paintTime(roundMs);
+      paintPips();
+      paintHearts(false);
+    }
+
+    function messXY(round) {
+      if (round.mess === "koppu") {
+        var el = document.getElementById("p-koppu");
+        return [parseFloat(el.style.left), parseFloat(el.style.top)];
+      }
+      if (round.mess === "hat") return PROPS.chair;
+      return [50, 6];
+    }
+
+    function xyNow(id) {
+      return spot[id] === "place" && PLACE[id] ? PLACE[id] : HOME[id];
+    }
+
+    function succeed(kind) {
+      var round = currentRound();
+      correct += 1;
+      marks[index] = "ok";
+      phase = "beat";
+      if (round.truth) {
+        spot[round.item] = "place";
+        var el = document.getElementById("p-" + round.item);
+        el.classList.add("is-placed", "snapping");
+        el.classList.remove("hot");
+        movePiece(round.item, PLACE[round.item], true);
+        syncGhosts();
+        setMood("kid", "yay");
+        setMood("parrot", "nod");
+        sfxSnap();
+        sfxOk();
+      } else {
+        document.getElementById("p-" + round.item).classList.remove("hot");
+        setMood("kid", "stamp");
+        setMood("parrot", "fluster");
+        sfxStamp();
+        sfxOk();
+      }
+      showBeat();
+      paintPips();
+      later(afterResolve, BEAT_MS);
+    }
+
+    function fail(type) {
+      var round = currentRound();
+      lives -= 1;
+      marks[index] = "bad";
+      phase = "scold";
+      var headline = type === "lie" ? "ウソにしたがった" : type === "truth" ? "ほんとうだったのに ことわった" : "じかんぎれ";
+      var detail = type === "time"
+        ? "「" + round.say + "」を えらぶまえに 時間切れ"
+        : round.detail;
+      lastFail = { type: type, headline: headline, detail: detail };
+      PIECES.forEach(function (id) {
+        document.getElementById("p-" + id).classList.remove("hot");
+      });
+      if (type === "lie" && round.mess) {
+        var xy = messXY(round);
+        var el = document.getElementById("p-" + round.item);
+        el.classList.add("is-mess");
+        movePiece(round.item, xy, true);
+        splash.hidden = false;
+        splash.style.left = xy[0] + "%";
+        splash.style.top = xy[1] + "%";
+        setMood("kid", "sad");
+        setMood("parrot", "laugh");
+        sfxSnap();
+        sfxBad();
+      } else if (type === "truth") {
+        setMood("kid", "sad");
+        setMood("parrot", "huh");
+        sfxStamp();
+        sfxBad();
+      } else {
+        setMood("kid", "panic");
+        setMood("parrot", "huh");
+        sfxTime();
+        sfxBad();
+      }
+      showScold(type, headline, detail);
+      paintHearts(true);
+      paintPips();
+      paintTime(0);
+      later(function () {
+        if (type === "lie") {
+          var piece = document.getElementById("p-" + round.item);
+          piece.classList.remove("is-mess");
+          movePiece(round.item, xyNow(round.item), false);
+          splash.hidden = true;
+        }
+        afterResolve();
+      }, lives <= 0 ? 800 : SCOLD_MS);
+    }
+
+    function afterResolve() {
+      if (lives <= 0) {
+        showResult(false);
+        return;
+      }
+      if (index >= TOTAL - 1) {
+        showResult(true);
+        return;
+      }
+      index += 1;
+      beginRound();
+    }
+
+    function obey() {
+      if (phase !== "play") return;
+      blurFocus();
+      obeyed += 1;
+      var round = currentRound();
+      if (round.truth) succeed("do");
+      else fail("lie");
+    }
+
+    function refuse() {
+      if (phase !== "play") return;
+      blurFocus();
+      var round = currentRound();
+      if (!round.truth) succeed("refuse");
+      else fail("truth");
+    }
+
+    function onTimeout() {
+      if (phase !== "play") return;
+      fail("time");
+    }
+
+    function shareBody() {
+      var status = won ? "クリア！" : "ゲームオーバー";
+      return "ウソつきおてつだい " + status + " " + correct + "/8ラウンド あなたは " + obeyed + "/8回 したがった #ねむねむゲーム部\n" + PLAY_URL;
+    }
+
+    function showResult(didWin) {
+      won = didWin;
+      phase = "result";
+      hideCallout();
+      paintPips();
+      var text = shareBody();
+      document.getElementById("share-text").textContent = text;
+      shareLink.href = "https://x.com/intent/post?text=" + encodeURIComponent(text);
+      document.getElementById("result-rounds").textContent = correct + "/8 ラウンドクリア";
+      document.getElementById("result-obey").textContent = "あなたは " + obeyed + "/8回 したがった";
+      var kicker = document.getElementById("result-kicker");
+      var title = document.getElementById("result-title");
+      var why = document.getElementById("result-why");
+      var ico = document.getElementById("result-ico");
+      if (didWin) {
+        resultPanel.dataset.kind = "clear";
+        kicker.textContent = "クリア";
+        title.textContent = "クリア！";
+        why.textContent = correct === TOTAL ? "8回とも、しるしをみぬいた！" : "ミスがあっても、8回のりきった！";
+        ico.innerHTML = iconSvg("clear");
+        setMood("result-kid", "yay");
+        setMood("result-parrot", "nod");
+        setMood("kid", "yay");
+        setMood("parrot", "nod");
+      } else {
+        var failInfo = lastFail || { type: "time", headline: "じかんぎれ", detail: "じかんぎれ" };
+        resultPanel.dataset.kind = failInfo.type;
+        kicker.textContent = "ゲームオーバー";
+        title.textContent = failInfo.headline;
+        why.textContent = failInfo.detail;
+        ico.innerHTML = iconSvg(failInfo.type);
+        setMood("result-kid", failInfo.type === "time" ? "panic" : "sad");
+        setMood("result-parrot", failInfo.type === "lie" ? "laugh" : "huh");
+      }
+      btnCopy.textContent = "コピー";
+      resultReadyAt = performance.now() + LOCK_MS;
+      needRelease = held.Space || held.Enter;
+      resultEl.classList.add("is-locked");
+      btnRetry.disabled = true;
+      btnCopy.disabled = true;
+      shareLink.classList.add("is-off");
+      shareLink.setAttribute("aria-disabled", "true");
+      resultEl.hidden = false;
+      blurFocus();
+      later(function () {
+        if (phase !== "result") return;
+        resultEl.classList.remove("is-locked");
+        btnRetry.disabled = false;
+        btnCopy.disabled = false;
+        shareLink.classList.remove("is-off");
+        shareLink.removeAttribute("aria-disabled");
+      }, LOCK_MS);
+    }
+
+    function beginGame() {
+      if (phase !== "title" && phase !== "result") return;
+      if (phase === "result" && performance.now() < resultReadyAt) return;
+      cancelLater();
+      ensureAudio();
+      phase = "boot";
+      index = 0;
+      lives = 3;
+      correct = 0;
+      obeyed = 0;
+      marks = [];
+      for (var i = 0; i < TOTAL; i++) marks.push("");
+      lastFail = null;
+      won = false;
+      resetTable(false);
+      titleEl.hidden = true;
+      resultEl.hidden = true;
+      resultEl.classList.remove("is-locked");
+      sfxStart();
+      beginRound();
+    }
+
+    function onKeyDown(e) {
+      if (e.code !== "Space" && e.code !== "Enter") return;
+      e.preventDefault();
+      if (e.repeat) return;
+      if (e.code === "Space") held.Space = true;
+      if (e.code === "Enter") held.Enter = true;
+      if (phase === "title") {
+        beginGame();
+        return;
+      }
+      if (phase === "result") {
+        if (needRelease || performance.now() < resultReadyAt || btnRetry.disabled) return;
+        beginGame();
+        return;
+      }
+      if (phase === "play") {
+        if (e.code === "Enter") obey();
+        else refuse();
+      }
+    }
+
+    function onKeyUp(e) {
+      if (e.code === "Space") held.Space = false;
+      if (e.code === "Enter") held.Enter = false;
+      if (!held.Space && !held.Enter) needRelease = false;
+    }
+
+    function bindPress(el, fn) {
+      el.addEventListener("pointerdown", function (e) {
+        if (e.button != null && e.button > 0) return;
+        e.preventDefault();
+        fn();
+      });
+    }
+
+    mount("kid", "tpl-kid");
+    mount("parrot", "tpl-parrot");
+    mount("title-kid", "tpl-kid");
+    mount("title-parrot", "tpl-parrot");
+    mount("result-kid", "tpl-kid");
+    mount("result-parrot", "tpl-parrot");
+    setMood("title-kid", "yay");
+    setMood("title-parrot", "idle");
+
+    PIECES.forEach(function (id) {
+      document.querySelector("#p-" + id + " .body").innerHTML = pieceSvg(id);
+      var g = document.getElementById("g-" + id);
+      if (g) g.innerHTML = ghostSvg(id);
+    });
+    document.getElementById("wan").innerHTML = propSvg("wan");
+    document.getElementById("chair").innerHTML = propSvg("chair");
+    splash.innerHTML = splashSvg();
+    Object.keys(PROPS).forEach(function (id) { placeProp(id, PROPS[id]); });
+    for (var p = 0; p < TOTAL; p++) {
+      var pip = document.createElement("i");
+      pipsEl.appendChild(pip);
+    }
+    resetTable(false);
+    paintHearts(false);
+    paintTime(5000);
+
+    bindPress(btnDo, obey);
+    bindPress(btnLie, refuse);
+    bindPress(document.getElementById("btn-start"), beginGame);
+    bindPress(btnRetry, beginGame);
+    PIECES.forEach(function (id) {
+      var el = document.getElementById("p-" + id);
+      el.addEventListener("pointerdown", function (e) {
+        if (!el.classList.contains("hot")) return;
+        if (e.button != null && e.button > 0) return;
+        e.preventDefault();
+        obey();
+      });
+    });
+
+    btnCopy.addEventListener("click", function () {
+      if (btnCopy.disabled || performance.now() < resultReadyAt) return;
+      var text = shareBody();
+      var done = function () {
+        btnCopy.textContent = "コピーした！";
+        copyTimer = performance.now() + 1200;
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(function () {
+          done();
+        });
+      } else {
+        done();
+      }
+    });
+
+    shareLink.addEventListener("click", function (e) {
+      if (shareLink.classList.contains("is-off") || performance.now() < resultReadyAt) e.preventDefault();
+    });
+
+    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("keyup", onKeyUp);
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden) {
+        document.hiddenAt = performance.now();
+      } else if (document.hiddenAt && phase === "play") {
+        deadline += performance.now() - document.hiddenAt;
+        document.hiddenAt = 0;
+      }
+    });
+    document.getElementById("stage").addEventListener("contextmenu", function (e) { e.preventDefault(); });
+
+    var last = performance.now();
+    function frame(now) {
+      requestAnimationFrame(frame);
+      if (copyTimer && now > copyTimer) {
+        copyTimer = 0;
+        if (phase === "result") btnCopy.textContent = "コピー";
+      }
+      if (phase !== "play") return;
+      var left = deadline - now;
+      if (left <= 0) {
+        paintTime(0);
+        onTimeout();
+        return;
+      }
+      paintTime(left);
+      if (left <= 1500) {
+        var gap = left < 700 ? 160 : 320;
+        if (now - lastTick >= gap) {
+          lastTick = now;
+          sfxTick();
+        }
+      }
+      last = now;
+    }
+    requestAnimationFrame(frame);
+  })();
+  </script>
+</body>
+</html>

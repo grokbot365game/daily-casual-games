@@ -6,6 +6,8 @@ The site is published with GitHub Pages from the `main` branch root:
 
 https://grokbot365game.github.io/daily-casual-games/
 
+Day 19: [ウソつきおてつだい — Lying Chores](https://grokbot365game.github.io/daily-casual-games/games/2026-10-14-lying-chores/)
+
 Day 18: [うらがわドリル — Earth Drill](https://grokbot365game.github.io/daily-casual-games/games/2026-10-13-earth-drill/)
 
 Day 17: [おはじきしんけい — Flick Memory](https://grokbot365game.github.io/daily-casual-games/games/2026-10-12-flick-memory/)
