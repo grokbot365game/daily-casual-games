@@ -1,0 +1,2385 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f0a04a">
+  <meta name="description" content="くまシェフのホットケーキ一発勝負。火・生地・ひっくり返し・おおり。ねらいどおりでパーフェクト。">
+  <title>くまシェフのホットケーキ一発勝負</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%23f0a04a'/%3E%3Ccircle cx='8' cy='9' r='4.2' fill='%23e09a3e'/%3E%3Ccircle cx='6.4' cy='8.2' r='.7' fill='%23fff6e0'/%3E%3Ccircle cx='9' cy='9.4' r='.55' fill='%23fff6e0'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      --ink: #3a2618;
+      --muted: #7a5b40;
+      --cream: #fff8ec;
+      --line: rgba(58, 38, 24, .14);
+      --good: #16a34a;
+      --good-bg: #bbf7d0;
+      --hot: #ea580c;
+      --burn: #7f1d1d;
+      --raw: #7dd3fc;
+      --honey: #f0a04a;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+    body {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      color: var(--ink);
+      background:
+        radial-gradient(80% 42% at 50% 0%, #ffe7b0 0%, transparent 58%),
+        linear-gradient(180deg, #ffd18a 0%, #f3b56a 42%, #e0974e 100%);
+      font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Yu Gothic", "WenQuanYi Micro Hei", "Droid Sans Fallback", "Meiryo", sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: manipulation;
+    }
+    [hidden] { display: none !important; }
+    button, a { -webkit-tap-highlight-color: transparent; font: inherit; color: inherit; }
+    button:focus-visible, a:focus-visible { outline: 3px solid #ffe08a; outline-offset: 2px; }
+    .back, .mute {
+      position: fixed;
+      z-index: 60;
+      top: max(10px, env(safe-area-inset-top));
+      border: 0;
+      border-radius: 999px;
+      color: var(--ink);
+      background: rgba(255, 248, 236, .94);
+      box-shadow: inset 0 0 0 1px var(--line);
+      font-size: .78rem;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-decoration: none;
+    }
+    .back { left: max(12px, env(safe-area-inset-left)); padding: 8px 12px; }
+    .mute {
+      right: max(12px, env(safe-area-inset-right));
+      width: 44px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+    }
+    .mute svg { width: 22px; height: 22px; display: block; }
+    .mute .slash { display: none; }
+    .mute.is-muted .slash { display: block; }
+    .shell {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      max-width: 480px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding:
+        calc(max(10px, env(safe-area-inset-top)) + 42px)
+        max(12px, env(safe-area-inset-right))
+        max(10px, env(safe-area-inset-bottom))
+        max(12px, env(safe-area-inset-left));
+      min-height: 0;
+    }
+    .hud, .coachbox {
+      flex: none;
+      border-radius: 16px;
+      background: rgba(255, 248, 236, .96);
+      box-shadow: inset 0 0 0 1px var(--line), 0 8px 18px rgba(90, 50, 20, .1);
+    }
+    .hud { padding: 8px 12px 8px; }
+    .hud-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+    .titles b { display: block; font-size: 1.02rem; letter-spacing: .03em; line-height: 1.15; }
+    .titles span, #step-line {
+      color: var(--ink);
+      font-size: .95rem;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+    }
+    .pips { margin-top: 6px; display: flex; gap: 5px; }
+    .pips i {
+      flex: 1;
+      height: 8px;
+      border-radius: 999px;
+      background: #ead9c2;
+      display: block;
+    }
+    .pips i.now { background: #0f766e; }
+    .pips i.good { background: var(--good); }
+    .pips i.mid { background: #f59e0b; }
+    .pips i.bad { background: #e11d48; }
+    .readout {
+      margin-top: 6px;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      font-weight: 800;
+      color: var(--muted);
+      font-size: .82rem;
+    }
+    .readout b {
+      font-size: 1.45rem;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      color: var(--ink);
+      min-width: 2ch;
+    }
+    .readout[data-zone="good"] b { color: #15803d; }
+    .readout[data-zone="hot"] b,
+    .readout[data-zone="dark"] b,
+    .readout[data-zone="thick"] b { color: var(--hot); }
+    .readout[data-zone="burn"] b,
+    .readout[data-zone="over"] b,
+    .readout[data-zone="raw"] b { color: #be123c; }
+    .readout .range { margin-left: auto; color: #166534; font-weight: 900; }
+    .coachbox { padding: 8px 12px 9px; }
+    .coachbox strong {
+      display: block;
+      font-size: .92rem;
+      line-height: 1.35;
+    }
+    .coachbox span {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: .75rem;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+    .play {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 118px minmax(0, 1fr) 74px;
+      gap: 6px;
+      align-items: center;
+      justify-items: center;
+    }
+    .play.no-thermo { grid-template-columns: 128px minmax(0, 1fr); }
+    .bear-col {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-self: center;
+      width: 100%;
+      max-height: 100%;
+      min-height: 0;
+      gap: 4px;
+    }
+    .say {
+      margin: 0;
+      padding: 6px 8px;
+      border-radius: 12px 12px 12px 4px;
+      background: #fffdf8;
+      box-shadow: 0 4px 0 rgba(92, 59, 34, .1), inset 0 0 0 1px var(--line);
+      font-size: .72rem;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+    .say.pop { animation: pop .28s ease; }
+    @keyframes pop { from { transform: scale(.94); } to { transform: none; } }
+    .bear {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      align-items: flex-end;
+      transform-origin: 50% 90%;
+    }
+    .bear svg { width: 100%; height: auto; max-height: 100%; display: block; overflow: visible; }
+    .bear .face { display: none; }
+    .bear[data-mood="idle"] .face.idle,
+    .bear[data-mood="happy"] .face.happy,
+    .bear[data-mood="worry"] .face.worry,
+    .bear[data-mood="shock"] .face.shock,
+    .bear[data-mood="focus"] .face.focus,
+    .bear[data-mood="meh"] .face.meh { display: block; }
+    .bear[data-mood="idle"] { animation: bob 2.2s ease-in-out infinite; }
+    .bear[data-mood="focus"] { animation: bob 1s ease-in-out infinite; }
+    .bear[data-mood="meh"] { animation: bob 2.6s ease-in-out infinite; }
+    .bear[data-mood="happy"] { animation: hop .5s ease; }
+    .bear[data-mood="worry"] { animation: wobble .28s ease-in-out infinite; }
+    .bear[data-mood="shock"] { animation: shock .42s ease; }
+    .bear .hat { transform-box: fill-box; transform-origin: center; transition: transform .18s; }
+    .bear[data-mood="shock"] .hat { transform: translateY(-7px) rotate(-10deg); }
+    @keyframes bob { 50% { transform: translateY(-4px); } }
+    @keyframes hop {
+      40% { transform: translateY(-12px) scale(1.05); }
+      100% { transform: none; }
+    }
+    @keyframes wobble {
+      0%, 100% { transform: rotate(-2.5deg); }
+      50% { transform: rotate(2.5deg); }
+    }
+    @keyframes shock {
+      25% { transform: translateX(-5px) rotate(-3deg); }
+      50% { transform: translateX(5px) rotate(3deg); }
+      75% { transform: translateX(-3px); }
+    }
+    .pan-wrap {
+      width: min(100%, 320px);
+      aspect-ratio: 1;
+      max-height: 100%;
+      min-height: 0;
+      border-radius: 18px;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.28), transparent 28%),
+        repeating-linear-gradient(90deg, #efc07a 0 16px, #e2ae64 16px 32px);
+      box-shadow: inset 0 0 0 2px rgba(255, 248, 236, .45), 0 10px 20px rgba(90, 40, 10, .12);
+      position: relative;
+    }
+    .pan-wrap canvas { width: 100%; height: 100%; display: block; touch-action: none; }
+    .flash {
+      position: absolute;
+      left: 50%;
+      top: 12%;
+      transform: translateX(-50%);
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #fffdf8;
+      font-weight: 900;
+      letter-spacing: .08em;
+      pointer-events: none;
+    }
+    .thermo {
+      position: relative;
+      align-self: stretch;
+      justify-self: stretch;
+      width: 100%;
+      min-height: 0;
+      border-radius: 16px;
+      background: rgba(255, 248, 236, .94);
+      box-shadow: inset 0 0 0 1px var(--line);
+      padding: 6px;
+      display: flex;
+    }
+    .thermo-track {
+      position: relative;
+      flex: 1;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #efe4d4;
+    }
+    .thermo .zone {
+      position: absolute;
+      left: 0;
+      right: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: .04em;
+      text-align: center;
+      line-height: 1.1;
+    }
+    .thermo .z-soft { background: #bae6fd; color: #0c4a6e; }
+    .thermo .z-cold { background: #fde68a; color: #78350f; }
+    .thermo .z-good { background: #86efac; color: #14532d; box-shadow: inset 0 0 0 2px #fff; z-index: 1; }
+    .thermo .z-hot { background: #fdba74; color: #7c2d12; }
+    .thermo .z-burn { background: #44403c; color: #fff; }
+    .needle {
+      position: absolute;
+      left: -4px;
+      right: -4px;
+      height: 4px;
+      margin-bottom: -2px;
+      border-radius: 4px;
+      background: #1c1917;
+      z-index: 2;
+      box-shadow: 0 0 0 2px #fff;
+    }
+    .hmeter {
+      flex: none;
+      padding: 8px 10px 10px;
+      border-radius: 16px;
+      background: rgba(255, 248, 236, .96);
+      box-shadow: inset 0 0 0 1px var(--line);
+    }
+    .htrack {
+      position: relative;
+      height: 28px;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #efe4d4;
+      display: flex;
+    }
+    .htrack .seg {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 900;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    .seg.raw { background: #fde68a; color: #78350f; }
+    .seg.pale { background: #fcd34d; color: #78350f; }
+    .seg.good { background: #86efac; color: #14532d; box-shadow: inset 0 0 0 2px #fff; }
+    .seg.dark { background: #d97706; color: #fff; }
+    .seg.burn { background: #44403c; color: #fff; }
+    .seg.tiny { background: #fecaca; color: #7f1d1d; }
+    .seg.thin { background: #fde68a; color: #78350f; }
+    .seg.thick { background: #fdba74; color: #7c2d12; }
+    .seg.over { background: #b91c1c; color: #fff; }
+    .hmarker {
+      position: absolute;
+      top: -3px;
+      bottom: -3px;
+      width: 4px;
+      margin-left: -2px;
+      border-radius: 4px;
+      background: #1c1917;
+      box-shadow: 0 0 0 2px #fff;
+      z-index: 2;
+    }
+    .action {
+      flex: none;
+      height: 64px;
+      border: 0;
+      color: white;
+      font-weight: 900;
+      letter-spacing: .04em;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1px;
+      box-shadow: 0 8px 0 rgba(0, 0, 0, .12);
+      touch-action: none;
+      cursor: pointer;
+    }
+    .action .as { font-size: .68rem; font-weight: 800; opacity: .9; letter-spacing: .02em; }
+    .action[data-kind="heat"] {
+      border-radius: 16px;
+      background: linear-gradient(180deg, #ffb15a, #ea580c);
+    }
+    .action[data-kind="pour"] {
+      border-radius: 40px 40px 18px 18px;
+      background: linear-gradient(180deg, #ffe08a, #eab308);
+      color: #5c3b12;
+    }
+    .action[data-kind="flip"] {
+      border-radius: 999px;
+      background: linear-gradient(180deg, #5eead4, #0f766e);
+    }
+    .action[data-kind="serve"] {
+      border-radius: 14px;
+      background: linear-gradient(180deg, #86efac, #15803d);
+    }
+    .action[data-kind="wait"] {
+      border-radius: 16px;
+      background: #d6d3d1;
+      color: #57534e;
+      box-shadow: none;
+    }
+    .action.is-down { transform: translateY(3px); box-shadow: 0 4px 0 rgba(0, 0, 0, .12); }
+    .action.is-now { box-shadow: 0 0 0 4px #fff, 0 8px 0 rgba(0, 0, 0, .12); }
+    .action.is-off { filter: saturate(.7); opacity: .75; }
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      display: grid;
+      place-items: center;
+      padding: 58px 14px 14px;
+      overflow: auto;
+      background: rgba(90, 45, 16, .28);
+    }
+    .card {
+      width: min(100%, 420px);
+      max-height: 100%;
+      overflow: auto;
+      padding: 16px 16px 14px;
+      border-radius: 22px;
+      background: var(--cream);
+      box-shadow: 0 18px 50px rgba(60, 30, 10, .28);
+      text-align: center;
+    }
+    .card h1 { margin: 0; font-size: 1.35rem; line-height: 1.3; letter-spacing: .02em; }
+    .card h2 { margin: 8px 0 0; font-size: 1.2rem; }
+    .en { margin: 4px 0 0; color: var(--muted); font-weight: 800; font-size: .82rem; }
+    .blurb, .keys, .fine { margin: 8px 0 0; font-size: .82rem; font-weight: 700; line-height: 1.45; }
+    .steps {
+      margin: 10px 0 0;
+      padding: 0;
+      list-style: none;
+      text-align: left;
+      display: grid;
+      gap: 6px;
+    }
+    .steps li {
+      padding: 7px 10px;
+      border-radius: 12px;
+      background: #fff;
+      box-shadow: inset 0 0 0 1px var(--line);
+      font-size: .78rem;
+      font-weight: 800;
+      line-height: 1.4;
+    }
+    .steps b { display: inline-block; min-width: 6.5em; }
+    .best { margin: 8px 0 0; font-size: .78rem; font-weight: 800; color: var(--muted); }
+    .btns { display: grid; gap: 8px; margin-top: 12px; }
+    .btns button, .btns a, .card .go {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      border: 0;
+      border-radius: 14px;
+      font-weight: 900;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .go, #btn-retry {
+      background: linear-gradient(180deg, #ffb15a, #ea580c);
+      color: white;
+      box-shadow: 0 6px 0 #9a3412;
+    }
+    .share {
+      background: #111;
+      color: white;
+      box-shadow: 0 6px 0 #000;
+    }
+    .share[aria-disabled="true"], #btn-retry:disabled {
+      opacity: .45;
+      pointer-events: none;
+      box-shadow: none;
+    }
+    #card {
+      width: min(100%, 340px);
+      height: auto;
+      border-radius: 16px;
+      background: #fff;
+      box-shadow: inset 0 0 0 1px var(--line);
+    }
+    .why {
+      margin: 10px 0 0;
+      padding: 10px 12px;
+      border-radius: 14px;
+      font-weight: 900;
+      line-height: 1.4;
+      font-size: .95rem;
+    }
+    .why.burn { background: #292018; color: #ffd7c2; }
+    .why.raw { background: #fff3c4; color: #7a5416; }
+    .why.spill { background: #fde68a; color: #7a3e00; }
+    .why.win { background: #ecfccb; color: #3f6212; }
+    .why.mid { background: #ffedd5; color: #9a3412; }
+    .meta { margin: 8px 0 0; font-size: .75rem; font-weight: 800; color: var(--muted); line-height: 1.4; }
+    .end-link { color: #0f766e; font-weight: 900; text-decoration: none; }
+    @media (max-height: 720px) {
+      .hud { padding: 6px 10px; }
+      .coachbox { padding: 6px 10px; }
+      .action { height: 54px; }
+      .play { grid-template-columns: 100px minmax(0, 1fr) 62px; }
+      .play.no-thermo { grid-template-columns: 108px minmax(0, 1fr); }
+      .card h1 { font-size: 1.15rem; }
+    }
+  </style>
+</head>
+<body>
+  <a class="back" href="../../index.html">ギャラリー</a>
+  <button type="button" class="mute" id="mute" aria-pressed="false" aria-label="音を消す">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="M4 9h4l5-4v14l-5-4H4z"/>
+      <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 9.5a4 4 0 0 1 0 5"/>
+      <path class="slash" fill="none" stroke="#e11d48" stroke-width="2.4" stroke-linecap="round" d="M6 5l13 14"/>
+    </svg>
+  </button>
+  <div class="shell">
+    <header class="hud">
+      <div class="hud-top">
+        <div class="titles">
+          <b>ホットケーキ一発勝負</b>
+        </div>
+        <span id="step-line">4ステップ</span>
+      </div>
+      <div class="pips" id="pips"><i></i><i></i><i></i><i></i></div>
+      <div class="readout" id="readout" data-zone="soft">
+        <span id="metric">温度</span>
+        <b id="num">8</b>
+        <span class="range" id="range">ねらい 50–75</span>
+      </div>
+    </header>
+    <div class="coachbox">
+      <strong id="coach">緑の帯ではなして。最初はタイマーなし</strong>
+      <span id="coach-sub">赤の「こげ」に触れると真っ黒で失敗。冷たいうちはやり直し</span>
+    </div>
+    <div class="play" id="play">
+      <div class="bear-col">
+        <p class="say" id="say">いっしょに焼こう</p>
+        <div class="bear" id="bear" data-mood="idle">
+          <svg viewBox="0 0 140 168" aria-hidden="true">
+            <ellipse cx="70" cy="160" rx="36" ry="7" fill="rgba(80,40,10,.18)"/>
+            <ellipse cx="70" cy="136" rx="34" ry="24" fill="#c4844a"/>
+            <path d="M46 120 h48 l-6 36 h-36 z" fill="#fffdf8"/>
+            <path d="M70 124 v28" stroke="#f0b429" stroke-width="3" fill="none"/>
+            <circle cx="70" cy="146" r="7" fill="#e09a3e"/>
+            <circle cx="66.5" cy="144" r="1.3" fill="#fff6e0"/>
+            <circle cx="28" cy="128" r="10" fill="#c4844a"/>
+            <circle cx="112" cy="128" r="10" fill="#c4844a"/>
+            <circle cx="34" cy="62" r="16" fill="#b8743a"/>
+            <circle cx="106" cy="62" r="16" fill="#b8743a"/>
+            <circle cx="34" cy="62" r="8" fill="#f0c2a0"/>
+            <circle cx="106" cy="62" r="8" fill="#f0c2a0"/>
+            <g class="hat">
+              <rect x="48" y="10" width="44" height="26" rx="14" fill="#fff"/>
+              <rect x="42" y="30" width="56" height="12" rx="5" fill="#f4efe6"/>
+              <rect x="46" y="32" width="48" height="5" rx="2" fill="#e7d3b0"/>
+            </g>
+            <circle cx="70" cy="78" r="38" fill="#d3924f"/>
+            <circle cx="70" cy="80" r="34" fill="#c4844a"/>
+            <ellipse cx="70" cy="92" rx="18" ry="13" fill="#f6dcc0"/>
+            <ellipse cx="70" cy="86" rx="5.5" ry="4.2" fill="#5c3b22"/>
+            <ellipse cx="44" cy="90" rx="7" ry="4" fill="#e7a090" opacity=".85"/>
+            <ellipse cx="96" cy="90" rx="7" ry="4" fill="#e7a090" opacity=".85"/>
+            <g class="face idle">
+              <ellipse cx="55" cy="74" rx="4.4" ry="5" fill="#3a2618"/>
+              <ellipse cx="85" cy="74" rx="4.4" ry="5" fill="#3a2618"/>
+              <circle cx="56.6" cy="72.4" r="1.5" fill="#fff"/>
+              <circle cx="86.6" cy="72.4" r="1.5" fill="#fff"/>
+              <path d="M60 100 q10 8 20 0" stroke="#5c3b22" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+            </g>
+            <g class="face happy">
+              <path d="M48 76 q8-10 14 0" stroke="#3a2618" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+              <path d="M78 76 q8-10 14 0" stroke="#3a2618" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+              <path d="M58 96 q12 16 24 0" stroke="#5c3b22" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+              <path d="M52 88 q4 3 0 6" stroke="#e11d48" stroke-width="1.6" fill="none" opacity=".7"/>
+            </g>
+            <g class="face worry">
+              <ellipse cx="55" cy="76" rx="4.2" ry="4.6" fill="#3a2618"/>
+              <ellipse cx="85" cy="76" rx="4.2" ry="4.6" fill="#3a2618"/>
+              <path d="M46 66 l12 6" stroke="#3a2618" stroke-width="2.4" stroke-linecap="round"/>
+              <path d="M94 66 l-12 6" stroke="#3a2618" stroke-width="2.4" stroke-linecap="round"/>
+              <path d="M62 102 q8-7 16 0" stroke="#5c3b22" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+              <path d="M104 70 q8 10 -1 16 q-8-6 1-16z" fill="#7dd3fc"/>
+            </g>
+            <g class="face shock">
+              <ellipse cx="54" cy="74" rx="7" ry="7.5" fill="#fff"/>
+              <ellipse cx="86" cy="74" rx="7" ry="7.5" fill="#fff"/>
+              <circle cx="54" cy="75" r="2.6" fill="#3a2618"/>
+              <circle cx="86" cy="75" r="2.6" fill="#3a2618"/>
+              <ellipse cx="70" cy="102" rx="7" ry="8" fill="#5c3b22"/>
+              <path d="M104 68 q8 10 -1 16 q-8-6 1-16z" fill="#7dd3fc"/>
+            </g>
+            <g class="face focus">
+              <ellipse cx="55" cy="75" rx="4.4" ry="3.3" fill="#3a2618"/>
+              <ellipse cx="85" cy="75" rx="4.4" ry="3.3" fill="#3a2618"/>
+              <path d="M60 100 q10 6 20 0" stroke="#5c3b22" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+            </g>
+            <g class="face meh">
+              <ellipse cx="55" cy="74" rx="4.2" ry="4.6" fill="#3a2618"/>
+              <ellipse cx="85" cy="74" rx="4.2" ry="4.6" fill="#3a2618"/>
+              <path d="M60 100 h20" stroke="#5c3b22" stroke-width="2.4" stroke-linecap="round"/>
+            </g>
+          </svg>
+        </div>
+      </div>
+      <div class="pan-wrap" id="pan-wrap">
+        <canvas id="pan" width="300" height="300"></canvas>
+        <div class="flash" id="flash" hidden>スタート</div>
+      </div>
+      <div class="thermo" id="thermo" aria-hidden="true">
+        <div class="thermo-track" id="thermo-track"></div>
+      </div>
+    </div>
+    <div class="hmeter" id="hmeter" hidden>
+      <div class="htrack" id="htrack"></div>
+    </div>
+    <button type="button" class="action is-off" id="action" data-kind="heat" aria-disabled="true">
+      <span class="al" id="action-label">おして火をつける</span>
+      <span class="as" id="action-sub">スペース長押し</span>
+    </button>
+  </div>
+
+  <div class="overlay" id="title">
+    <div class="card">
+      <h1>くまシェフの<br>ホットケーキ一発勝負</h1>
+      <p class="en">Pancake Flip · Day 20</p>
+      <p class="blurb">ホットケーキを<strong>1枚だけ</strong>焼く。各ステップのねらいは、その場で見える。4つ全部ねらいで<strong>パーフェクト</strong>。</p>
+      <ol class="steps">
+        <li><b>1 火加減</b>緑の帯ではなす。タイマーなし。赤は真っ黒で失敗</li>
+        <li><b>2 生地</b>白いわに合わせてはなす。赤のわはあふれ、小さすぎも失敗</li>
+        <li><b>3 返し</b>緑の「かえす」でタップ。早すぎは生、遅すぎはこげ</li>
+        <li><b>4 おおり</b>うら側の緑でタップ。早すぎは生、遅すぎはこげ</li>
+      </ol>
+      <p class="keys">操作: 下のボタン、または<strong>スペース</strong></p>
+      <p class="best" id="title-best">ベスト なし</p>
+      <div class="btns">
+        <button type="button" class="go" id="btn-start">はじめる</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="result" hidden>
+    <div class="card">
+      <canvas id="card" width="720" height="960"></canvas>
+      <h2 id="res-title">できあがり</h2>
+      <p class="why" id="res-why"></p>
+      <p class="meta" id="res-meta"></p>
+      <p class="best" id="res-best"></p>
+      <div class="btns">
+        <button type="button" id="btn-retry" disabled>もういちど</button>
+        <a class="share" id="btn-share" href="#" target="_blank" rel="noopener noreferrer" aria-disabled="true">Xでシェア</a>
+      </div>
+      <p class="fine"><a class="end-link" href="../../index.html">ギャラリーへ</a></p>
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    "use strict";
+
+    var PLAY_URL = "https://grokbot365game.github.io/daily-casual-games/games/2026-10-15-pancake-flip/";
+    var STORE = "pancake-flip-2026-10-15";
+    var LOCK_MS = 900;
+    var JP = '"Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Yu Gothic", "WenQuanYi Micro Hei", "Droid Sans Fallback", sans-serif';
+
+    var HEAT = { soft: 18, low: 50, good: 75, burn: 88, rise: 11, cool: 6.2 };
+    var POUR = { tiny: 58, thin: 86, good: 112, over: 134, speed: 34, scale: 150 };
+    var FLIP = { raw: 30, pale: 44, good: 58, dark: 74, sec: 7.1, lead: 1.15 };
+    var FINISH = { raw: 32, pale: 46, good: 61, dark: 77, sec: 6.3, lead: 1.05 };
+
+    var STEP_NAME = { heat: "火加減", pour: "生地", flip: "ひっくり返し", finish: "おおり" };
+    var STEP_OK = {
+      heat: { good: "いい火かげん！", cold: "ちょっとぬるい", hot: "ちょっとあつい" },
+      pour: { good: "いい大きさ！", thin: "うすめだね", thick: "ぶあつめ" },
+      flip: { good: "きれいな返し！", pale: "ちょっと早かった", dark: "ちょっと遅かった" },
+      finish: { good: "いいおおり！", pale: "うらがうすい", dark: "うらが濃い" }
+    };
+    var CHIP = {
+      heat: { good: "ばっちり", cold: "ぬるい", hot: "あつい" },
+      pour: { good: "ばっちり", thin: "うすい", thick: "ぶあつ" },
+      flip: { good: "ばっちり", pale: "はやい", dark: "おそい" },
+      finish: { good: "ばっちり", pale: "はやい", dark: "おそい" }
+    };
+    var FAIL_STEP = {
+      "burn-heat": "heat",
+      overflow: "pour",
+      "thin-pour": "pour",
+      "raw-flip": "flip",
+      "burn-flip": "flip",
+      "raw-finish": "finish",
+      "burn-finish": "finish"
+    };
+    var FAILS = {
+      "burn-heat": {
+        title: "フライパンが真っ黒！",
+        why: "こげた！ 火が強すぎてフライパンが真っ黒",
+        name: "真っ黒なフライパン",
+        tone: "burn",
+        say: "あっつ！ こげちゃった"
+      },
+      overflow: {
+        title: "あふれた！",
+        why: "あふれた！ 生地を入れすぎてこぼれた",
+        name: "あふれた生地",
+        tone: "spill",
+        say: "わああ、こぼれた"
+      },
+      "thin-pour": {
+        title: "生地がたりない",
+        why: "生地がたりない… 白いわよりずっと小さい",
+        name: "ぺらぺらな生地",
+        tone: "raw",
+        say: "それじゃ焼けないよ"
+      },
+      "raw-flip": {
+        title: "まだドロドロ…",
+        why: "まだドロドロ… ひっくり返すのが早すぎ",
+        name: "ドロドロな生地",
+        tone: "raw",
+        say: "まだ生だよ…"
+      },
+      "burn-flip": {
+        title: "こげた！",
+        why: "こげた！ ひっくり返すのが遅すぎ",
+        name: "真っ黒なホットケーキ",
+        tone: "burn",
+        say: "黒こげだ…"
+      },
+      "raw-finish": {
+        title: "うらが生焼け",
+        why: "生焼け… おおりするのが早すぎ",
+        name: "うら生焼けなホットケーキ",
+        tone: "raw",
+        say: "うらがまだ生…"
+      },
+      "burn-finish": {
+        title: "うらが真っ黒！",
+        why: "うらが真っ黒！ おおりするのが遅すぎ",
+        name: "うら真っ黒なホットケーキ",
+        tone: "burn",
+        say: "うらが黒こげ…"
+      }
+    };
+    var RANK_JA = { S: "パーフェクト", A: "おしい", B: "ふつう", C: "むらあり", D: "なんとか" };
+
+    var stepLine = document.getElementById("step-line");
+    var pipsEl = document.getElementById("pips");
+    var readout = document.getElementById("readout");
+    var metricEl = document.getElementById("metric");
+    var numEl = document.getElementById("num");
+    var rangeEl = document.getElementById("range");
+    var coachEl = document.getElementById("coach");
+    var coachSub = document.getElementById("coach-sub");
+    var sayEl = document.getElementById("say");
+    var bear = document.getElementById("bear");
+    var play = document.getElementById("play");
+    var panWrap = document.getElementById("pan-wrap");
+    var panCanvas = document.getElementById("pan");
+    var panCtx = panCanvas.getContext("2d");
+    var flashEl = document.getElementById("flash");
+    var thermo = document.getElementById("thermo");
+    var thermoTrack = document.getElementById("thermo-track");
+    var hmeter = document.getElementById("hmeter");
+    var htrack = document.getElementById("htrack");
+    var actionBtn = document.getElementById("action");
+    var actionLabel = document.getElementById("action-label");
+    var actionSub = document.getElementById("action-sub");
+    var titleEl = document.getElementById("title");
+    var resultEl = document.getElementById("result");
+    var cardCanvas = document.getElementById("card");
+    var cardCtx = cardCanvas.getContext("2d");
+    var resTitle = document.getElementById("res-title");
+    var resWhy = document.getElementById("res-why");
+    var resMeta = document.getElementById("res-meta");
+    var resBest = document.getElementById("res-best");
+    var titleBest = document.getElementById("title-best");
+    var btnStart = document.getElementById("btn-start");
+    var btnRetry = document.getElementById("btn-retry");
+    var btnShare = document.getElementById("btn-share");
+    var btnMute = document.getElementById("mute");
+
+    var phase = "title";
+    var stepIndex = -1;
+    var runId = 0;
+    var timer = 0;
+    var temp = 8;
+    var pourN = 0;
+    var cookT = 0;
+    var lead = 0;
+    var holding = false;
+    var keys = { space: false, pointer: false };
+    var pointerId = null;
+    var staleHold = false;
+    var stats = { heat: null, pour: null, flip: null, finish: null };
+    var visual = { amount: 0, p1: 0, p2: 0, flipped: false, heat: null };
+    var fail = null;
+    var flipping = false;
+    var flipAnim = 1;
+    var lastZone = "";
+    var flashT = 0;
+    var bubbles = [];
+    var smokes = [];
+    var clock = 0;
+    var lastNow = 0;
+    var viewDpr = 1;
+    var lockUntil = 0;
+    var resultArmed = false;
+    var bestRank = "";
+    var updatedBest = false;
+    var audioCtx = null;
+    var muted = false;
+    var activeLoop = null;
+    var meterKind = "";
+    var hmarker = null;
+
+    function $(id) { return document.getElementById(id); }
+
+    function loadStore() {
+      try {
+        var raw = localStorage.getItem(STORE);
+        if (!raw) return;
+        var data = JSON.parse(raw);
+        if (data && data.best) bestRank = data.best;
+        if (data && data.muted) muted = true;
+      } catch (e) {}
+    }
+    function saveStore() {
+      try {
+        localStorage.setItem(STORE, JSON.stringify({ best: bestRank, muted: muted }));
+      } catch (e) {}
+    }
+    function rankScore(r) {
+      if (r === "S") return 5;
+      if (r === "A") return 4;
+      if (r === "B") return 3;
+      if (r === "C") return 2;
+      if (r === "D") return 1;
+      return 0;
+    }
+    function bestLabel() {
+      if (!bestRank) return "ベスト なし";
+      return "ベスト ランク" + bestRank + " " + RANK_JA[bestRank];
+    }
+
+    function later(fn, ms) {
+      clearTimeout(timer);
+      var id = runId;
+      timer = setTimeout(function () {
+        if (id !== runId) return;
+        fn();
+      }, ms);
+    }
+
+    function setSay(text) {
+      if (sayEl.textContent === text) return;
+      sayEl.textContent = text;
+      sayEl.classList.remove("pop");
+      void sayEl.offsetWidth;
+      sayEl.classList.add("pop");
+    }
+    function setCoach(main, sub) {
+      coachEl.textContent = main;
+      coachSub.textContent = sub || "";
+    }
+    function setMood(m, replay) {
+      var same = bear.getAttribute("data-mood") === m;
+      if (same && !replay) return;
+      if (same || replay) {
+        bear.setAttribute("data-mood", "");
+        void bear.offsetWidth;
+      }
+      bear.setAttribute("data-mood", m);
+    }
+    function setFlash(text) {
+      flashEl.textContent = text;
+      flashEl.hidden = false;
+      flashT = 0.55;
+    }
+    function setAction(kind, label, sub, live) {
+      actionBtn.setAttribute("data-kind", kind);
+      actionLabel.textContent = label;
+      actionSub.textContent = sub || "";
+      if (live) {
+        actionBtn.classList.remove("is-off");
+        actionBtn.setAttribute("aria-disabled", "false");
+      } else {
+        actionBtn.classList.add("is-off");
+        actionBtn.setAttribute("aria-disabled", "true");
+      }
+    }
+
+    function paintPips() {
+      var order = ["heat", "pour", "flip", "finish"];
+      var nodes = pipsEl.children;
+      for (var i = 0; i < 4; i++) {
+        var cls = "";
+        if (fail && FAIL_STEP[fail] === order[i]) cls = "bad";
+        else if (stats[order[i]] === "good") cls = "good";
+        else if (stats[order[i]]) cls = "mid";
+        else if (i === stepIndex && (phase === order[i] || phase === "beat" || phase === "fail")) cls = "now";
+        nodes[i].className = cls;
+      }
+    }
+
+    function buildThermo() {
+      var zones = [
+        { from: 0, to: HEAT.soft, cls: "z-soft", label: "冷" },
+        { from: HEAT.soft, to: HEAT.low, cls: "z-cold", label: "ぬる" },
+        { from: HEAT.low, to: HEAT.good + 1, cls: "z-good", label: "ねらい" },
+        { from: HEAT.good + 1, to: HEAT.burn, cls: "z-hot", label: "あつ" },
+        { from: HEAT.burn, to: 100, cls: "z-burn", label: "こげ" }
+      ];
+      thermoTrack.innerHTML = "";
+      for (var i = 0; i < zones.length; i++) {
+        var z = zones[i];
+        var d = document.createElement("div");
+        d.className = "zone " + z.cls;
+        d.style.bottom = z.from + "%";
+        d.style.height = (z.to - z.from) + "%";
+        d.textContent = z.label;
+        thermoTrack.appendChild(d);
+      }
+      var needle = document.createElement("div");
+      needle.className = "needle";
+      needle.id = "needle";
+      thermoTrack.appendChild(needle);
+    }
+
+    function buildHMeter(kind) {
+      if (meterKind === kind) return;
+      meterKind = kind;
+      htrack.innerHTML = "";
+      var segs = [];
+      var scale = 100;
+      if (kind === "pour") {
+        scale = POUR.scale;
+        segs = [
+          { to: POUR.tiny, cls: "tiny", label: "小" },
+          { to: POUR.thin, cls: "thin", label: "うす" },
+          { to: POUR.good + 1, cls: "good", label: "ねらい" },
+          { to: POUR.over, cls: "thick", label: "厚" },
+          { to: POUR.scale, cls: "over", label: "失敗" }
+        ];
+      } else if (kind === "flip") {
+        segs = [
+          { to: FLIP.raw, cls: "raw", label: "生" },
+          { to: FLIP.pale, cls: "pale", label: "うす" },
+          { to: FLIP.good + 1, cls: "good", label: "かえす" },
+          { to: FLIP.dark, cls: "dark", label: "こが" },
+          { to: 100, cls: "burn", label: "黒" }
+        ];
+      } else {
+        segs = [
+          { to: FINISH.raw, cls: "raw", label: "生" },
+          { to: FINISH.pale, cls: "pale", label: "うす" },
+          { to: FINISH.good + 1, cls: "good", label: "おおり" },
+          { to: FINISH.dark, cls: "dark", label: "こが" },
+          { to: 100, cls: "burn", label: "黒" }
+        ];
+      }
+      var prev = 0;
+      for (var i = 0; i < segs.length; i++) {
+        var s = segs[i];
+        var el = document.createElement("i");
+        el.className = "seg " + s.cls;
+        el.style.width = ((s.to - prev) / scale * 100) + "%";
+        el.textContent = s.label;
+        htrack.appendChild(el);
+        prev = s.to;
+      }
+      hmarker = document.createElement("b");
+      hmarker.className = "hmarker";
+      htrack.appendChild(hmarker);
+    }
+
+    function shownHeat() { return Math.round(temp); }
+    function shownPour() { return Math.round(pourN); }
+    function liveCookNumber() {
+      var spec = phase === "finish" ? FINISH : FLIP;
+      return Math.round((cookT / spec.sec) * 100);
+    }
+
+    function heatZone(t) {
+      if (t < HEAT.soft) return "soft";
+      if (t < HEAT.low) return "cold";
+      if (t <= HEAT.good) return "good";
+      if (t < HEAT.burn) return "hot";
+      return "burn";
+    }
+    function pourZone(n) {
+      if (n < POUR.tiny) return "tiny";
+      if (n < POUR.thin) return "thin";
+      if (n <= POUR.good) return "good";
+      if (n < POUR.over) return "thick";
+      return "over";
+    }
+    function cookZone(n, spec) {
+      if (n < spec.raw) return "raw";
+      if (n < spec.pale) return "pale";
+      if (n <= spec.good) return "good";
+      if (n < spec.dark) return "dark";
+      return "burn";
+    }
+
+    function updateReadout() {
+      var metric = "温度";
+      var num = shownHeat();
+      var range = "ねらい " + HEAT.low + "–" + HEAT.good;
+      var zone = heatZone(num);
+      var show = "heat";
+      if (phase === "pour" || ((phase === "beat" || phase === "fail" || phase === "result") && stepIndex === 1 && !stats.flip)) show = "pour";
+      else if (phase === "flip" || ((phase === "beat" || phase === "fail") && stepIndex === 2)) show = "flip";
+      else if (phase === "finish" || ((phase === "beat" || phase === "fail" || phase === "result") && stepIndex === 3)) show = "finish";
+      else if (phase === "result" && stats.flip) show = "finish";
+
+      if (show === "pour") {
+        metric = "大きさ";
+        num = shownPour();
+        range = "ねらい " + POUR.thin + "–" + POUR.good;
+        zone = pourZone(num);
+      } else if (show === "flip" || show === "finish") {
+        var spec = show === "flip" ? FLIP : FINISH;
+        metric = show === "flip" ? "表面" : "うら側";
+        if ((phase === "flip" || phase === "finish") && lead > 0) num = 0;
+        else if (phase === "flip" || phase === "finish") num = liveCookNumber();
+        else num = Math.round(show === "flip" ? visual.p1 : visual.p2);
+        range = "ねらい " + spec.pale + "–" + spec.good;
+        zone = ((phase === "flip" || phase === "finish") && lead > 0) ? "soft" : cookZone(num, spec);
+      }
+      metricEl.textContent = metric;
+      numEl.textContent = String(num);
+      rangeEl.textContent = range;
+      readout.setAttribute("data-zone", zone);
+      var needle = $("needle");
+      if (needle) needle.style.bottom = Math.max(0, Math.min(100, temp)) + "%";
+      if (hmarker) {
+        var pos = 0;
+        if (meterKind === "pour") {
+          pos = Math.max(0, Math.min(POUR.scale, pourN)) / POUR.scale * 100;
+        } else if (meterKind === "flip" || meterKind === "finish") {
+          if ((phase === "flip" || phase === "finish") && lead > 0) pos = 0;
+          else if (phase === "flip" || phase === "finish") {
+            pos = Math.max(0, Math.min(100, (cookT / (phase === "finish" ? FINISH.sec : FLIP.sec)) * 100));
+          } else pos = Math.max(0, Math.min(100, meterKind === "flip" ? visual.p1 : visual.p2));
+        }
+        hmarker.style.left = pos + "%";
+      }
+    }
+
+    function goods() {
+      var n = 0;
+      var ks = ["heat", "pour", "flip", "finish"];
+      for (var i = 0; i < ks.length; i++) if (stats[ks[i]] === "good") n++;
+      return n;
+    }
+    function textureWord() {
+      if (stats.pour === "thin") return "ぺらぺら";
+      if (stats.pour === "thick") return "ぶあつ";
+      if (stats.heat === "hot") return "かりっと";
+      if (stats.heat === "cold") return "しっとり";
+      return "ふっくら";
+    }
+    function colorWord() {
+      var pale = (stats.flip === "pale" ? 1 : 0) + (stats.finish === "pale" ? 1 : 0);
+      var dark = (stats.flip === "dark" ? 1 : 0) + (stats.finish === "dark" ? 1 : 0);
+      if (pale && dark) return "むらやけ";
+      if (dark) return "こげこげ";
+      if (pale) return "うすいろ";
+      return "きつね色";
+    }
+    function resultName() {
+      if (fail) return FAILS[fail].name;
+      if (goods() === 4) return "パーフェクトなホットケーキ";
+      return textureWord() + colorWord() + "なホットケーキ";
+    }
+    function rankLetter() {
+      if (fail) return "";
+      return ["D", "C", "B", "A", "S"][goods()];
+    }
+    function metaLine() {
+      var order = [
+        ["heat", "火"],
+        ["pour", "生地"],
+        ["flip", "返し"],
+        ["finish", "おおり"]
+      ];
+      var parts = [];
+      for (var i = 0; i < order.length; i++) {
+        var key = order[i][0];
+        var label = order[i][1];
+        var bit = "—";
+        if (fail && FAIL_STEP[fail] === key) bit = "×";
+        else if (stats[key]) bit = CHIP[key][stats[key]] || stats[key];
+        parts.push(label + " " + bit);
+      }
+      return parts.join(" · ");
+    }
+
+    function ctxAudio() {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      if (!audioCtx) {
+        try { audioCtx = new AC(); } catch (e) { return null; }
+      }
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      return audioCtx;
+    }
+    function tone(freq, dur, type, gain, delay, slideTo) {
+      if (muted) return;
+      var ctx = ctxAudio();
+      if (!ctx) return;
+      var t = ctx.currentTime + (delay || 0);
+      var o = ctx.createOscillator();
+      var g = ctx.createGain();
+      o.type = type || "sine";
+      o.frequency.setValueAtTime(freq, t);
+      if (slideTo) o.frequency.exponentialRampToValueAtTime(Math.max(40, slideTo), t + dur);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(Math.max(gain, 0.0001), t + 0.015);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + Math.max(0.04, dur));
+      o.connect(g).connect(ctx.destination);
+      o.start(t);
+      o.stop(t + dur + 0.02);
+    }
+    function noiseBurst(dur, gain, freq) {
+      if (muted) return;
+      var ctx = ctxAudio();
+      if (!ctx) return;
+      var sr = ctx.sampleRate;
+      var len = Math.max(1, Math.floor(sr * dur));
+      var buf = ctx.createBuffer(1, len, sr);
+      var data = buf.getChannelData(0);
+      for (var i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+      var src = ctx.createBufferSource();
+      src.buffer = buf;
+      var filter = ctx.createBiquadFilter();
+      filter.type = "bandpass";
+      filter.frequency.value = freq || 700;
+      var g = ctx.createGain();
+      var t = ctx.currentTime;
+      g.gain.setValueAtTime(Math.max(gain, 0.0001), t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      src.connect(filter).connect(g).connect(ctx.destination);
+      src.start();
+    }
+    function startLoop(kind) {
+      stopLoop();
+      if (muted) return;
+      var ctx = ctxAudio();
+      if (!ctx) return;
+      var sr = ctx.sampleRate;
+      var len = sr;
+      var buf = ctx.createBuffer(1, len, sr);
+      var data = buf.getChannelData(0);
+      for (var i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+      var src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.loop = true;
+      var filter = ctx.createBiquadFilter();
+      if (kind === "pour") {
+        filter.type = "lowpass";
+        filter.frequency.value = 420;
+      } else if (kind === "heat") {
+        filter.type = "bandpass";
+        filter.frequency.value = 1700;
+        filter.Q.value = 0.7;
+      } else {
+        filter.type = "bandpass";
+        filter.frequency.value = 980;
+        filter.Q.value = 0.55;
+      }
+      var g = ctx.createGain();
+      g.gain.value = kind === "pour" ? 0.075 : 0.04;
+      src.connect(filter).connect(g).connect(ctx.destination);
+      src.start();
+      activeLoop = { src: src, g: g, ctx: ctx };
+    }
+    function stopLoop() {
+      if (!activeLoop) return;
+      try {
+        var t = activeLoop.ctx.currentTime;
+        activeLoop.g.gain.cancelScheduledValues(t);
+        activeLoop.g.gain.setValueAtTime(Math.max(0.0001, activeLoop.g.gain.value), t);
+        activeLoop.g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+        activeLoop.src.stop(t + 0.06);
+      } catch (e) {}
+      activeLoop = null;
+    }
+    function sfxGood() {
+      tone(523, 0.08, "triangle", 0.06, 0);
+      tone(659, 0.1, "triangle", 0.055, 0.07);
+    }
+    function sfxPartial() { tone(392, 0.09, "sine", 0.05, 0); }
+    function sfxFail() {
+      tone(196, 0.16, "sawtooth", 0.035, 0);
+      tone(120, 0.24, "square", 0.028, 0.08);
+      noiseBurst(0.12, 0.04, 300);
+    }
+    function sfxPerfect() {
+      tone(523, 0.09, "triangle", 0.06, 0);
+      tone(659, 0.09, "triangle", 0.06, 0.09);
+      tone(784, 0.1, "triangle", 0.055, 0.18);
+      tone(1046, 0.18, "triangle", 0.05, 0.28);
+    }
+    function sfxDing() { tone(880, 0.07, "sine", 0.045, 0); }
+    function sfxWarn() { tone(311, 0.09, "square", 0.03, 0); }
+    function sfxFlip() {
+      tone(210, 0.14, "sine", 0.07, 0, 680);
+      noiseBurst(0.1, 0.05, 900);
+    }
+    function sfxServe() {
+      tone(660, 0.06, "triangle", 0.05, 0);
+      tone(990, 0.1, "sine", 0.04, 0.05);
+      noiseBurst(0.05, 0.04, 1400);
+    }
+    function sfxStart() {
+      tone(392, 0.06, "triangle", 0.05, 0);
+      tone(523, 0.08, "triangle", 0.05, 0.06);
+    }
+
+    function syncMute() {
+      btnMute.classList.toggle("is-muted", muted);
+      btnMute.setAttribute("aria-pressed", muted ? "true" : "false");
+      btnMute.setAttribute("aria-label", muted ? "音を出す" : "音を消す");
+    }
+
+    function isHeld() { return keys.space || keys.pointer; }
+
+    function beginStep(name) {
+      phase = name;
+      stepIndex = { heat: 0, pour: 1, flip: 2, finish: 3 }[name];
+      holding = false;
+      actionBtn.classList.remove("is-down", "is-now");
+      staleHold = isHeld();
+      lastZone = "";
+      cookT = 0;
+      lead = 0;
+      stopLoop();
+      stepLine.textContent = "ステップ " + (stepIndex + 1) + "/4　" + STEP_NAME[name];
+      if (name === "heat") {
+        thermo.hidden = false;
+        play.classList.remove("no-thermo");
+        hmeter.hidden = true;
+        setCoach(
+          "緑のねらい " + HEAT.low + "–" + HEAT.good + " ではなす",
+          "タイマーなし。赤（" + HEAT.burn + "以上）は真っ黒で失敗。冷（" + HEAT.soft + "未満）はやり直し"
+        );
+        setSay("おして、緑ではなしてね");
+        setMood("idle");
+        setAction("heat", "おして火をつける", "スペース長押し", true);
+      } else if (name === "pour") {
+        thermo.hidden = true;
+        play.classList.add("no-thermo");
+        hmeter.hidden = false;
+        buildHMeter("pour");
+        pourN = 0;
+        setCoach(
+          "白いわ（大きさ " + POUR.thin + "–" + POUR.good + "）ではなす",
+          "赤のわ（" + POUR.over + "）をこえるとあふれ。小さすぎ（" + POUR.tiny + "未満）も失敗"
+        );
+        setSay("白いわを目指して");
+        setMood("focus");
+        setAction("pour", "おして生地を注ぐ", "スペース長押し", true);
+      } else if (name === "flip") {
+        thermo.hidden = true;
+        play.classList.add("no-thermo");
+        hmeter.hidden = false;
+        buildHMeter("flip");
+        lead = FLIP.lead;
+        cookT = 0;
+        setCoach(
+          "緑の「かえす」（表面 " + FLIP.pale + "–" + FLIP.good + "）でタップ",
+          "早すぎは生焼け、遅すぎはこげ。帯を見てから動くよ"
+        );
+        setSay("あわと色を見てね");
+        setMood("focus");
+        setAction("flip", "まって、帯を見て", "もうすぐ動く", true);
+      } else if (name === "finish") {
+        thermo.hidden = true;
+        play.classList.add("no-thermo");
+        hmeter.hidden = false;
+        buildHMeter("finish");
+        lead = FINISH.lead;
+        cookT = 0;
+        visual.flipped = true;
+        flipping = false;
+        flipAnim = 1;
+        setCoach(
+          "うら側の緑（" + FINISH.pale + "–" + FINISH.good + "）でおおり",
+          "早すぎは生焼け、遅すぎはうらが真っ黒"
+        );
+        setSay("うら側の色を見てね");
+        setMood("focus");
+        setAction("serve", "まって、帯を見て", "もうすぐ動く", true);
+      }
+      paintPips();
+      updateReadout();
+    }
+
+    function succeedStep(stepName, q, next) {
+      phase = "beat";
+      holding = false;
+      actionBtn.classList.remove("is-down", "is-now");
+      stopLoop();
+      stats[stepName] = q;
+      if (q === "good") {
+        sfxGood();
+        setMood("happy", true);
+      } else {
+        sfxPartial();
+        setMood("meh", true);
+      }
+      setSay(STEP_OK[stepName][q]);
+      setCoach(STEP_OK[stepName][q], next ? "つぎの工程へ" : "できあがり");
+      setAction("wait", "つぎへ…", "", false);
+      paintPips();
+      later(function () {
+        if (next) beginStep(next);
+        else showResult();
+      }, 780);
+    }
+
+    function failNow(type) {
+      if (phase === "fail" || phase === "result" || phase === "beat" || phase === "title") return;
+      phase = "fail";
+      fail = type;
+      holding = false;
+      actionBtn.classList.remove("is-down", "is-now");
+      stopLoop();
+      var info = FAILS[type];
+      setMood("shock", true);
+      setSay(info.say);
+      setCoach(info.title, info.why);
+      setAction("wait", "しっぱい…", "", false);
+      sfxFail();
+      paintPips();
+      if (type === "burn-flip") visual.p1 = 100;
+      if (type === "burn-finish") visual.p2 = 100;
+      if (type === "raw-flip") visual.p1 = Math.min(visual.p1, liveCookNumber());
+      if (type === "thin-pour") visual.amount = shownPour();
+      if (type === "overflow") visual.amount = Math.max(shownPour(), POUR.over);
+      later(function () { showResult(); }, 560);
+    }
+
+    function commitHeat() {
+      if (phase !== "heat") return;
+      var t = shownHeat();
+      if (t < HEAT.soft) {
+        setSay("まだつめたいよ。緑まであげて");
+        setMood("focus");
+        return;
+      }
+      if (t >= HEAT.burn) {
+        failNow("burn-heat");
+        return;
+      }
+      var q = t < HEAT.low ? "cold" : (t <= HEAT.good ? "good" : "hot");
+      visual.heat = q;
+      succeedStep("heat", q, "pour");
+    }
+    function commitPour() {
+      if (phase !== "pour") return;
+      var n = shownPour();
+      visual.amount = n;
+      if (n >= POUR.over) {
+        failNow("overflow");
+        return;
+      }
+      if (n < POUR.tiny) {
+        failNow("thin-pour");
+        return;
+      }
+      var q = n < POUR.thin ? "thin" : (n <= POUR.good ? "good" : "thick");
+      visual.amount = n;
+      succeedStep("pour", q, "flip");
+    }
+    function commitCook() {
+      if (phase !== "flip" && phase !== "finish") return;
+      if (lead > 0) {
+        setSay("まだだよ。緑の帯を見てね");
+        setMood("focus");
+        return;
+      }
+      var spec = phase === "finish" ? FINISH : FLIP;
+      var n = liveCookNumber();
+      var q = cookZone(n, spec);
+      if (phase === "flip") {
+        sfxFlip();
+        visual.p1 = q === "burn" ? 100 : n;
+        if (q === "raw") { failNow("raw-flip"); return; }
+        if (q === "burn") { failNow("burn-flip"); return; }
+        flipping = true;
+        flipAnim = 0;
+        visual.flipped = false;
+        succeedStep("flip", q, "finish");
+        return;
+      }
+      sfxServe();
+      visual.p2 = q === "burn" ? 100 : n;
+      if (q === "raw") { failNow("raw-finish"); return; }
+      if (q === "burn") { failNow("burn-finish"); return; }
+      succeedStep("finish", q, null);
+    }
+
+    function noteZone(zone, goodName) {
+      if (zone === lastZone) return;
+      var prev = lastZone;
+      lastZone = zone;
+      if (!prev) return;
+      if (zone === goodName) sfxDing();
+      if (zone === "hot" || zone === "thick" || zone === "dark" || zone === "over" || zone === "burn") sfxWarn();
+    }
+
+    function resetRun() {
+      temp = 8;
+      pourN = 0;
+      cookT = 0;
+      lead = 0;
+      stats = { heat: null, pour: null, flip: null, finish: null };
+      visual = { amount: 0, p1: 0, p2: 0, flipped: false, heat: null };
+      fail = null;
+      flipping = false;
+      flipAnim = 1;
+      bubbles = [];
+      smokes = [];
+      holding = false;
+      lastZone = "";
+      updatedBest = false;
+      actionBtn.classList.remove("is-down", "is-now");
+    }
+
+    function startRun() {
+      if (phase !== "title" && phase !== "result") return;
+      runId++;
+      clearTimeout(timer);
+      stopLoop();
+      resetRun();
+      titleEl.hidden = true;
+      resultEl.hidden = true;
+      sfxStart();
+      beginStep("heat");
+    }
+
+    function shareBody() {
+      var lines = ["「" + resultName() + "」"];
+      if (fail) lines.push(FAILS[fail].why);
+      else lines.push("ランク" + rankLetter() + " " + RANK_JA[rankLetter()]);
+      lines.push(PLAY_URL);
+      lines.push("#ねむねむゲーム部");
+      return lines.join("\n");
+    }
+
+    function showResult() {
+      phase = "result";
+      stopLoop();
+      holding = false;
+      var letter = rankLetter();
+      var perfect = !fail && letter === "S";
+      if (perfect) sfxPerfect();
+      if (!fail && rankScore(letter) > rankScore(bestRank)) {
+        bestRank = letter;
+        updatedBest = true;
+        saveStore();
+      }
+      titleBest.textContent = bestLabel();
+      if (fail) {
+        resTitle.textContent = FAILS[fail].title;
+        resWhy.textContent = FAILS[fail].why;
+        resWhy.className = "why " + FAILS[fail].tone;
+      } else if (perfect) {
+        resTitle.textContent = "パーフェクト！";
+        resWhy.textContent = "「" + resultName() + "」 ランクS";
+        resWhy.className = "why win";
+      } else {
+        resTitle.textContent = "ランク " + letter + " " + RANK_JA[letter];
+        resWhy.textContent = "「" + resultName() + "」";
+        resWhy.className = "why mid";
+      }
+      resMeta.textContent = metaLine();
+      resBest.textContent = (updatedBest ? "ベスト更新！ " : "") + bestLabel();
+      drawCard();
+      btnShare.href = "https://x.com/intent/tweet?text=" + encodeURIComponent(shareBody());
+      resultEl.hidden = false;
+      lockUntil = performance.now() + LOCK_MS;
+      resultArmed = !isHeld();
+      btnRetry.disabled = true;
+      btnShare.setAttribute("aria-disabled", "true");
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+      later(function () {
+        if (phase !== "result") return;
+        btnRetry.disabled = false;
+        btnShare.setAttribute("aria-disabled", "false");
+      }, LOCK_MS);
+      paintPips();
+    }
+
+    function tryRetry() {
+      if (phase !== "result") return;
+      if (performance.now() < lockUntil) return;
+      if (!resultArmed) return;
+      startRun();
+    }
+
+    function onPressEdge() {
+      if (staleHold) return;
+      if (phase === "title") {
+        startRun();
+        return;
+      }
+      if (phase === "result") {
+        tryRetry();
+        return;
+      }
+      if (phase === "beat" || phase === "fail") return;
+      if (phase === "heat" || phase === "pour") {
+        holding = true;
+        actionBtn.classList.add("is-down");
+        startLoop(phase === "pour" ? "pour" : "heat");
+        return;
+      }
+      if (phase === "flip" || phase === "finish") commitCook();
+    }
+    function onReleaseEdge() {
+      if (phase === "result") resultArmed = true;
+      if (staleHold) {
+        if (!isHeld()) staleHold = false;
+        holding = false;
+        actionBtn.classList.remove("is-down");
+        stopLoop();
+        return;
+      }
+      if (holding && (phase === "heat" || phase === "pour")) {
+        holding = false;
+        actionBtn.classList.remove("is-down");
+        stopLoop();
+        if (phase === "heat") commitHeat();
+        else commitPour();
+      }
+    }
+    function press(which) {
+      if (keys[which]) return;
+      keys[which] = true;
+      onPressEdge();
+    }
+    function release(which) {
+      if (!keys[which]) return;
+      keys[which] = false;
+      if (!isHeld()) onReleaseEdge();
+    }
+
+    function mix(a, b, t) {
+      return [
+        a[0] + (b[0] - a[0]) * t,
+        a[1] + (b[1] - a[1]) * t,
+        a[2] + (b[2] - a[2]) * t
+      ];
+    }
+    function rgb(c) {
+      return "rgb(" + (c[0] | 0) + "," + (c[1] | 0) + "," + (c[2] | 0) + ")";
+    }
+    function colorAt(n) {
+      var stops = [
+        [0, [246, 232, 200]],
+        [30, [240, 214, 156]],
+        [44, [230, 176, 90]],
+        [52, [214, 142, 52]],
+        [58, [200, 120, 42]],
+        [74, [110, 58, 32]],
+        [100, [32, 20, 18]]
+      ];
+      var x = Math.max(0, Math.min(100, n));
+      for (var i = 1; i < stops.length; i++) {
+        if (x <= stops[i][0]) {
+          var t = (x - stops[i - 1][0]) / (stops[i][0] - stops[i - 1][0]);
+          return mix(stops[i - 1][1], stops[i][1], t);
+        }
+      }
+      return stops[stops.length - 1][1];
+    }
+    function cakePath(ctx, rad, wobble, lumps, spin) {
+      ctx.beginPath();
+      var n = 36;
+      for (var i = 0; i <= n; i++) {
+        var a = (i / n) * Math.PI * 2;
+        var m = 1 + wobble * 0.05 * Math.sin(a * 3 + spin) + lumps * 0.075 * Math.sin(a * 5 + 1.1);
+        var x = Math.cos(a) * rad * m;
+        var y = Math.sin(a) * rad * m;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+    }
+    function drawFlames(ctx, cx, cy, R, level) {
+      if (level <= 0.02) return;
+      var tongues = 6;
+      for (var i = 0; i < tongues; i++) {
+        var ang = Math.PI * (0.18 + 0.64 * (i / (tongues - 1)));
+        var fx = cx + Math.cos(ang) * R * 0.86;
+        var fy = cy + Math.sin(ang) * R * 0.86;
+        var h = (8 + level * 26) * (0.65 + 0.35 * Math.sin(clock * 9 + i));
+        ctx.beginPath();
+        ctx.moveTo(fx - 7, fy);
+        ctx.quadraticCurveTo(fx - 2, fy - h, fx, fy - h * 1.15);
+        ctx.quadraticCurveTo(fx + 2, fy - h, fx + 7, fy);
+        ctx.fillStyle = i % 2 ? "#fb923c" : "#fde68a";
+        ctx.fill();
+      }
+    }
+    function drawSmoke(ctx) {
+      for (var i = 0; i < smokes.length; i++) {
+        var s = smokes[i];
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(80,70,70," + Math.max(0, s.a) + ")";
+        ctx.fill();
+      }
+    }
+    function drawPanScene(ctx, cx, cy, R, opt) {
+      var well = R * 0.78;
+      var targetR = well * 0.68;
+      var overR = targetR * (POUR.over / 100);
+      var amount = opt.amount || 0;
+      var heatLevel = opt.flames || 0;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy + R * 0.08, R * 0.92, 0, Math.PI * 2);
+      ctx.fillStyle = "#3f3f46";
+      ctx.fill();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = "#27272a";
+      ctx.stroke();
+      drawFlames(ctx, cx, cy, R, heatLevel);
+
+      ctx.beginPath();
+      ctx.arc(cx + R * 0.92, cy, R * 0.16, 0, Math.PI * 2);
+      ctx.fillStyle = "#27272a";
+      ctx.fill();
+      roundRectPath(ctx, cx + R * 0.7, cy - R * 0.1, R * 0.7, R * 0.2, 8);
+      ctx.fillStyle = "#1c1917";
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, R, 0, Math.PI * 2);
+      ctx.fillStyle = opt.scorch ? "#1c1412" : "#3f3f46";
+      ctx.fill();
+      ctx.lineWidth = Math.max(4, R * 0.07);
+      ctx.strokeStyle = "#292524";
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, well, 0, Math.PI * 2);
+      var panCol = [92, 84, 78];
+      if (opt.panHeat) panCol = mix(panCol, [48, 24, 20], Math.min(1, opt.panHeat));
+      if (opt.scorch) panCol = [28, 18, 16];
+      ctx.fillStyle = rgb(panCol);
+      ctx.fill();
+
+      if (opt.scorch) {
+        ctx.strokeStyle = "rgba(0,0,0,.45)";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(cx - well * 0.4, cy - well * 0.1);
+        ctx.lineTo(cx - well * 0.05, cy + well * 0.25);
+        ctx.lineTo(cx + well * 0.35, cy - well * 0.05);
+        ctx.stroke();
+      }
+
+      if (opt.showRings) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(cx, cy, overR, 0, Math.PI * 2);
+        ctx.setLineDash([7, 6]);
+        ctx.lineDashOffset = -clock * 14;
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = "#ef4444";
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(cx, cy, targetR, 0, Math.PI * 2);
+        ctx.lineDashOffset = clock * 10;
+        ctx.lineWidth = 3.5;
+        ctx.strokeStyle = "#ecfdf5";
+        ctx.stroke();
+        ctx.restore();
+        haloText(ctx, "ねらい", cx, cy - targetR - 8, 13, "#14532d");
+        haloText(ctx, "失敗", cx + overR * 0.72, cy - overR * 0.72, 12, "#7f1d1d");
+      }
+
+      if (opt.mode === "liquid" || opt.mode === "cake") {
+        var rad = targetR * (Math.max(0.04, amount) / 100);
+        var wobble = opt.heat === "hot" && opt.mode === "cake" ? 1 : 0;
+        var lumps = opt.heat === "cold" && opt.mode === "cake" ? 1 : 0;
+        var p1 = opt.p1 || 0;
+        var pTop = opt.flipped ? (opt.p2 || 0) : p1;
+        var edge = opt.flipped ? colorAt(p1) : mix(colorAt(p1), [70, 36, 18], 0.28);
+        var top = colorAt(pTop);
+        if (opt.fail === "raw-flip" || (opt.mode === "liquid")) {
+          top = colorAt(Math.min(pTop, 18));
+          edge = mix(top, [210, 180, 140], 0.2);
+        }
+        if (opt.fail === "burn-flip" || opt.fail === "burn-finish") {
+          top = [28, 18, 16];
+          if (opt.fail === "burn-flip") edge = [20, 14, 12];
+        }
+        var squash = opt.squash == null ? 1 : opt.squash;
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.scale(1, Math.max(0.07, squash));
+        ctx.beginPath();
+        ctx.arc(2, 3, rad, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(0,0,0,.18)";
+        ctx.fill();
+        cakePath(ctx, rad, wobble, lumps, clock);
+        ctx.fillStyle = rgb(edge);
+        ctx.fill();
+        if (opt.mode === "cake") {
+          var rim = Math.max(4, rad * (0.1 + Math.min(amount, 130) / 100 * 0.08));
+          ctx.save();
+          ctx.clip();
+          ctx.beginPath();
+          ctx.arc(0, 0, Math.max(2, rad - rim), 0, Math.PI * 2);
+          var g = ctx.createRadialGradient(-rad * 0.3, -rad * 0.3, rad * 0.1, 0, 0, rad);
+          g.addColorStop(0, rgb(mix(top, [255, 250, 235], 0.35)));
+          g.addColorStop(0.72, rgb(top));
+          g.addColorStop(1, rgb(mix(top, edge, 0.45)));
+          ctx.fillStyle = g;
+          ctx.fill();
+          ctx.restore();
+        } else {
+          var lg = ctx.createRadialGradient(-rad * 0.25, -rad * 0.3, rad * 0.05, 0, 0, rad);
+          lg.addColorStop(0, "rgba(255,255,255,.65)");
+          lg.addColorStop(0.45, rgb(top));
+          lg.addColorStop(1, rgb(mix(top, [180, 140, 80], 0.25)));
+          ctx.fillStyle = lg;
+          ctx.fill();
+        }
+        if (opt.bubbles && squash > 0.8) {
+          for (var i = 0; i < opt.bubbles.length; i++) {
+            var b = opt.bubbles[i];
+            ctx.beginPath();
+            ctx.arc(b.x * rad * 0.8, b.y * rad * 0.8, b.r * rad, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(255,255,255,.55)";
+            ctx.fill();
+            ctx.strokeStyle = "rgba(120,70,20,.25)";
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
+        }
+        if ((pTop >= 74 || (opt.fail && opt.fail.indexOf("burn") === 0 && opt.fail !== "burn-heat")) && opt.mode === "cake") {
+          ctx.strokeStyle = "rgba(0,0,0,.4)";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(-rad * 0.45, -rad * 0.05);
+          ctx.lineTo(-rad * 0.05, rad * 0.2);
+          ctx.lineTo(rad * 0.4, -rad * 0.02);
+          ctx.stroke();
+        }
+        if (opt.perfect && opt.mode === "cake") {
+          ctx.fillStyle = "#facc15";
+          roundRectPath(ctx, -rad * 0.16, -rad * 0.16, rad * 0.28, rad * 0.22, 3);
+          ctx.fill();
+        }
+        if (opt.fail === "raw-flip" || opt.fail === "raw-finish" || (opt.mode === "liquid" && amount > 8)) {
+          ctx.beginPath();
+          ctx.ellipse(-rad * 0.2, -rad * 0.25, rad * 0.22, rad * 0.12, -0.4, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(255,255,255,.35)";
+          ctx.fill();
+        }
+        ctx.restore();
+
+        if (opt.fail === "overflow" || (opt.mode === "liquid" && amount >= POUR.over)) {
+          ctx.fillStyle = "#f3d7a2";
+          for (var d = 0; d < 4; d++) {
+            var ang = Math.PI * 0.15 + d * 0.9;
+            var dx = cx + Math.cos(ang) * (well * 0.92);
+            var dy = cy + Math.sin(ang) * (well * 0.92);
+            ctx.beginPath();
+            ctx.ellipse(dx, dy + 10, 8, 14, ang, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      }
+
+      if (opt.banner) {
+        haloText(ctx, opt.banner, cx, cy, 22, "#7f1d1d");
+      }
+      ctx.restore();
+    }
+
+    function roundRectPath(ctx, x, y, w, h, r) {
+      var rr = Math.min(r, w / 2, h / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + rr, y);
+      ctx.arcTo(x + w, y, x + w, y + h, rr);
+      ctx.arcTo(x + w, y + h, x, y + h, rr);
+      ctx.arcTo(x, y + h, x, y, rr);
+      ctx.arcTo(x, y, x + w, y, rr);
+      ctx.closePath();
+    }
+    function haloText(ctx, text, x, y, size, fill) {
+      ctx.font = "800 " + size + "px " + JP;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = "rgba(255,255,255,.9)";
+      ctx.strokeText(text, x, y);
+      ctx.fillStyle = fill || "#3a2618";
+      ctx.fillText(text, x, y);
+    }
+
+    function sceneOpt() {
+      var opt = {
+        amount: 0,
+        p1: visual.p1,
+        p2: visual.p2,
+        flipped: visual.flipped,
+        heat: visual.heat,
+        mode: "empty",
+        flames: 0,
+        panHeat: 0,
+        scorch: false,
+        showRings: false,
+        bubbles: bubbles,
+        squash: 1,
+        fail: fail,
+        perfect: !fail && goods() === 4 && phase === "result",
+        banner: ""
+      };
+      if (phase === "title") {
+        opt.mode = "cake";
+        opt.amount = 100;
+        opt.p1 = 52;
+        opt.p2 = 52;
+        opt.flipped = true;
+        opt.perfect = true;
+        opt.heat = "good";
+        return opt;
+      }
+      if (fail === "burn-heat") {
+        opt.scorch = true;
+        opt.flames = 1;
+        opt.panHeat = 1;
+        opt.banner = "真っ黒";
+        return opt;
+      }
+      if (fail === "overflow") {
+        opt.mode = "liquid";
+        opt.amount = Math.max(pourN, visual.amount || 0, 150);
+        opt.showRings = true;
+        opt.banner = "あふれ";
+        return opt;
+      }
+      if (fail === "thin-pour") {
+        opt.mode = "liquid";
+        opt.amount = Math.max(4, visual.amount || pourN);
+        opt.showRings = true;
+        opt.banner = "たりない";
+        return opt;
+      }
+      if (phase === "heat" || (stepIndex === 0 && phase === "beat" && !stats.pour)) {
+        opt.flames = holding ? Math.min(1, temp / 80) : (fail === "burn-heat" ? 1 : 0);
+        opt.panHeat = temp / 100;
+        if (fail === "burn-heat") {
+          opt.scorch = true;
+          opt.flames = 1;
+          opt.banner = "真っ黒";
+        }
+        return opt;
+      }
+      if (phase === "pour") {
+        opt.mode = "liquid";
+        opt.amount = pourN;
+        opt.showRings = true;
+        if (fail === "overflow") {
+          opt.amount = Math.max(pourN, 150);
+          opt.banner = "あふれ";
+        }
+        if (fail === "thin-pour") opt.banner = "たりない";
+        return opt;
+      }
+      opt.mode = visual.amount > 0 ? "cake" : "empty";
+      opt.amount = visual.amount || pourN;
+      if (phase === "flip" || (fail === "raw-flip" || fail === "burn-flip")) {
+        if (phase === "flip" && !fail) opt.p1 = lead > 0 ? 0 : (cookT / FLIP.sec) * 100;
+        opt.flipped = false;
+      }
+      if (phase === "finish" && !fail) {
+        opt.flipped = visual.flipped;
+        opt.p2 = lead > 0 ? 0 : (cookT / FINISH.sec) * 100;
+      }
+      if (flipping) opt.squash = Math.abs(Math.cos(Math.min(1, flipAnim) * Math.PI));
+      if (fail === "burn-flip") {
+        opt.p1 = 100;
+        opt.banner = "こげ";
+        opt.flipped = false;
+      }
+      if (fail === "raw-flip") {
+        opt.banner = "生";
+        opt.flipped = false;
+      }
+      if (fail === "burn-finish") {
+        opt.flipped = true;
+        opt.p2 = 100;
+        opt.banner = "うらこげ";
+      }
+      if (fail === "raw-finish") {
+        opt.flipped = true;
+        opt.banner = "生焼け";
+      }
+      if (phase === "result" && !fail) opt.perfect = goods() === 4;
+      return opt;
+    }
+
+    function resize() {
+      var rect = panWrap.getBoundingClientRect();
+      viewDpr = Math.min(window.devicePixelRatio || 1, 2);
+      var w = Math.max(1, rect.width);
+      var h = Math.max(1, rect.height);
+      panCanvas.width = Math.max(1, Math.floor(w * viewDpr));
+      panCanvas.height = Math.max(1, Math.floor(h * viewDpr));
+      panCanvas.style.width = w + "px";
+      panCanvas.style.height = h + "px";
+    }
+
+    function draw() {
+      var w = panCanvas.width / viewDpr;
+      var h = panCanvas.height / viewDpr;
+      if (w < 8 || h < 8) return;
+      panCtx.setTransform(viewDpr, 0, 0, viewDpr, 0, 0);
+      panCtx.clearRect(0, 0, w, h);
+      var R = Math.min(w, h) * 0.38;
+      drawPanScene(panCtx, w * 0.46, h * 0.52, R, sceneOpt());
+      drawSmoke(panCtx);
+      if (flashT > 0) {
+        flashEl.hidden = false;
+      } else {
+        flashEl.hidden = true;
+      }
+    }
+
+    function drawMiniBear(ctx, x, y, s, mood) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(s, s);
+      ctx.fillStyle = "#c4844a";
+      ctx.beginPath();
+      ctx.arc(-22, -18, 12, 0, Math.PI * 2);
+      ctx.arc(22, -18, 12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#f0c2a0";
+      ctx.beginPath();
+      ctx.arc(-22, -18, 6, 0, Math.PI * 2);
+      ctx.arc(22, -18, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#fff";
+      roundRectPath(ctx, -16, -58, 32, 20, 10);
+      ctx.fill();
+      roundRectPath(ctx, -22, -44, 44, 10, 4);
+      ctx.fill();
+      ctx.fillStyle = "#c4844a";
+      ctx.beginPath();
+      ctx.arc(0, 0, 28, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#f6dcc0";
+      ctx.beginPath();
+      ctx.ellipse(0, 10, 12, 9, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#5c3b22";
+      ctx.beginPath();
+      ctx.ellipse(0, 6, 4, 3, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#3a2618";
+      if (mood === "shock") {
+        ctx.fillStyle = "#fff";
+        ctx.beginPath();
+        ctx.arc(-10, -4, 6, 0, Math.PI * 2);
+        ctx.arc(10, -4, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#3a2618";
+        ctx.beginPath();
+        ctx.arc(-10, -3, 2.4, 0, Math.PI * 2);
+        ctx.arc(10, -3, 2.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(0, 16, 5, 6, 0, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (mood === "happy") {
+        ctx.lineWidth = 2.4;
+        ctx.strokeStyle = "#3a2618";
+        ctx.beginPath();
+        ctx.arc(-10, -2, 6, Math.PI, 0);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(10, -2, 6, Math.PI, 0);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(0, 12, 8, 0.15 * Math.PI, 0.85 * Math.PI);
+        ctx.stroke();
+      } else if (mood === "worry") {
+        ctx.beginPath();
+        ctx.arc(-10, -2, 3.2, 0, Math.PI * 2);
+        ctx.arc(10, -2, 3.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#3a2618";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-16, -12);
+        ctx.lineTo(-6, -8);
+        ctx.moveTo(16, -12);
+        ctx.lineTo(6, -8);
+        ctx.moveTo(-6, 16);
+        ctx.quadraticCurveTo(0, 12, 6, 16);
+        ctx.stroke();
+      } else {
+        ctx.beginPath();
+        ctx.arc(-10, -4, 3.3, 0, Math.PI * 2);
+        ctx.arc(10, -4, 3.3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#3a2618";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, 12, 7, 0.2 * Math.PI, 0.8 * Math.PI);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function wrapChars(ctx, text, maxW) {
+      var lines = [];
+      var line = "";
+      for (var i = 0; i < text.length; i++) {
+        var ch = text.charAt(i);
+        if (ch === "\n") {
+          lines.push(line);
+          line = "";
+          continue;
+        }
+        var test = line + ch;
+        if (line && ctx.measureText(test).width > maxW) {
+          lines.push(line);
+          line = ch;
+        } else line = test;
+      }
+      if (line) lines.push(line);
+      return lines;
+    }
+
+    function drawCard() {
+      var w = cardCanvas.width;
+      var h = cardCanvas.height;
+      var ctx = cardCtx;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      var g = ctx.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0, "#fff8ee");
+      g.addColorStop(1, "#f6d39a");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = "#e7c48a";
+      ctx.lineWidth = 12;
+      ctx.strokeRect(10, 10, w - 20, h - 20);
+
+      ctx.fillStyle = "#5c3b22";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "800 40px " + JP;
+      ctx.fillText("ホットケーキ一発勝負", w / 2, 70);
+      ctx.font = "700 22px " + JP;
+      ctx.fillStyle = "#7a5b40";
+      ctx.fillText("くまシェフ  ·  Day 20", w / 2, 112);
+
+      var letter = rankLetter();
+      var badge = fail ? "しっぱい" : ("ランク " + letter + "  " + RANK_JA[letter]);
+      ctx.font = "800 28px " + JP;
+      var bw = ctx.measureText(badge).width + 48;
+      roundRectPath(ctx, (w - bw) / 2, 140, bw, 52, 26);
+      ctx.fillStyle = fail ? "#44403c" : (letter === "S" ? "#facc15" : "#fff");
+      ctx.fill();
+      ctx.fillStyle = fail ? "#fff" : "#5c3b22";
+      ctx.fillText(badge, w / 2, 166);
+
+      var mood = "happy";
+      if (fail) mood = "shock";
+      else if (letter === "S") mood = "happy";
+      else if (letter === "A" || letter === "B") mood = "idle";
+      else mood = "worry";
+      drawMiniBear(ctx, 118, 470, 1.55, mood);
+
+      var opt = {
+        amount: visual.amount || (fail === "overflow" ? 150 : 0),
+        p1: visual.p1,
+        p2: visual.p2,
+        flipped: !!visual.flipped,
+        heat: visual.heat,
+        mode: "cake",
+        flames: 0,
+        panHeat: 0,
+        scorch: false,
+        showRings: false,
+        bubbles: [],
+        squash: 1,
+        fail: fail,
+        perfect: !fail && letter === "S",
+        banner: ""
+      };
+      if (fail === "burn-heat") {
+        opt.mode = "empty";
+        opt.scorch = true;
+        opt.flames = 1;
+        opt.banner = "真っ黒";
+      } else if (fail === "overflow") {
+        opt.mode = "liquid";
+        opt.amount = 150;
+        opt.showRings = true;
+        opt.banner = "あふれ";
+      } else if (fail === "thin-pour") {
+        opt.mode = "liquid";
+        opt.amount = Math.max(6, visual.amount || shownPour());
+        opt.showRings = true;
+        opt.banner = "たりない";
+      } else if (fail === "raw-flip") {
+        opt.mode = "cake";
+        opt.flipped = false;
+        opt.p1 = Math.min(opt.p1 || 8, 16);
+        opt.banner = "生";
+        if (!opt.amount) opt.amount = 100;
+      } else if (fail === "burn-flip") {
+        opt.mode = "cake";
+        opt.flipped = false;
+        opt.p1 = 100;
+        opt.banner = "こげ";
+        if (!opt.amount) opt.amount = 100;
+      } else if (fail === "raw-finish") {
+        opt.mode = "cake";
+        opt.flipped = true;
+        opt.banner = "生焼け";
+        if (!opt.amount) opt.amount = 100;
+      } else if (fail === "burn-finish") {
+        opt.mode = "cake";
+        opt.flipped = true;
+        opt.p2 = 100;
+        opt.banner = "うらこげ";
+        if (!opt.amount) opt.amount = 100;
+      } else if (!opt.amount) {
+        opt.amount = 100;
+      }
+      drawPanScene(ctx, w / 2 + 30, 430, 168, opt);
+
+      var name = resultName();
+      ctx.font = "800 36px " + JP;
+      ctx.fillStyle = "#3a2618";
+      var lines = wrapChars(ctx, "「" + name + "」", w - 80);
+      var y = 690;
+      for (var i = 0; i < lines.length; i++) {
+        ctx.fillText(lines[i], w / 2, y);
+        y += 44;
+      }
+      if (!fail && letter === "S") {
+        ctx.font = "700 24px " + JP;
+        ctx.fillStyle = "#9a3412";
+        ctx.fillText("ふっくらきつね色", w / 2, y);
+        y += 36;
+      }
+      ctx.font = "700 22px " + JP;
+      ctx.fillStyle = "#7a5b40";
+      var meta = metaLine();
+      var mlines = wrapChars(ctx, meta, w - 90);
+      for (var m = 0; m < mlines.length; m++) {
+        ctx.fillText(mlines[m], w / 2, y + 10);
+        y += 30;
+      }
+      if (fail) {
+        ctx.font = "800 26px " + JP;
+        ctx.fillStyle = FAILS[fail].tone === "burn" ? "#7f1d1d" : (FAILS[fail].tone === "spill" ? "#9a3412" : "#854d0e");
+        var wlines = wrapChars(ctx, FAILS[fail].why, w - 100);
+        y += 16;
+        for (var k = 0; k < wlines.length; k++) {
+          ctx.fillText(wlines[k], w / 2, y);
+          y += 34;
+        }
+      }
+      ctx.font = "700 18px " + JP;
+      ctx.fillStyle = "#a16207";
+      ctx.fillText("2026-10-15", w / 2, h - 42);
+    }
+
+    function spawnBubble() {
+      if (bubbles.length > 16) return;
+      var a = Math.random() * Math.PI * 2;
+      var rad = Math.sqrt(Math.random()) * 0.85;
+      bubbles.push({
+        x: Math.cos(a) * rad,
+        y: Math.sin(a) * rad,
+        r: 0.05 + Math.random() * 0.05,
+        life: 0.5 + Math.random() * 0.8
+      });
+    }
+    function spawnSmoke(x, y) {
+      if (smokes.length > 20) return;
+      smokes.push({
+        x: x + (Math.random() - 0.5) * 20,
+        y: y,
+        r: 6 + Math.random() * 6,
+        a: 0.35,
+        vy: 16 + Math.random() * 10
+      });
+    }
+
+    function tick(now) {
+      requestAnimationFrame(tick);
+      if (!lastNow) lastNow = now;
+      var dt = Math.min(0.05, (now - lastNow) / 1000);
+      lastNow = now;
+      clock += dt;
+      if (flashT > 0) flashT -= dt;
+
+      if (phase === "heat") {
+        if (holding) temp = Math.min(100, temp + HEAT.rise * dt);
+        else temp = Math.max(0, temp - HEAT.cool * dt);
+        var hz = heatZone(shownHeat());
+        noteZone(hz, "good");
+        if (shownHeat() >= HEAT.burn) failNow("burn-heat");
+        else {
+          if (hz === "good") setSay("そのへん！ はなして");
+          else if (hz === "hot") setSay("あぶない… はなして！");
+          else if (holding) setSay("緑の帯まであげて");
+          if (hz === "hot") setMood("worry");
+          else if (hz === "good") setMood("happy");
+          else if (holding) setMood("focus");
+          else setMood("idle");
+          actionBtn.classList.toggle("is-now", hz === "good");
+        }
+      } else if (phase === "pour") {
+        if (holding) pourN += POUR.speed * dt;
+        var pz = pourZone(shownPour());
+        noteZone(pz, "good");
+        if (pourN >= POUR.over) failNow("overflow");
+        else {
+          if (pz === "good") setSay("その大きさ！ はなして");
+          else if (pz === "thick") setSay("もう十分！ はなして");
+          else if (holding) setSay("白いわに合わせて");
+          if (pz === "thick") setMood("worry");
+          else if (pz === "good") setMood("happy");
+          else if (holding) setMood("focus");
+          else setMood("idle");
+          actionBtn.classList.toggle("is-now", pz === "good");
+        }
+      } else if (phase === "flip" || phase === "finish") {
+        var spec = phase === "finish" ? FINISH : FLIP;
+        if (lead > 0) {
+          lead -= dt;
+          if (lead <= 0) {
+            lead = 0;
+            setFlash("スタート");
+            sfxDing();
+            startLoop("sizzle");
+            setAction(
+              phase === "flip" ? "flip" : "serve",
+              phase === "flip" ? "タップでひっくり返す" : "タップでおおりする",
+              "スペース",
+              true
+            );
+            setSay(phase === "flip" ? "緑の帯でタップ！" : "緑でおおり！");
+          }
+        } else {
+          cookT += dt;
+          var n = liveCookNumber();
+          var cz = cookZone(n, spec);
+          noteZone(cz, "good");
+          if (n >= spec.dark) {
+            if (phase === "flip") visual.p1 = 100;
+            else visual.p2 = 100;
+            failNow(phase === "flip" ? "burn-flip" : "burn-finish");
+          } else {
+            if (cz === "good") setSay("いま！");
+            else if (cz === "dark") setSay("はやく！");
+            else if (cz === "pale") setSay("もうすこし…");
+            else setSay("まだ早い");
+            setMood(cz === "dark" ? "worry" : (cz === "good" ? "happy" : "focus"));
+            actionBtn.classList.toggle("is-now", cz === "good");
+            if (cz === "pale" || cz === "good" || cz === "dark") {
+              if (Math.random() < dt * (cz === "good" ? 10 : 4)) spawnBubble();
+            }
+          }
+        }
+      }
+
+      if (flipping) {
+        flipAnim += dt / 0.42;
+        if (flipAnim >= 0.5) visual.flipped = true;
+        if (flipAnim >= 1) {
+          flipAnim = 1;
+          flipping = false;
+        }
+      }
+
+      for (var i = bubbles.length - 1; i >= 0; i--) {
+        bubbles[i].life -= dt;
+        if (bubbles[i].life <= 0) bubbles.splice(i, 1);
+      }
+      var smoking = fail === "burn-heat" || fail === "burn-flip" || fail === "burn-finish";
+      if (!smoking && (phase === "flip" || phase === "finish") && lead <= 0) {
+        var spec2 = phase === "finish" ? FINISH : FLIP;
+        if (liveCookNumber() >= spec2.good) smoking = true;
+      }
+      if (smoking && Math.random() < dt * 8) {
+        var rect = panWrap.getBoundingClientRect();
+        spawnSmoke(rect.width * 0.48, rect.height * 0.28);
+      }
+      for (var s = smokes.length - 1; s >= 0; s--) {
+        smokes[s].y -= smokes[s].vy * dt;
+        smokes[s].a -= dt * 0.35;
+        smokes[s].r += dt * 8;
+        if (smokes[s].a <= 0) smokes.splice(s, 1);
+      }
+
+      if (phase === "flip" && lead > 0) actionBtn.classList.remove("is-now");
+      if (phase === "finish" && lead > 0) actionBtn.classList.remove("is-now");
+
+      updateReadout();
+      draw();
+    }
+
+    buildThermo();
+    loadStore();
+    syncMute();
+    titleBest.textContent = bestLabel();
+    thermo.hidden = false;
+    hmeter.hidden = true;
+    setAction("heat", "おして火をつける", "スペース長押し", false);
+    stepLine.textContent = "4ステップ";
+    updateReadout();
+
+    window.addEventListener("resize", resize);
+    if (window.ResizeObserver) {
+      new ResizeObserver(resize).observe(panWrap);
+    }
+    resize();
+    requestAnimationFrame(tick);
+
+    btnMute.addEventListener("click", function () {
+      muted = !muted;
+      syncMute();
+      saveStore();
+      if (muted) stopLoop();
+      else if (holding && (phase === "heat" || phase === "pour")) startLoop(phase === "pour" ? "pour" : "heat");
+      else if ((phase === "flip" || phase === "finish") && lead <= 0) startLoop("sizzle");
+    });
+
+    btnStart.addEventListener("click", function () {
+      ctxAudio();
+      startRun();
+    });
+    var retryArmed = false;
+    btnRetry.addEventListener("pointerdown", function (e) {
+      retryArmed = performance.now() >= lockUntil;
+      if (!retryArmed) e.preventDefault();
+    });
+    btnRetry.addEventListener("click", function () {
+      if (performance.now() < lockUntil || !retryArmed) return;
+      startRun();
+    });
+    btnShare.addEventListener("click", function (e) {
+      if (performance.now() < lockUntil) e.preventDefault();
+    });
+
+    actionBtn.addEventListener("pointerdown", function (e) {
+      if (pointerId !== null) return;
+      if (e.button != null && e.button !== 0) return;
+      e.preventDefault();
+      pointerId = e.pointerId;
+      try { actionBtn.setPointerCapture(e.pointerId); } catch (err) {}
+      ctxAudio();
+      press("pointer");
+    });
+    function endPointer(e) {
+      if (e.pointerId !== pointerId) return;
+      pointerId = null;
+      release("pointer");
+    }
+    actionBtn.addEventListener("pointerup", endPointer);
+    actionBtn.addEventListener("pointercancel", endPointer);
+    actionBtn.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+    panWrap.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+
+    document.addEventListener("keydown", function (e) {
+      if (e.code !== "Space" && e.code !== "Enter") return;
+      if (e.repeat) return;
+      if (e.target && (e.target.tagName === "A" || e.target === btnMute)) return;
+      e.preventDefault();
+      ctxAudio();
+      press("space");
+    });
+    document.addEventListener("keyup", function (e) {
+      if (e.code !== "Space" && e.code !== "Enter") return;
+      release("space");
+    });
+    window.addEventListener("blur", function () {
+      if (keys.space) release("space");
+    });
+  })();
+  </script>
+</body>
+</html>
