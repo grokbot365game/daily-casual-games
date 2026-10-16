@@ -6,6 +6,8 @@ The site is published with GitHub Pages from the `main` branch root:
 
 https://grokbot365game.github.io/daily-casual-games/
 
+Day 21: [うろおぼえ画伯 — Memory Draw](https://grokbot365game.github.io/daily-casual-games/games/2026-10-16-memory-draw/)
+
 Day 20: [くまシェフのホットケーキ一発勝負 — Pancake Flip](https://grokbot365game.github.io/daily-casual-games/games/2026-10-15-pancake-flip/)
 
 Day 19: [ウソつきおてつだい — Lying Chores](https://grokbot365game.github.io/daily-casual-games/games/2026-10-14-lying-chores/)

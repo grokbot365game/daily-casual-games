@@ -1,0 +1,1456 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#d7e6dc">
+  <meta name="description" content="うろおぼえ画伯。お題を3秒みて、消えたら8秒以内に、見た位置と大きさで一筆でかく。合格ラインを下回ると、その場でおしまい。">
+  <meta property="og:title" content="うろおぼえ画伯 — Memory Draw">
+  <meta property="og:description" content="お題を3秒みて、消えたら8秒以内に一筆でかく。5ラウンド。合格ラインを下回ると、その場でおしまい。">
+  <title>うろおぼえ画伯 — Memory Draw</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%23e7efe4'/%3E%3Ccircle cx='8' cy='9.2' r='4' fill='%23b7c0cc'/%3E%3Cpath d='M4.4 6.4L3.2 3.4L6.4 5.6Z' fill='%23b7c0cc'/%3E%3Cpath d='M11.6 6.4L12.8 3.4L9.6 5.6Z' fill='%23b7c0cc'/%3E%3Cellipse cx='9.2' cy='5.4' rx='3.1' ry='1.6' fill='%23d64550'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      --ink: #243044;
+      --muted: #52615c;
+      --paper: #fffdf8;
+      --target: #0f766e;
+      --you: #e11d48;
+      --line: rgba(36, 48, 40, .14);
+      --good: #166534;
+      --bad: #9f1239;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+    body {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      color: var(--ink);
+      background:
+        radial-gradient(90% 46% at 50% 0%, #fff8ec 0%, transparent 56%),
+        linear-gradient(180deg, #e7efe6 0%, #d5e3d8 50%, #c5d6cb 100%);
+      font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Yu Gothic", "WenQuanYi Micro Hei", "Droid Sans Fallback", "Meiryo", sans-serif;
+      font-size: 18px;
+      line-height: 1.4;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: manipulation;
+    }
+    [hidden] { display: none !important; }
+    button, a { -webkit-tap-highlight-color: transparent; font: inherit; color: inherit; }
+    button:focus-visible, a:focus-visible { outline: 3px solid #f0b429; outline-offset: 2px; }
+    .back, .mute {
+      position: fixed;
+      z-index: 60;
+      top: max(10px, env(safe-area-inset-top));
+      border: 0;
+      border-radius: 999px;
+      color: var(--ink);
+      background: rgba(255, 253, 248, .94);
+      box-shadow: inset 0 0 0 1px var(--line);
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-decoration: none;
+    }
+    .back { left: max(12px, env(safe-area-inset-left)); padding: 8px 12px; min-height: 40px; }
+    .mute {
+      right: max(12px, env(safe-area-inset-right));
+      width: 44px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+    }
+    .mute svg { width: 22px; height: 22px; display: block; }
+    .mute .slash { display: none; }
+    .mute.is-muted .slash { display: block; }
+    .shell {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      max-width: 480px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding:
+        calc(max(10px, env(safe-area-inset-top)) + 46px)
+        max(12px, env(safe-area-inset-right))
+        max(10px, env(safe-area-inset-bottom))
+        max(12px, env(safe-area-inset-left));
+      min-height: 0;
+    }
+    .hud, .bubble {
+      border-radius: 16px;
+      background: rgba(255, 253, 248, .96);
+      box-shadow: inset 0 0 0 1px var(--line), 0 8px 18px rgba(36, 48, 40, .08);
+    }
+    .hud { flex: none; padding: 8px 12px 10px; }
+    .hud-top, .hud-mid {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .hud-top b { font-size: 18px; letter-spacing: .03em; }
+    #round-label { font-size: 18px; font-weight: 900; font-variant-numeric: tabular-nums; }
+    .pips { margin-top: 6px; display: flex; gap: 5px; }
+    .pips i {
+      flex: 1;
+      height: 8px;
+      border-radius: 999px;
+      background: #e4ddd2;
+      display: block;
+    }
+    .pips i.now { background: var(--target); }
+    .pips i.ok { background: #16a34a; }
+    .pips i.bad { background: var(--you); }
+    .hud-mid { margin-top: 8px; }
+    .phase {
+      flex: none;
+      min-width: 4.6em;
+      padding: 2px 10px;
+      border-radius: 999px;
+      background: var(--target);
+      color: #fff;
+      font-size: 18px;
+      font-weight: 900;
+      text-align: center;
+    }
+    .phase.is-draw { background: var(--you); }
+    #subject {
+      display: block;
+      margin-top: 6px;
+      font-size: 22px;
+      line-height: 1.25;
+      letter-spacing: .02em;
+    }
+    .time {
+      flex: none;
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .time b {
+      color: var(--ink);
+      font-size: 28px;
+      font-weight: 900;
+      letter-spacing: .02em;
+    }
+    .time.warn b { color: var(--you); }
+    .passline {
+      margin-top: 4px;
+      font-size: 18px;
+      font-weight: 900;
+      color: var(--target);
+    }
+    .bar {
+      margin-top: 6px;
+      height: 12px;
+      border-radius: 999px;
+      background: #efe8dc;
+      box-shadow: inset 0 0 0 1px rgba(36, 48, 40, .06);
+      overflow: hidden;
+    }
+    .bar > div {
+      height: 100%;
+      width: 100%;
+      transform-origin: left center;
+      transform: scaleX(1);
+      border-radius: inherit;
+      background: var(--target);
+    }
+    .bar.is-draw > div { background: var(--you); }
+    .bar.warn > div { background: #be123c; }
+    .coach {
+      flex: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 0;
+    }
+    .bubble { flex: 1; min-width: 0; padding: 8px 12px; }
+    .who {
+      margin: 0;
+      color: var(--muted);
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: .04em;
+    }
+    .say {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+    .say.pop { animation: pop .28s ease; }
+    @keyframes pop { from { transform: scale(.96); } to { transform: none; } }
+    .cat { flex: none; width: 84px; height: 90px; }
+    .cat svg { width: 100%; height: 100%; display: block; overflow: visible; }
+    .cat .face { display: none; }
+    .cat[data-mood="idle"] .face.idle,
+    .cat[data-mood="focus"] .face.focus,
+    .cat[data-mood="happy"] .face.happy,
+    .cat[data-mood="shock"] .face.shock { display: block; }
+    .cat.pop[data-mood="happy"] { animation: hop .42s ease; }
+    .cat.pop[data-mood="shock"] { animation: shake .42s ease; }
+    @keyframes hop {
+      0% { transform: translateY(0); }
+      40% { transform: translateY(-8px); }
+      100% { transform: translateY(0); }
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-4px) rotate(-3deg); }
+      75% { transform: translateX(4px) rotate(3deg); }
+    }
+    .stage {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .paper {
+      position: relative;
+      border-radius: 18px;
+      overflow: hidden;
+      background: var(--paper);
+      box-shadow: 0 12px 28px rgba(36, 48, 40, .14);
+      touch-action: none;
+    }
+    .paper::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      box-shadow: inset 0 0 0 4px var(--target);
+      pointer-events: none;
+    }
+    .paper.is-draw::after { box-shadow: inset 0 0 0 4px var(--you); }
+    #board {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+      cursor: default;
+    }
+    .paper.is-draw #board { cursor: crosshair; }
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      display: grid;
+      place-items: center;
+      padding:
+        calc(max(8px, env(safe-area-inset-top)) + 48px)
+        12px
+        max(8px, env(safe-area-inset-bottom))
+        12px;
+      background: rgba(36, 48, 40, .46);
+      backdrop-filter: blur(4px);
+    }
+    .card {
+      width: min(100%, 420px);
+      max-height: 100%;
+      overflow: auto;
+      overscroll-behavior: contain;
+      padding: 16px 16px 14px;
+      border-radius: 22px;
+      background: var(--paper);
+      box-shadow: 0 18px 48px rgba(36, 48, 40, .24);
+      text-align: center;
+    }
+    .card h1 {
+      margin: 2px 0 4px;
+      font-size: 32px;
+      line-height: 1.2;
+      letter-spacing: .04em;
+    }
+    .card h2 {
+      margin: 4px 0 6px;
+      font-size: 28px;
+      line-height: 1.25;
+      letter-spacing: .03em;
+    }
+    .tag {
+      margin: 0 0 4px;
+      font-size: 18px;
+      font-weight: 800;
+      line-height: 1.4;
+    }
+    .en {
+      margin: 0 0 10px;
+      color: var(--muted);
+      font-size: 18px;
+      font-weight: 800;
+    }
+    .how {
+      margin: 0 0 8px;
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1.45;
+      text-align: left;
+    }
+    .best, .total, .status, .subject-line, .meta {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 800;
+      line-height: 1.4;
+    }
+    .best { margin: 4px 0 10px; color: var(--muted); }
+    .status { margin-top: 2px; font-size: 20px; font-weight: 900; }
+    .status.win { color: var(--good); }
+    .status.lose { color: var(--bad); }
+    .total { margin-top: 4px; }
+    .record {
+      margin: 4px 0 0;
+      color: #a16207;
+      font-size: 18px;
+      font-weight: 900;
+    }
+    .hero, .react {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-align: left;
+    }
+    .hero { margin-bottom: 8px; }
+    .hero .cat { width: 104px; height: 112px; }
+    .hero-text, .react .say { flex: 1; min-width: 0; }
+    .react { margin-top: 8px; }
+    .react .cat { width: 72px; height: 78px; }
+    .verdict {
+      margin: 0;
+      font-size: 30px;
+      font-weight: 900;
+      line-height: 1.25;
+      letter-spacing: .02em;
+    }
+    .verdict.pass { color: var(--good); }
+    .verdict.fail {
+      color: var(--bad);
+      background: #ffe4e6;
+      border-radius: 14px;
+      padding: 8px 10px;
+    }
+    .subject-line { margin-top: 6px; color: var(--muted); }
+    .score {
+      margin: 4px 0 0;
+      font-size: 42px;
+      font-weight: 900;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: .02em;
+    }
+    .score.pass { color: var(--good); }
+    .score.fail { color: var(--bad); }
+    .gap {
+      margin: 6px 0 8px;
+      font-size: 18px;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+    }
+    .compare-wrap {
+      width: min(100%, 220px, 32vh);
+      margin: 0 auto;
+      aspect-ratio: 1;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: inset 0 0 0 1px var(--line);
+      background: var(--paper);
+    }
+    #compare { display: block; width: 100%; height: 100%; }
+    .legend {
+      margin: 6px 0 0;
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      font-size: 18px;
+      font-weight: 800;
+    }
+    .legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .swatch {
+      width: 18px;
+      height: 8px;
+      border-radius: 999px;
+      display: inline-block;
+    }
+    .swatch.target { background: var(--target); }
+    .swatch.you { background: var(--you); }
+    .sharebox {
+      margin: 8px 0 0;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #f3f0e8;
+      color: var(--ink);
+      font-size: 18px;
+      font-weight: 800;
+      line-height: 1.45;
+      text-align: left;
+      overflow-wrap: anywhere;
+      -webkit-user-select: text;
+      user-select: text;
+      cursor: text;
+    }
+    .btns { display: grid; gap: 8px; margin-top: 10px; }
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 14px;
+      min-height: 48px;
+      padding: 10px 16px;
+      font-weight: 900;
+      font-size: 18px;
+      cursor: pointer;
+      color: #fff;
+      background: var(--target);
+      box-shadow: 0 5px 0 #115e59;
+    }
+    button:active { transform: translateY(2px); box-shadow: 0 3px 0 #115e59; }
+    button.secondary {
+      color: var(--ink);
+      background: #fff;
+      box-shadow: inset 0 0 0 1px var(--line), 0 4px 0 rgba(36, 48, 40, .08);
+    }
+    button.secondary:active { box-shadow: inset 0 0 0 1px var(--line), 0 2px 0 rgba(36, 48, 40, .08); }
+    button:disabled { opacity: .55; cursor: default; transform: none; }
+    .fine { margin: 10px 0 0; font-size: 18px; font-weight: 800; }
+    .fine a { color: var(--target); font-weight: 900; text-decoration: none; }
+    .sr {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+    }
+    @media (max-height: 700px) {
+      .hero .cat { width: 78px; height: 84px; }
+      .cat { width: 68px; height: 74px; }
+      .card h1 { font-size: 28px; }
+      .card { padding: 12px 12px 10px; }
+      .score { font-size: 36px; }
+      .verdict { font-size: 26px; }
+      .compare-wrap { width: min(100%, 180px, 26vh); }
+      .hud { padding: 6px 10px 8px; }
+      .time b { font-size: 24px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .cat.pop, .say.pop { animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <a class="back" href="../../index.html">ギャラリー</a>
+  <button type="button" class="mute" id="mute" aria-pressed="false" aria-label="音を消す">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="M4 9h4l5-4v14l-5-4H4z"/>
+      <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 9.5a4 4 0 0 1 0 5"/>
+      <path class="slash" fill="none" stroke="#e11d48" stroke-width="2.4" stroke-linecap="round" d="M6 5l13 14"/>
+    </svg>
+  </button>
+  <p class="sr" id="live" aria-live="polite"></p>
+  <div class="shell">
+    <header class="hud">
+      <div class="hud-top">
+        <b>うろおぼえ画伯</b>
+        <span id="round-label">ラウンド 1/5</span>
+      </div>
+      <div class="pips" id="pips" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="hud-mid">
+        <span class="phase" id="phase">みて</span>
+        <span class="time" id="time-wrap">残り <b id="time">3.0</b></span>
+      </div>
+      <strong id="subject">お題</strong>
+      <div class="passline" id="pass-label">合格ライン 55</div>
+      <div class="bar" id="bar-wrap" aria-hidden="true"><div id="bar"></div></div>
+    </header>
+    <div class="coach">
+      <div class="cat" id="coach-cat" data-mood="idle" aria-hidden="true"></div>
+      <div class="bubble">
+        <p class="who">ねこ画伯</p>
+        <p class="say" id="coach-say">3秒だけ、よくみて</p>
+      </div>
+    </div>
+    <div class="stage" id="stage">
+      <div class="paper" id="paper">
+        <canvas id="board" width="300" height="300"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="title-overlay">
+    <div class="card">
+      <div class="hero">
+        <div class="cat" id="title-cat" data-mood="idle" role="img" aria-label="ねこ画伯">
+          <svg viewBox="0 0 120 128" aria-hidden="true">
+            <ellipse cx="62" cy="122" rx="34" ry="5" fill="rgba(36,48,40,.16)"/>
+            <path d="M92 104c16 4 24-12 16-24" fill="none" stroke="#b7c0cc" stroke-width="8" stroke-linecap="round"/>
+            <ellipse cx="60" cy="104" rx="32" ry="20" fill="#b7c0cc"/>
+            <ellipse cx="60" cy="108" rx="18" ry="13" fill="#fff7ee"/>
+            <ellipse cx="40" cy="118" rx="11" ry="6" fill="#aeb6c2"/>
+            <ellipse cx="82" cy="118" rx="11" ry="6" fill="#aeb6c2"/>
+            <ellipse cx="38" cy="117" rx="4" ry="2.4" fill="#7f9ad8" opacity=".85"/>
+            <path d="M36 48 L26 16 L54 36 Z" fill="#b7c0cc"/>
+            <path d="M86 48 L96 16 L68 36 Z" fill="#b7c0cc"/>
+            <path d="M38 44 L32 24 L50 36 Z" fill="#f3b6c2"/>
+            <path d="M84 44 L90 24 L72 36 Z" fill="#f3b6c2"/>
+            <circle cx="62" cy="60" r="30" fill="#c5ced8"/>
+            <g class="beret">
+              <ellipse cx="74" cy="34" rx="26" ry="12" fill="#d64550"/>
+              <ellipse cx="72" cy="30" rx="16" ry="7" fill="#e15b66"/>
+              <circle cx="96" cy="28" r="4.2" fill="#c43844"/>
+            </g>
+            <g transform="rotate(18 100 46)">
+              <rect x="97" y="24" width="4.2" height="20" rx="1" fill="#f2c14e"/>
+              <rect x="97" y="42" width="4.2" height="3.2" fill="#f3b6c2"/>
+              <path d="M97 45.2 L99.1 51 L101.2 45.2 Z" fill="#f6f1e6"/>
+            </g>
+            <path d="M44 84 h36 l-5 8 H50 Z" fill="#243044"/>
+            <path d="M56 91 l6 12 6-12" fill="#d64550"/>
+            <ellipse cx="62" cy="70" rx="14" ry="11" fill="#fff7ee"/>
+            <g fill="none" stroke="#243044" stroke-width="2.1">
+              <circle cx="50" cy="60" r="10"/>
+              <circle cx="76" cy="60" r="10"/>
+              <path d="M60 60 h6"/>
+            </g>
+            <g stroke="#7d8794" stroke-width="1.3" stroke-linecap="round">
+              <path d="M24 66 h16"/>
+              <path d="M26 72 h14"/>
+              <path d="M86 66 h16"/>
+              <path d="M84 72 h14"/>
+            </g>
+            <ellipse cx="62" cy="70" rx="2.3" ry="1.7" fill="#e07a8a"/>
+            <g class="face idle">
+              <ellipse cx="50" cy="60" rx="3.1" ry="3.6" fill="#243044"/>
+              <ellipse cx="76" cy="60" rx="3.1" ry="3.6" fill="#243044"/>
+              <circle cx="51.2" cy="58.8" r="1.1" fill="#fff"/>
+              <circle cx="77.2" cy="58.8" r="1.1" fill="#fff"/>
+              <path d="M54 78 q8 6 16 0" fill="none" stroke="#243044" stroke-width="1.8" stroke-linecap="round"/>
+            </g>
+            <g class="face focus">
+              <path d="M44 60 h12" fill="none" stroke="#243044" stroke-width="2.3" stroke-linecap="round"/>
+              <path d="M70 60 h12" fill="none" stroke="#243044" stroke-width="2.3" stroke-linecap="round"/>
+              <path d="M56 78 q6 4 12 0" fill="none" stroke="#243044" stroke-width="1.8" stroke-linecap="round"/>
+            </g>
+            <g class="face happy">
+              <path d="M44 62 q6-8 12 0" fill="none" stroke="#243044" stroke-width="2.3" stroke-linecap="round"/>
+              <path d="M70 62 q6-8 12 0" fill="none" stroke="#243044" stroke-width="2.3" stroke-linecap="round"/>
+              <path d="M52 76 q10 10 20 0" fill="none" stroke="#243044" stroke-width="1.8" stroke-linecap="round"/>
+              <ellipse cx="38" cy="68" rx="4" ry="2.2" fill="#f0a0a8" opacity=".9"/>
+              <ellipse cx="88" cy="68" rx="4" ry="2.2" fill="#f0a0a8" opacity=".9"/>
+            </g>
+            <g class="face shock">
+              <circle cx="50" cy="60" r="5.4" fill="#fff"/>
+              <circle cx="76" cy="60" r="5.4" fill="#fff"/>
+              <circle cx="50" cy="61" r="2.2" fill="#243044"/>
+              <circle cx="76" cy="61" r="2.2" fill="#243044"/>
+              <ellipse cx="62" cy="80" rx="4.2" ry="5" fill="#243044"/>
+              <ellipse cx="38" cy="68" rx="4" ry="2.2" fill="#f0a0a8"/>
+              <ellipse cx="88" cy="68" rx="4" ry="2.2" fill="#f0a0a8"/>
+            </g>
+          </svg>
+        </div>
+        <div class="hero-text">
+          <p class="who">ねこ画伯</p>
+          <p class="say" id="title-say">知ってるつもり、じゃあ一筆</p>
+        </div>
+      </div>
+      <h1>うろおぼえ画伯</h1>
+      <p class="tag">「知ってるつもり」を一筆でかけ！</p>
+      <p class="en">Memory Draw · Day 21</p>
+      <p class="how">お題を3秒みて、消えたら8秒以内に、見た位置と大きさで一筆でかく。</p>
+      <p class="how">5ラウンド。合格ラインは上がっていく。下回ると、その場でおしまい。</p>
+      <p class="best" id="title-best">ベスト なし</p>
+      <div class="btns">
+        <button type="button" id="btn-start">はじめる</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="round-overlay" hidden>
+    <div class="card">
+      <p class="verdict" id="verdict">合格</p>
+      <p class="subject-line" id="res-subject">お題 おにぎり</p>
+      <p class="score" id="res-score">0点</p>
+      <p class="gap" id="res-gap">合格ライン 55 / あと0点</p>
+      <div class="compare-wrap"><canvas id="compare" width="400" height="400"></canvas></div>
+      <p class="legend"><span><i class="swatch target"></i>お題</span><span><i class="swatch you"></i>あなたの線</span></p>
+      <div class="react">
+        <div class="cat" id="res-cat" data-mood="happy" aria-hidden="true"></div>
+        <p class="say" id="res-say">合格。いい線だ</p>
+      </div>
+      <div class="btns">
+        <button type="button" id="btn-next" disabled>つぎへ</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="final-overlay" hidden>
+    <div class="card">
+      <div class="react">
+        <div class="cat" id="final-cat" data-mood="happy" aria-hidden="true"></div>
+        <p class="say" id="final-say">全国区の画伯だ！</p>
+      </div>
+      <h2 id="final-rank">全国区の 画伯</h2>
+      <p class="status" id="final-status">5/5 ラウンド · クリア</p>
+      <p class="verdict fail" id="final-reason" hidden>たりない部分がある</p>
+      <p class="gap" id="final-gap" hidden></p>
+      <p class="total" id="final-total">合計 0点</p>
+      <p class="best" id="final-best">ベスト なし</p>
+      <p class="record" id="final-record" hidden>ベスト更新！</p>
+      <p class="sharebox" id="share-line"></p>
+      <div class="btns">
+        <button type="button" id="btn-retry" disabled>もういちど</button>
+        <button type="button" class="secondary" id="btn-copy" disabled>結果をコピー</button>
+      </div>
+      <p class="fine"><a href="../../index.html">ギャラリーへ</a></p>
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    "use strict";
+
+    var PASS = [55, 60, 65, 70, 75];
+    var SHOW_MS = 3000;
+    var DRAW_MS = 8000;
+    var ROUNDS = 5;
+    var STORE = "memory-draw-2026-10-16";
+    var LOCK_MS = 700;
+    // Mean nearest-point error equal to this fraction of the canvas width scores 0.
+    // Tuned so a careful trace lands in the mid-80s and a rough memory trace in the 60s.
+    var SCORE_ZERO_AT = 0.085;
+    var SAMPLE_N = 64;
+    var PAD = 0.08;
+    var INK = "#243044";
+    var TARGET = "#0f766e";
+    var PLAYER = "#e11d48";
+
+    var REASON = {
+      SHORT: "かいてない",
+      TIME: "時間切れ",
+      MISS: "たりない部分がある",
+      OVER: "はみだしすぎ",
+      SMALL: "小さすぎ",
+      BIG: "大きすぎ",
+      OFF: "位置がずれた"
+    };
+    var RANKS = [
+      "まだ 知ってるつもり",
+      "ご近所の うろおぼえ",
+      "町内いちばんの うろおぼえ",
+      "商店街の 記憶画伯",
+      "県内の 記憶画伯",
+      "全国区の 画伯"
+    ];
+    var CAT_FAIL = {
+      "たりない部分がある": "たりない部分があるよ",
+      "はみだしすぎ": "はみだしすぎだよ",
+      "小さすぎ": "小さすぎだよ",
+      "大きすぎ": "大きすぎだよ",
+      "位置がずれた": "位置がずれたよ",
+      "かいてない": "かいてないよ",
+      "時間切れ": "時間切れだよ"
+    };
+
+    var SHAPES = [
+      {
+        id: "onigiri",
+        name: "おにぎり",
+        closed: true,
+        pts: [[50, 10], [86, 86], [14, 86], [23.5, 66], [77.5, 69], [70, 52], [31.1, 50]]
+      },
+      {
+        id: "bottle",
+        name: "ペットボトル",
+        closed: true,
+        pts: [[41, 8], [59, 8], [59, 18], [53, 20], [53, 30], [72, 44], [74, 56], [70, 90], [30, 90], [26, 56], [28, 44], [47, 30], [47, 20], [41, 18]]
+      },
+      {
+        id: "soyfish",
+        name: "魚のしょうゆ入れ",
+        closed: true,
+        pts: [[12, 50], [26, 32], [32, 44], [48, 36], [56, 20], [64, 34], [76, 38], [92, 46], [78, 52], [74, 62], [60, 72], [44, 68], [32, 58], [24, 72]]
+      },
+      {
+        id: "umbrella",
+        name: "かさ",
+        closed: false,
+        pts: [[10, 40], [20, 28], [30, 36], [40, 24], [50, 16], [60, 24], [70, 36], [80, 28], [90, 40], [50, 48], [50, 76], [42, 88], [32, 82], [38, 70]]
+      },
+      {
+        id: "bulb",
+        name: "でんきゅう",
+        closed: true,
+        pts: [[44, 92], [56, 92], [58, 84], [52, 84], [58, 78], [52, 78], [62, 68], [70, 56], [72, 42], [62, 26], [50, 16], [38, 26], [28, 42], [30, 56], [38, 68], [48, 78], [42, 78], [48, 84], [42, 84]]
+      },
+      {
+        id: "soft",
+        name: "ソフトクリーム",
+        closed: true,
+        pts: [[50, 90], [30, 58], [22, 48], [32, 38], [24, 28], [36, 18], [50, 12], [64, 18], [74, 28], [66, 38], [76, 48], [68, 58]]
+      },
+      {
+        id: "key",
+        name: "家の鍵",
+        closed: true,
+        pts: [[48, 30], [36, 22], [22, 26], [14, 40], [16, 54], [26, 66], [40, 68], [50, 58], [60, 58], [60, 76], [70, 76], [70, 62], [78, 62], [78, 84], [90, 84], [90, 36], [52, 36]]
+      },
+      {
+        id: "banana",
+        name: "バナナ",
+        closed: true,
+        pts: [[40, 88], [32, 72], [24, 56], [26, 40], [36, 26], [50, 16], [64, 12], [74, 18], [66, 26], [54, 30], [42, 40], [34, 54], [34, 70], [42, 84]]
+      }
+    ];
+
+    var board = document.getElementById("board");
+    var boardCtx = board.getContext("2d");
+    var compare = document.getElementById("compare");
+    var compareCtx = compare.getContext("2d");
+    var paper = document.getElementById("paper");
+    var stage = document.getElementById("stage");
+    var titleOverlay = document.getElementById("title-overlay");
+    var roundOverlay = document.getElementById("round-overlay");
+    var finalOverlay = document.getElementById("final-overlay");
+    var titleCat = document.getElementById("title-cat");
+    var coachCat = document.getElementById("coach-cat");
+    var resCat = document.getElementById("res-cat");
+    var finalCat = document.getElementById("final-cat");
+    var coachSay = document.getElementById("coach-say");
+    var resSay = document.getElementById("res-say");
+    var finalSay = document.getElementById("final-say");
+    var phaseEl = document.getElementById("phase");
+    var subjectEl = document.getElementById("subject");
+    var roundLabel = document.getElementById("round-label");
+    var passLabel = document.getElementById("pass-label");
+    var timeWrap = document.getElementById("time-wrap");
+    var timeEl = document.getElementById("time");
+    var barWrap = document.getElementById("bar-wrap");
+    var bar = document.getElementById("bar");
+    var pips = document.getElementById("pips");
+    var live = document.getElementById("live");
+    var titleBest = document.getElementById("title-best");
+    var verdictEl = document.getElementById("verdict");
+    var resSubject = document.getElementById("res-subject");
+    var resScore = document.getElementById("res-score");
+    var resGap = document.getElementById("res-gap");
+    var btnNext = document.getElementById("btn-next");
+    var finalRank = document.getElementById("final-rank");
+    var finalStatus = document.getElementById("final-status");
+    var finalReason = document.getElementById("final-reason");
+    var finalGap = document.getElementById("final-gap");
+    var finalTotal = document.getElementById("final-total");
+    var finalBest = document.getElementById("final-best");
+    var finalRecord = document.getElementById("final-record");
+    var shareLine = document.getElementById("share-line");
+    var btnStart = document.getElementById("btn-start");
+    var btnRetry = document.getElementById("btn-retry");
+    var btnCopy = document.getElementById("btn-copy");
+    var muteBtn = document.getElementById("mute");
+
+    var svg = titleCat.querySelector("svg");
+    coachCat.appendChild(svg.cloneNode(true));
+    resCat.appendChild(svg.cloneNode(true));
+    finalCat.appendChild(svg.cloneNode(true));
+
+    var phase = "title";
+    var deck = [];
+    var roundIndex = 0;
+    var scores = [];
+    var cleared = 0;
+    var lastReason = "";
+    var lastScore = 0;
+    var lastLine = PASS[0];
+    var stroke = [];
+    var targetPts = [];
+    var targetClosed = false;
+    var drawing = false;
+    var pointerId = null;
+    var deadline = 0;
+    var lastTick = -1;
+    var raf = 0;
+    var bestCleared = -1;
+    var bestTotal = 0;
+    var muted = false;
+    var audioCtx = null;
+    var shareText = "";
+
+    function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+    function loadStore() {
+      try {
+        var raw = localStorage.getItem(STORE);
+        if (!raw) return;
+        var data = JSON.parse(raw);
+        if (data && typeof data.bestCleared === "number") bestCleared = data.bestCleared;
+        if (data && typeof data.bestTotal === "number") bestTotal = data.bestTotal;
+        if (data && data.muted) muted = true;
+      } catch (e) {}
+    }
+    function saveStore() {
+      try {
+        localStorage.setItem(STORE, JSON.stringify({
+          bestCleared: bestCleared,
+          bestTotal: bestTotal,
+          muted: muted
+        }));
+      } catch (e) {}
+    }
+    function bestText() {
+      if (bestCleared < 0) return "ベスト なし";
+      return "ベスト " + bestCleared + "/5 · 合計 " + bestTotal + "点";
+    }
+    function applyMute() {
+      muteBtn.classList.toggle("is-muted", muted);
+      muteBtn.setAttribute("aria-pressed", muted ? "true" : "false");
+      muteBtn.setAttribute("aria-label", muted ? "音を出す" : "音を消す");
+    }
+
+    function audio() {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      if (!audioCtx) audioCtx = new AC();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      return audioCtx;
+    }
+    function blip(freq, dur, gain, type, delay) {
+      if (muted) return;
+      var ctx = audio();
+      if (!ctx) return;
+      var t = ctx.currentTime + (delay || 0);
+      var o = ctx.createOscillator();
+      var g = ctx.createGain();
+      o.type = type || "sine";
+      o.frequency.setValueAtTime(freq, t);
+      g.gain.setValueAtTime(gain || 0.05, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.start(t);
+      o.stop(t + dur + 0.02);
+    }
+    function soundShow() {
+      blip(523, 0.12, 0.05);
+      blip(659, 0.14, 0.045, "sine", 0.09);
+    }
+    function soundDraw() { blip(392, 0.08, 0.04, "triangle"); }
+    function soundPass(margin) {
+      blip(523, 0.1, 0.05);
+      blip(659, 0.1, 0.05, "sine", 0.08);
+      blip(margin >= 20 ? 880 : 784, 0.16, 0.055, "sine", 0.16);
+    }
+    function soundFail() {
+      blip(196, 0.16, 0.06, "triangle");
+      blip(146, 0.2, 0.045, "triangle", 0.08);
+    }
+    function soundWin() {
+      [523, 659, 784, 1046].forEach(function (f, i) { blip(f, 0.16, 0.055, "sine", i * 0.09); });
+    }
+
+    function pathLength(pts, closed) {
+      var n = pts.length;
+      if (n < 2) return 0;
+      var seg = closed ? n : n - 1;
+      var L = 0;
+      for (var i = 0; i < seg; i++) {
+        var a = pts[i];
+        var b = pts[(i + 1) % n];
+        L += Math.hypot(b.x - a.x, b.y - a.y);
+      }
+      return L;
+    }
+    function pointAt(pts, closed, dist) {
+      var n = pts.length;
+      var seg = closed ? n : n - 1;
+      var acc = 0;
+      for (var i = 0; i < seg; i++) {
+        var a = pts[i];
+        var b = pts[(i + 1) % n];
+        var sl = Math.hypot(b.x - a.x, b.y - a.y);
+        if (acc + sl >= dist || i === seg - 1) {
+          var t = sl < 1e-6 ? 0 : (dist - acc) / sl;
+          t = clamp(t, 0, 1);
+          return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+        }
+        acc += sl;
+      }
+      var last = pts[closed ? 0 : n - 1];
+      return { x: last.x, y: last.y };
+    }
+    function resample(pts, n, closed) {
+      var out = [];
+      if (!pts.length) return out;
+      if (pts.length === 1 || pathLength(pts, closed) < 0.001) {
+        for (var i = 0; i < n; i++) out.push({ x: pts[0].x, y: pts[0].y });
+        return out;
+      }
+      var L = pathLength(pts, closed);
+      if (closed) {
+        for (var k = 0; k < n; k++) out.push(pointAt(pts, true, (L * k) / n));
+      } else {
+        for (var k2 = 0; k2 < n; k2++) out.push(pointAt(pts, false, n === 1 ? 0 : (L * k2) / (n - 1)));
+      }
+      return out;
+    }
+    function meanNearest(a, b) {
+      if (!a.length || !b.length) return 0;
+      var sum = 0;
+      for (var i = 0; i < a.length; i++) {
+        var best = Infinity;
+        var ax = a[i].x;
+        var ay = a[i].y;
+        for (var j = 0; j < b.length; j++) {
+          var dx = ax - b[j].x;
+          var dy = ay - b[j].y;
+          var d = dx * dx + dy * dy;
+          if (d < best) best = d;
+        }
+        sum += Math.sqrt(best);
+      }
+      return sum / a.length;
+    }
+    function centroid(pts) {
+      var x = 0;
+      var y = 0;
+      for (var i = 0; i < pts.length; i++) { x += pts[i].x; y += pts[i].y; }
+      return { x: x / pts.length, y: y / pts.length };
+    }
+    function bboxDiag(pts) {
+      var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      for (var i = 0; i < pts.length; i++) {
+        minX = Math.min(minX, pts[i].x);
+        minY = Math.min(minY, pts[i].y);
+        maxX = Math.max(maxX, pts[i].x);
+        maxY = Math.max(maxY, pts[i].y);
+      }
+      return Math.hypot(maxX - minX, maxY - minY);
+    }
+    function judge(draw, target, closedTarget, width) {
+      if (!draw || draw.length < 2 || !target || target.length < 2) {
+        return { score: 0, sym: width, dAB: width, dBA: width };
+      }
+      var A = resample(draw, SAMPLE_N, false);
+      var B = resample(target, SAMPLE_N, !!closedTarget);
+      var dAB = meanNearest(A, B);
+      var dBA = meanNearest(B, A);
+      var sym = (dAB + dBA) / 2;
+      var score = Math.round(clamp(100 * (1 - (sym / width) / SCORE_ZERO_AT), 0, 100));
+      return { score: score, sym: sym, dAB: dAB, dBA: dBA };
+    }
+    function diagnose(draw, target, closedTarget, width, timeUp) {
+      var tLen = pathLength(target, !!closedTarget);
+      var dLen = pathLength(draw || [], false);
+      var minLen = Math.max(width * 0.08, tLen * 0.16);
+      if (!draw || draw.length < 2 || dLen < minLen) return timeUp ? REASON.TIME : REASON.SHORT;
+      if (timeUp && dLen < tLen * 0.45) return REASON.TIME;
+
+      var A = resample(draw, SAMPLE_N, false);
+      var B = resample(target, SAMPLE_N, !!closedTarget);
+      var dAB = meanNearest(A, B);
+      var dBA = meanNearest(B, A);
+      var raw = (dAB + dBA) / 2;
+      var cA = centroid(A);
+      var cB = centroid(B);
+      var off = Math.hypot(cA.x - cB.x, cA.y - cB.y);
+      var Aalign = A.map(function (p) {
+        return { x: p.x - cA.x + cB.x, y: p.y - cA.y + cB.y };
+      });
+      var align = (meanNearest(Aalign, B) + meanNearest(B, Aalign)) / 2;
+      var diagA = bboxDiag(A);
+      var diagB = bboxDiag(B);
+      var ratio = diagB > 1 ? diagA / diagB : 1;
+      var scale = diagA > 1 ? diagB / diagA : 1;
+      var Ascale = Aalign.map(function (p) {
+        return { x: cB.x + (p.x - cB.x) * scale, y: cB.y + (p.y - cB.y) * scale };
+      });
+      var scaled = (meanNearest(Ascale, B) + meanNearest(B, Ascale)) / 2;
+      var offsetGain = raw - align;
+      var sizeGain = align - scaled;
+      var shifted = off > width * 0.07 && offsetGain > width * 0.02;
+      // A uniform size miss still matches once scaled. A missing chunk does not.
+      var sizeOff = (ratio < 0.92 || ratio > 1.12) && sizeGain > width * 0.01 && scaled < align * 0.72;
+
+      if (shifted && sizeOff) {
+        if (offsetGain >= sizeGain) return REASON.OFF;
+        return ratio < 1 ? REASON.SMALL : REASON.BIG;
+      }
+      if (shifted) return REASON.OFF;
+      if (sizeOff) return ratio < 1 ? REASON.SMALL : REASON.BIG;
+      if (dBA > dAB * 1.18) return REASON.MISS;
+      if (dAB > dBA * 1.12) return REASON.OVER;
+      return dBA >= dAB ? REASON.MISS : REASON.OVER;
+    }
+
+    function toBoard(pt, w, h) {
+      return {
+        x: (PAD + (pt[0] / 100) * (1 - 2 * PAD)) * w,
+        y: (PAD + (pt[1] / 100) * (1 - 2 * PAD)) * h
+      };
+    }
+    function buildTarget() {
+      var shape = deck[roundIndex];
+      if (!shape) { targetPts = []; return; }
+      targetClosed = !!shape.closed;
+      var w = board.width;
+      var h = board.height;
+      targetPts = shape.pts.map(function (p) { return toBoard(p, w, h); });
+    }
+    function drawPaper(ctx, w, h) {
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = "#fffdf8";
+      ctx.fillRect(0, 0, w, h);
+      var m = Math.min(w, h) * 0.045;
+      var len = Math.min(w, h) * 0.04;
+      ctx.strokeStyle = "rgba(36,48,40,.2)";
+      ctx.lineWidth = Math.max(2, w * 0.004);
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      cornerMark(ctx, m, m, len, len);
+      cornerMark(ctx, w - m, m, -len, len);
+      cornerMark(ctx, m, h - m, len, -len);
+      cornerMark(ctx, w - m, h - m, -len, -len);
+    }
+    function cornerMark(ctx, x, y, dx, dy) {
+      ctx.beginPath();
+      ctx.moveTo(x, y + dy);
+      ctx.lineTo(x, y);
+      ctx.lineTo(x + dx, y);
+      ctx.stroke();
+    }
+    function strokePath(ctx, pts, closed, color, width, halo) {
+      if (!pts || pts.length < 2) return;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      for (var i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+      if (closed) ctx.closePath();
+      if (halo) {
+        ctx.strokeStyle = "#fffdf8";
+        ctx.lineWidth = width + halo;
+        ctx.stroke();
+      }
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.stroke();
+    }
+    function renderBoard() {
+      var w = board.width;
+      var h = board.height;
+      if (!w || !h) return;
+      drawPaper(boardCtx, w, h);
+      var lw = Math.max(3, w * 0.016);
+      if (phase === "show") strokePath(boardCtx, targetPts, targetClosed, TARGET, lw, 0);
+      else if (phase === "draw") strokePath(boardCtx, stroke, false, PLAYER, lw, 0);
+      else if (phase === "roundResult" || phase === "final") {
+        strokePath(boardCtx, targetPts, targetClosed, TARGET, lw, 0);
+        strokePath(boardCtx, stroke, false, PLAYER, lw * 0.92, lw * 0.45);
+      }
+    }
+    function renderCompare() {
+      var s = 400;
+      if (compare.width !== s) { compare.width = s; compare.height = s; }
+      drawPaper(compareCtx, s, s);
+      if (!board.width) return;
+      var sx = s / board.width;
+      var sy = s / board.height;
+      function map(pts) {
+        return pts.map(function (p) { return { x: p.x * sx, y: p.y * sy }; });
+      }
+      var lw = Math.max(4, s * 0.02);
+      strokePath(compareCtx, map(targetPts), targetClosed, TARGET, lw, 0);
+      strokePath(compareCtx, map(stroke), false, PLAYER, lw * 0.92, lw * 0.55);
+    }
+
+    function layout() {
+      var side = Math.floor(Math.min(stage.clientWidth, stage.clientHeight));
+      if (side < 2) return;
+      paper.style.width = side + "px";
+      paper.style.height = side + "px";
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      var px = Math.max(1, Math.round(side * dpr));
+      if (board.width !== px || board.height !== px) {
+        var prevW = board.width;
+        var prevH = board.height;
+        if (stroke.length && prevW) {
+          var sx = px / prevW;
+          var sy = px / prevH;
+          for (var i = 0; i < stroke.length; i++) {
+            stroke[i].x *= sx;
+            stroke[i].y *= sy;
+          }
+        }
+        board.width = px;
+        board.height = px;
+        if (deck.length && (phase === "show" || phase === "draw" || phase === "roundResult" || phase === "final")) {
+          buildTarget();
+        }
+      }
+      renderBoard();
+      if (phase === "roundResult") renderCompare();
+    }
+
+    function setMood(mood) {
+      [coachCat, resCat, finalCat].forEach(function (el) {
+        el.dataset.mood = mood;
+        el.classList.remove("pop");
+        void el.offsetWidth;
+        if (mood === "happy" || mood === "shock") el.classList.add("pop");
+      });
+    }
+    function setSay(el, text) {
+      el.textContent = text;
+      el.classList.remove("pop");
+      void el.offsetWidth;
+      el.classList.add("pop");
+    }
+    function announce(text) {
+      live.textContent = "";
+      live.textContent = text;
+    }
+    function gapText(score, line) {
+      if (score >= line) return "合格ライン " + line + " / 余裕" + (score - line) + "点";
+      return "合格ライン " + line + " / あと" + (line - score) + "点";
+    }
+    function updateHud() {
+      var shape = deck[roundIndex];
+      var line = PASS[roundIndex] || PASS[0];
+      roundLabel.textContent = "ラウンド " + (roundIndex + 1) + "/5";
+      passLabel.textContent = "合格ライン " + line;
+      subjectEl.textContent = shape ? shape.name : "お題";
+      var looking = phase === "show";
+      phaseEl.textContent = looking ? "みて" : "かいて";
+      phaseEl.classList.toggle("is-draw", !looking);
+      paper.classList.toggle("is-draw", phase === "draw");
+      barWrap.classList.toggle("is-draw", phase === "draw");
+      var nodes = pips.querySelectorAll("i");
+      for (var i = 0; i < ROUNDS; i++) {
+        var cls = "";
+        if (i < scores.length) cls = scores[i] >= PASS[i] ? "ok" : "bad";
+        else if (i === scores.length && (phase === "show" || phase === "draw")) cls = "now";
+        nodes[i].className = cls;
+      }
+    }
+    function arm(btn) {
+      btn.disabled = true;
+      setTimeout(function () { btn.disabled = false; }, LOCK_MS);
+    }
+
+    function startRun() {
+      deck = shuffle(SHAPES).slice(0, ROUNDS);
+      roundIndex = 0;
+      scores = [];
+      cleared = 0;
+      lastReason = "";
+      stroke = [];
+      titleOverlay.hidden = true;
+      roundOverlay.hidden = true;
+      finalOverlay.hidden = true;
+      startRound();
+    }
+    function startRound() {
+      phase = "show";
+      stroke = [];
+      drawing = false;
+      pointerId = null;
+      lastTick = -1;
+      layout();
+      buildTarget();
+      deadline = performance.now() + SHOW_MS;
+      setMood("focus");
+      setSay(coachSay, "3秒だけ、よくみて");
+      updateHud();
+      timeEl.textContent = (SHOW_MS / 1000).toFixed(1);
+      bar.style.transform = "scaleX(1)";
+      timeWrap.classList.remove("warn");
+      barWrap.classList.remove("warn");
+      renderBoard();
+      var shape = deck[roundIndex];
+      announce("ラウンド " + (roundIndex + 1) + "。お題 " + shape.name + "。みて。合格ライン " + PASS[roundIndex]);
+      soundShow();
+    }
+    function beginDraw() {
+      if (phase !== "show") return;
+      phase = "draw";
+      stroke = [];
+      drawing = false;
+      lastTick = -1;
+      deadline = performance.now() + DRAW_MS;
+      setMood("focus");
+      setSay(coachSay, "位置と大きさ、そのまま");
+      updateHud();
+      renderBoard();
+      announce(deck[roundIndex].name + "。かいて。残り8秒。一筆。");
+      soundDraw();
+    }
+    function finishRound(isTimeUp) {
+      if (phase !== "draw") return;
+      phase = "roundResult";
+      drawing = false;
+      var width = board.width || 1;
+      var judged = judge(stroke, targetPts, targetClosed, width);
+      var reason = diagnose(stroke, targetPts, targetClosed, width, !!isTimeUp);
+      var line = PASS[roundIndex];
+      var ok = judged.score >= line;
+      scores.push(judged.score);
+      lastScore = judged.score;
+      lastLine = line;
+      if (ok) cleared += 1;
+      else lastReason = reason;
+      var margin = judged.score - line;
+      var catLine;
+      if (!ok) catLine = CAT_FAIL[reason] || reason;
+      else if (margin >= 20) catLine = "そのおぼえ、上等";
+      else if (margin >= 8) catLine = "合格。いい線だ";
+      else catLine = "ぎりぎり合格！";
+      verdictEl.textContent = ok ? "合格" : reason;
+      verdictEl.className = "verdict " + (ok ? "pass" : "fail");
+      resSubject.textContent = "お題 " + deck[roundIndex].name;
+      resScore.textContent = judged.score + "点";
+      resScore.className = "score " + (ok ? "pass" : "fail");
+      resGap.textContent = gapText(judged.score, line);
+      setMood(ok ? "happy" : "shock");
+      setSay(coachSay, catLine);
+      setSay(resSay, catLine);
+      var ending = !ok || roundIndex >= ROUNDS - 1;
+      btnNext.textContent = ending ? "結果を見る" : "つぎへ";
+      updateHud();
+      renderBoard();
+      renderCompare();
+      roundOverlay.hidden = false;
+      arm(btnNext);
+      announce((ok ? "合格。" : reason + "。") + judged.score + "点。" + gapText(judged.score, line));
+      if (ok) soundPass(margin);
+      else soundFail();
+    }
+    function showFinal() {
+      roundOverlay.hidden = true;
+      phase = "final";
+      var total = 0;
+      for (var i = 0; i < scores.length; i++) total += scores[i];
+      var win = cleared === ROUNDS;
+      var rank = RANKS[cleared];
+      var improved = false;
+      if (bestCleared < 0) {
+        bestCleared = cleared;
+        bestTotal = total;
+        improved = cleared > 0;
+      } else if (cleared > bestCleared || (cleared === bestCleared && total > bestTotal)) {
+        bestCleared = cleared;
+        bestTotal = total;
+        improved = true;
+      }
+      saveStore();
+      titleBest.textContent = bestText();
+      finalRank.textContent = rank;
+      finalStatus.textContent = cleared + "/5 ラウンド · " + (win ? "クリア" : "脱落");
+      finalStatus.className = "status " + (win ? "win" : "lose");
+      if (win) {
+        finalReason.hidden = true;
+        finalGap.hidden = true;
+      } else {
+        finalReason.hidden = false;
+        finalReason.textContent = lastReason;
+        finalGap.hidden = false;
+        finalGap.textContent = lastScore + "点 · " + gapText(lastScore, lastLine);
+      }
+      finalTotal.textContent = "合計 " + total + "点";
+      finalBest.textContent = bestText();
+      finalRecord.hidden = !improved;
+      shareText = win
+        ? "うろおぼえ画伯 5/5 クリア！『全国区の 画伯』 #うろおぼえ画伯"
+        : "うろおぼえ画伯 " + cleared + "/5 で脱落…『" + lastReason + "』 #うろおぼえ画伯";
+      shareLine.textContent = shareText;
+      btnCopy.textContent = "結果をコピー";
+      var catLine = win ? "全国区の画伯だ！" : "つぎは一筆、じっくり";
+      setMood(win ? "happy" : "shock");
+      setSay(finalSay, catLine);
+      finalOverlay.hidden = false;
+      arm(btnRetry);
+      arm(btnCopy);
+      announce((win ? "クリア。" : "脱落。") + rank + "。合計 " + total + "点。");
+      if (win) soundWin();
+    }
+
+    function shuffle(list) {
+      var a = list.slice();
+      for (var i = a.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var t = a[i];
+        a[i] = a[j];
+        a[j] = t;
+      }
+      return a;
+    }
+
+    function eventPoint(e) {
+      var r = board.getBoundingClientRect();
+      return {
+        x: (e.clientX - r.left) * (board.width / r.width),
+        y: (e.clientY - r.top) * (board.height / r.height)
+      };
+    }
+    function pushPoint(p, force) {
+      if (!p || !isFinite(p.x) || !isFinite(p.y)) return;
+      var n = stroke.length;
+      if (n) {
+        var last = stroke[n - 1];
+        var dist = Math.hypot(p.x - last.x, p.y - last.y);
+        if (dist < 0.4) return;
+        if (!force && dist < Math.max(2, board.width * 0.004)) return;
+      }
+      stroke.push({ x: p.x, y: p.y });
+    }
+    function onDown(e) {
+      if (phase !== "draw" || drawing) return;
+      if (e.button != null && e.button !== 0) return;
+      if (e.cancelable) e.preventDefault();
+      drawing = true;
+      pointerId = e.pointerId;
+      try { board.setPointerCapture(e.pointerId); } catch (err) {}
+      stroke = [];
+      pushPoint(eventPoint(e), true);
+      renderBoard();
+    }
+    function onMove(e) {
+      if (!drawing || e.pointerId !== pointerId) return;
+      if (e.cancelable) e.preventDefault();
+      var list = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+      for (var i = 0; i < list.length; i++) pushPoint(eventPoint(list[i]), false);
+      renderBoard();
+    }
+    function onUp(e) {
+      if (!drawing || e.pointerId !== pointerId) return;
+      if (e.cancelable) e.preventDefault();
+      if (e.clientX != null) pushPoint(eventPoint(e), true);
+      drawing = false;
+      try { board.releasePointerCapture(e.pointerId); } catch (err) {}
+      finishRound(false);
+    }
+
+    function loop(now) {
+      raf = requestAnimationFrame(loop);
+      if (phase !== "show" && phase !== "draw") return;
+      var total = phase === "show" ? SHOW_MS : DRAW_MS;
+      var left = deadline - now;
+      if (left <= 0) {
+        timeEl.textContent = "0.0";
+        bar.style.transform = "scaleX(0)";
+        if (phase === "show") beginDraw();
+        else finishRound(true);
+        return;
+      }
+      var sec = left / 1000;
+      timeEl.textContent = sec.toFixed(1);
+      bar.style.transform = "scaleX(" + (left / total) + ")";
+      var warn = phase === "draw" && sec <= 3;
+      timeWrap.classList.toggle("warn", warn);
+      barWrap.classList.toggle("warn", warn);
+      if (phase === "draw") {
+        var bucket = Math.ceil(sec);
+        if (bucket <= 3 && bucket !== lastTick) {
+          lastTick = bucket;
+          blip(680, 0.04, 0.03);
+        }
+      }
+    }
+
+    function copyShare() {
+      function done(ok) { btnCopy.textContent = ok ? "コピーした" : "コピーできませんでした"; }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(shareText).then(function () { done(true); }, fallback);
+      } else fallback();
+      function fallback() {
+        var ta = document.createElement("textarea");
+        ta.value = shareText;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        var ok = false;
+        try { ok = document.execCommand("copy"); } catch (e) {}
+        ta.remove();
+        done(ok);
+      }
+    }
+
+    board.addEventListener("pointerdown", onDown, { passive: false });
+    board.addEventListener("pointermove", onMove, { passive: false });
+    board.addEventListener("pointerup", onUp, { passive: false });
+    board.addEventListener("pointercancel", onUp, { passive: false });
+    board.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+    btnStart.addEventListener("click", function () {
+      audio();
+      startRun();
+    });
+    btnNext.addEventListener("click", function () {
+      if (btnNext.disabled) return;
+      var failed = scores.length && scores[scores.length - 1] < PASS[roundIndex];
+      if (failed || roundIndex >= ROUNDS - 1) showFinal();
+      else {
+        roundOverlay.hidden = true;
+        roundIndex += 1;
+        startRound();
+      }
+    });
+    btnRetry.addEventListener("click", function () {
+      if (btnRetry.disabled) return;
+      audio();
+      startRun();
+    });
+    btnCopy.addEventListener("click", function () {
+      if (btnCopy.disabled) return;
+      copyShare();
+    });
+    shareLine.addEventListener("click", function () {
+      var sel = window.getSelection();
+      if (!sel) return;
+      var range = document.createRange();
+      range.selectNodeContents(shareLine);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    });
+    muteBtn.addEventListener("click", function () {
+      muted = !muted;
+      applyMute();
+      saveStore();
+      if (!muted) blip(660, 0.06, 0.04);
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      if (phase === "show" || phase === "draw") {
+        e.preventDefault();
+        return;
+      }
+      if (e.key === " " && e.target && (e.target.tagName === "BUTTON" || e.target.tagName === "A")) return;
+      if (!titleOverlay.hidden) { e.preventDefault(); btnStart.click(); }
+      else if (!roundOverlay.hidden && !btnNext.disabled) { e.preventDefault(); btnNext.click(); }
+      else if (!finalOverlay.hidden && !btnRetry.disabled && e.key === "Enter") { e.preventDefault(); btnRetry.click(); }
+    });
+
+    loadStore();
+    applyMute();
+    titleBest.textContent = bestText();
+    layout();
+    if (window.ResizeObserver) new ResizeObserver(function () { layout(); }).observe(stage);
+    window.addEventListener("resize", layout);
+    raf = requestAnimationFrame(loop);
+  })();
+  </script>
+</body>
+</html>
