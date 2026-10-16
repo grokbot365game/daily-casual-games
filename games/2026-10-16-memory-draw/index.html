@@ -130,14 +130,11 @@
     }
     .phase.is-draw { background: var(--you); }
     #subject {
-      flex: 1;
-      min-width: 0;
+      display: block;
+      margin-top: 6px;
       font-size: 22px;
-      line-height: 1.2;
+      line-height: 1.25;
       letter-spacing: .02em;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
     }
     .time {
       flex: none;
@@ -474,9 +471,9 @@
       <div class="pips" id="pips" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
       <div class="hud-mid">
         <span class="phase" id="phase">みて</span>
-        <strong id="subject">お題</strong>
         <span class="time" id="time-wrap">残り <b id="time">3.0</b></span>
       </div>
+      <strong id="subject">お題</strong>
       <div class="passline" id="pass-label">合格ライン 55</div>
       <div class="bar" id="bar-wrap" aria-hidden="true"><div id="bar"></div></div>
     </header>
@@ -633,7 +630,9 @@
     var ROUNDS = 5;
     var STORE = "memory-draw-2026-10-16";
     var LOCK_MS = 700;
-    var SCORE_ZERO_AT = 0.22;
+    // Mean nearest-point error equal to this fraction of the canvas width scores 0.
+    // Tuned so a careful trace lands in the mid-80s and a rough memory trace in the 60s.
+    var SCORE_ZERO_AT = 0.085;
     var SAMPLE_N = 64;
     var PAD = 0.08;
     var INK = "#243044";
@@ -982,7 +981,8 @@
       var offsetGain = raw - align;
       var sizeGain = align - scaled;
       var shifted = off > width * 0.07 && offsetGain > width * 0.02;
-      var sizeOff = (ratio < 0.78 || ratio > 1.28) && sizeGain > width * 0.015;
+      // A uniform size miss still matches once scaled. A missing chunk does not.
+      var sizeOff = (ratio < 0.92 || ratio > 1.12) && sizeGain > width * 0.01 && scaled < align * 0.72;
 
       if (shifted && sizeOff) {
         if (offsetGain >= sizeGain) return REASON.OFF;
@@ -1450,64 +1450,6 @@
     if (window.ResizeObserver) new ResizeObserver(function () { layout(); }).observe(stage);
     window.addEventListener("resize", layout);
     raf = requestAnimationFrame(loop);
-
-    if (new URLSearchParams(location.search).has("debug")) {
-      window.__MD = {
-        PASS: PASS,
-        SHAPES: SHAPES,
-        SHOW_MS: SHOW_MS,
-        DRAW_MS: DRAW_MS,
-        toBoard: toBoard,
-        densify: function (pts, closed, step) {
-          var out = [];
-          var n = pts.length;
-          var seg = closed ? n : n - 1;
-          for (var i = 0; i < seg; i++) {
-            var a = pts[i];
-            var b = pts[(i + 1) % n];
-            var len = Math.hypot(b.x - a.x, b.y - a.y);
-            var pieces = Math.max(1, Math.ceil(len / step));
-            for (var k = 0; k < pieces; k++) {
-              var t = k / pieces;
-              out.push({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
-            }
-          }
-          var end = closed ? pts[0] : pts[n - 1];
-          out.push({ x: end.x, y: end.y });
-          return out;
-        },
-        evaluate: function (shapeIndex, pts, timeUp) {
-          var shape = SHAPES[shapeIndex];
-          var w = 400;
-          var target = shape.pts.map(function (p) { return toBoard(p, w, w); });
-          var judged = judge(pts, target, !!shape.closed, w);
-          return {
-            name: shape.name,
-            score: judged.score,
-            sym: judged.sym,
-            reason: diagnose(pts, target, !!shape.closed, w, !!timeUp)
-          };
-        },
-        state: function () {
-          return {
-            phase: phase,
-            round: roundIndex,
-            name: deck[roundIndex] ? deck[roundIndex].name : null,
-            scores: scores.slice(),
-            cleared: cleared,
-            lastReason: lastReason,
-            lastScore: lastScore,
-            share: shareText
-          };
-        },
-        targetPoints: function () { return targetPts.map(function (p) { return { x: p.x, y: p.y }; }); },
-        targetClosed: function () { return targetClosed; },
-        boardBox: function () {
-          var r = board.getBoundingClientRect();
-          return { left: r.left, top: r.top, width: r.width, height: r.height, px: board.width };
-        }
-      };
-    }
   })();
   </script>
 </body>
