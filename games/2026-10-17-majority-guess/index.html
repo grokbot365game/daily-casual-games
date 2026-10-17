@@ -1,0 +1,1451 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#8ecaf0">
+  <meta name="description" content="みんなどっち？ コンちゃん街頭アンケート。架空の100人に聞いた二択で、多数派を当てる。ハートは3つ、全10問。">
+  <meta property="og:title" content="みんなどっち？ コンちゃん街頭アンケート">
+  <meta property="og:description" content="架空の100人アンケート。多数派だと思うほうを選ぶ。ハート3つ。4問目から10秒。時間切れもミス。">
+  <title>みんなどっち？ コンちゃん街頭アンケート</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%23ffd9a8'/%3E%3Cpath d='M4 8 L2.2 3 L7 6Z' fill='%23f1842e'/%3E%3Cpath d='M12 8 L13.8 3 L9 6Z' fill='%23f1842e'/%3E%3Ccircle cx='8' cy='9.2' r='3.6' fill='%23f1842e'/%3E%3Ccircle cx='6.7' cy='8.8' r='.7' fill='%232a2118'/%3E%3Ccircle cx='9.3' cy='8.8' r='.7' fill='%232a2118'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      --ink: #2a2118;
+      --muted: #5c4638;
+      --paper: #fffdf8;
+      --line: rgba(42, 33, 24, .14);
+      --accent: #c2410c;
+      --accent-dark: #9a3412;
+      --good: #166534;
+      --bad: #9f1239;
+      --sky: #8ecaf0;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+    body {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      color: var(--ink);
+      background: #8ecaf0;
+      font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Yu Gothic", "WenQuanYi Micro Hei", "Droid Sans Fallback", "Meiryo", sans-serif;
+      font-size: 18px;
+      line-height: 1.45;
+      -webkit-text-size-adjust: 100%;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: manipulation;
+    }
+    [hidden] { display: none !important; }
+    button, a { -webkit-tap-highlight-color: transparent; font: inherit; color: inherit; }
+    button:focus-visible, a:focus-visible { outline: 3px solid #f5c542; outline-offset: 2px; }
+    .bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(90px 90px at 86% 7%, #ffe38a 0 46%, rgba(255, 227, 138, .45) 47%, transparent 62%),
+        linear-gradient(180deg, #8ecaf0 0%, #d9f3c4 42%, #ead9b8 42%, #d7c09a 100%);
+    }
+    .bg::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 22%;
+      background: repeating-linear-gradient(90deg, rgba(255, 253, 248, .35) 0 18px, transparent 18px 36px);
+    }
+    .back, .mute {
+      position: fixed;
+      z-index: 60;
+      top: max(10px, env(safe-area-inset-top));
+      border: 0;
+      border-radius: 999px;
+      color: var(--ink);
+      background: rgba(255, 253, 248, .94);
+      box-shadow: inset 0 0 0 1px var(--line);
+      font-size: 18px;
+      font-weight: 800;
+      text-decoration: none;
+    }
+    .back { left: max(12px, env(safe-area-inset-left)); padding: 8px 14px; min-height: 44px; }
+    .mute {
+      right: max(12px, env(safe-area-inset-right));
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+    }
+    .mute svg { width: 22px; height: 22px; display: block; }
+    .mute .slash { display: none; }
+    .mute.is-muted .slash { display: block; }
+    .shell {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      max-width: 520px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding:
+        calc(max(10px, env(safe-area-inset-top)) + 52px)
+        max(12px, env(safe-area-inset-right))
+        max(10px, env(safe-area-inset-bottom))
+        max(12px, env(safe-area-inset-left));
+      min-height: 0;
+    }
+    .hud, .bubble, .panel {
+      border-radius: 18px;
+      background: rgba(255, 253, 248, .96);
+      box-shadow: inset 0 0 0 1px var(--line), 0 8px 18px rgba(42, 33, 24, .08);
+    }
+    .hud { flex: none; padding: 10px 12px 12px; }
+    .hud-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    #q-label {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: .03em;
+      font-variant-numeric: tabular-nums;
+    }
+    .hearts { display: flex; gap: 4px; }
+    .heart {
+      width: 32px;
+      height: 32px;
+      display: block;
+      color: #e7d5c8;
+    }
+    .heart svg { width: 32px; height: 32px; display: block; }
+    .heart.is-on { color: #e11d48; }
+    .heart.is-break { animation: heartpop .4s ease; }
+    @keyframes heartpop {
+      0% { transform: scale(1.35); color: #e11d48; }
+      100% { transform: scale(1); color: #e7d5c8; }
+    }
+    .time {
+      margin: 6px 0 0;
+      font-size: 22px;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+    }
+    .time.warn { color: var(--bad); }
+    .bar {
+      margin-top: 6px;
+      height: 16px;
+      border-radius: 999px;
+      background: #efe6da;
+      overflow: hidden;
+      box-shadow: inset 0 0 0 1px rgba(42, 33, 24, .06);
+    }
+    #time-fill {
+      height: 100%;
+      width: 100%;
+      transform-origin: left center;
+      transform: scaleX(1);
+      background: #1d6fe6;
+      border-radius: inherit;
+    }
+    .bar.warn #time-fill { background: #e11d48; }
+    .bar.is-frozen #time-fill { background: #b7c4ce; }
+    .coach {
+      flex: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .fox { flex: none; width: 124px; }
+    .fox svg { width: 100%; height: auto; display: block; overflow: visible; }
+    .fox .face { display: none; }
+    .fox[data-mood="idle"] .face.idle,
+    .fox[data-mood="happy"] .face.happy,
+    .fox[data-mood="shock"] .face.shock { display: block; }
+    .fox[data-mood="idle"] { animation: bob 2.8s ease-in-out infinite; }
+    .fox.is-pop[data-mood="happy"] { animation: hop .45s ease; }
+    .fox.is-pop[data-mood="shock"] { animation: shake .42s ease; }
+    .fox .mic { transform-box: fill-box; transform-origin: 50% 80%; }
+    .fox[data-mood="shock"] .mic { transform: rotate(12deg); }
+    .fox[data-mood="happy"] .mic { transform: rotate(-8deg); }
+    @keyframes bob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+    @keyframes hop {
+      0% { transform: translateY(0); }
+      40% { transform: translateY(-10px); }
+      100% { transform: translateY(0); }
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px) rotate(-3deg); }
+      75% { transform: translateX(5px) rotate(3deg); }
+    }
+    .bubble { flex: 1; min-width: 0; padding: 10px 12px; position: relative; }
+    .bubble::before {
+      content: "";
+      position: absolute;
+      left: -8px;
+      top: 28px;
+      border: 8px solid transparent;
+      border-right-color: rgba(255, 253, 248, .96);
+    }
+    .who {
+      margin: 0;
+      color: var(--accent);
+      font-size: 18px;
+      font-weight: 900;
+    }
+    .say {
+      margin: 2px 0 0;
+      min-height: 2.7em;
+      font-size: 20px;
+      font-weight: 900;
+      line-height: 1.35;
+    }
+    .say.is-pop { animation: pop .28s ease; }
+    @keyframes pop { from { transform: scale(.96); } to { transform: none; } }
+    .panel {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      overscroll-behavior: contain;
+      padding: 12px;
+    }
+    .choices { display: grid; gap: 10px; }
+    .choice {
+      appearance: none;
+      width: 100%;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: center;
+      gap: 10px;
+      text-align: left;
+      border: 0;
+      border-radius: 16px;
+      min-height: 72px;
+      padding: 10px 14px;
+      background: #fff;
+      color: var(--ink);
+      box-shadow: inset 0 0 0 2px #f0e2d2, 0 5px 0 #e4d3c0;
+      font-size: 22px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .choice:active { transform: translateY(2px); box-shadow: inset 0 0 0 2px #f0e2d2, 0 3px 0 #e4d3c0; }
+    .choice.is-picked { box-shadow: inset 0 0 0 3px var(--accent), 0 5px 0 #e4d3c0; background: #fff4ec; }
+    .choice:disabled { cursor: default; }
+    .key {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      background: #fff1e0;
+      font-size: 18px;
+      font-weight: 900;
+    }
+    .asked {
+      margin: 0 0 6px;
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--muted);
+    }
+    .bang {
+      margin: 0;
+      font-size: 32px;
+      font-weight: 900;
+      line-height: 1.2;
+      letter-spacing: .04em;
+    }
+    .bang.is-good { color: var(--good); }
+    .bang.is-bad { color: var(--bad); }
+    .crowd {
+      margin: 4px 0 8px;
+      font-size: 24px;
+      font-weight: 900;
+      line-height: 1.35;
+    }
+    .meter { margin-top: 8px; }
+    .meter-top {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      font-weight: 900;
+    }
+    .meter .name { flex: 1; min-width: 8em; text-align: left; font-size: 18px; }
+    .meter .pct { font-size: 22px; font-variant-numeric: tabular-nums; }
+    .badges { display: flex; gap: 4px; flex-wrap: wrap; }
+    .pill {
+      font-size: 18px;
+      font-weight: 900;
+      line-height: 1.4;
+      padding: 0 8px;
+      border-radius: 999px;
+    }
+    .pill.is-major { background: #ffd7b0; color: #9a3412; }
+    .pill.is-you { background: #dbeafe; color: #1e3a8a; }
+    .track {
+      margin-top: 4px;
+      height: 18px;
+      border-radius: 999px;
+      background: #efe6da;
+      overflow: hidden;
+    }
+    .fill {
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      background: #8aa0b4;
+      transition: width .75s cubic-bezier(.16, .84, .32, 1);
+    }
+    .meter.is-major .fill { background: #ef7a2a; }
+    .meter.is-miss .fill { background: #e11d48; }
+    .primary, .share {
+      appearance: none;
+      display: grid;
+      place-items: center;
+      width: 100%;
+      border: 0;
+      border-radius: 14px;
+      min-height: 56px;
+      padding: 12px 16px;
+      font-size: 22px;
+      font-weight: 900;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .primary {
+      color: #fff;
+      background: var(--accent);
+      box-shadow: 0 5px 0 var(--accent-dark);
+    }
+    .primary:active { transform: translateY(2px); box-shadow: 0 3px 0 var(--accent-dark); }
+    .primary:disabled { opacity: .55; cursor: default; transform: none; }
+    #btn-next { margin-top: 12px; position: sticky; bottom: 0; }
+    .share {
+      color: #fff;
+      background: #1a1a1a;
+      box-shadow: 0 5px 0 #000;
+    }
+    .share:active { transform: translateY(2px); box-shadow: 0 3px 0 #000; }
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      display: grid;
+      place-items: center;
+      padding:
+        calc(max(8px, env(safe-area-inset-top)) + 52px)
+        12px
+        max(8px, env(safe-area-inset-bottom))
+        12px;
+      background: rgba(42, 33, 24, .42);
+      backdrop-filter: blur(3px);
+    }
+    .card {
+      width: min(100%, 440px);
+      max-height: 100%;
+      overflow: auto;
+      overscroll-behavior: contain;
+      padding: 16px 16px 14px;
+      border-radius: 22px;
+      background: var(--paper);
+      box-shadow: 0 18px 48px rgba(42, 33, 24, .24);
+      text-align: center;
+    }
+    .card.is-shake { animation: shake .45s linear; }
+    .hero {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-align: left;
+      margin-bottom: 8px;
+    }
+    .hero .fox { width: 112px; }
+    .hero-text { flex: 1; min-width: 0; }
+    .hero .say { min-height: 0; font-size: 18px; }
+    h1 {
+      margin: 0 0 6px;
+      font-size: 40px;
+      line-height: 1.15;
+      letter-spacing: .02em;
+    }
+    h1 span {
+      display: block;
+      margin-top: 2px;
+      font-size: 26px;
+      letter-spacing: 0;
+    }
+    .fictional {
+      margin: 0 0 8px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: #fff1e0;
+      color: #9a3412;
+      font-size: 18px;
+      font-weight: 900;
+    }
+    .how {
+      margin: 0 0 6px;
+      font-size: 18px;
+      font-weight: 800;
+      line-height: 1.45;
+      text-align: left;
+    }
+    .best, .zure-note, .list-title {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 800;
+    }
+    .best { margin: 8px 0; color: var(--muted); }
+    .record {
+      margin: 6px 0 0;
+      color: #a16207;
+      font-size: 20px;
+      font-weight: 900;
+    }
+    .verdict {
+      margin: 4px 0;
+      font-size: 40px;
+      line-height: 1.15;
+      font-weight: 900;
+      letter-spacing: .04em;
+    }
+    .verdict.is-clear { color: var(--good); }
+    .verdict.is-over { color: var(--bad); }
+    .verdict.is-pop { animation: stamp .45s cubic-bezier(.2, 1.4, .4, 1); }
+    @keyframes stamp {
+      from { transform: scale(.4) rotate(-6deg); opacity: 0; }
+      to { transform: none; opacity: 1; }
+    }
+    .reason {
+      margin: 6px 0;
+      padding: 10px 12px;
+      border-radius: 14px;
+      font-size: 18px;
+      font-weight: 900;
+      line-height: 1.45;
+      text-align: left;
+    }
+    .reason.is-good { background: #dcfce7; color: var(--good); }
+    .reason.is-bad { background: #ffe4e6; color: var(--bad); }
+    .score-kicker { margin: 8px 0 0; font-size: 18px; font-weight: 900; }
+    .score {
+      margin: 0;
+      font-size: 48px;
+      font-weight: 900;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+    .zure {
+      margin: 8px 0 0;
+      font-size: 28px;
+      font-weight: 900;
+      line-height: 1.3;
+    }
+    .zure-note { margin-top: 2px; color: var(--muted); }
+    .tier {
+      margin: 8px 0;
+      font-size: 32px;
+      font-weight: 900;
+      line-height: 1.25;
+      color: var(--accent);
+    }
+    .list-title { margin: 12px 0 4px; text-align: left; }
+    .qlog {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      text-align: left;
+    }
+    .qlog li {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 2px 8px;
+      padding: 8px 0;
+      border-top: 1px solid var(--line);
+      font-size: 18px;
+      font-weight: 800;
+    }
+    .qlog .qt { font-weight: 900; }
+    .qlog .qd { grid-column: 1 / -1; color: var(--muted); }
+    .qlog .qs.is-ok { color: var(--good); }
+    .qlog .qs.is-bad { color: var(--bad); }
+    .qlog .qs.is-yet { color: var(--muted); }
+    .btns {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+      position: sticky;
+      bottom: -14px;
+      padding: 10px 0 2px;
+      background: linear-gradient(transparent, var(--paper) 28%);
+    }
+    .burst {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .burst i {
+      position: absolute;
+      top: -12px;
+      width: 10px;
+      height: 16px;
+      border-radius: 2px;
+      animation: fall 1.1s ease-in forwards;
+    }
+    @keyframes fall {
+      to { transform: translateY(70vh) rotate(180deg); opacity: .2; }
+    }
+    .sr {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+    }
+    @media (max-height: 740px) {
+      h1 { font-size: 34px; }
+      h1 span { font-size: 22px; }
+      .hero .fox, .fox { width: 96px; }
+      .verdict, .score { font-size: 36px; }
+      .tier { font-size: 26px; }
+      .crowd { font-size: 20px; }
+      .bang { font-size: 28px; }
+      .choice { min-height: 64px; font-size: 20px; }
+      .hud { padding: 8px 10px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .fox, .fox.is-pop, .say.is-pop, .verdict.is-pop, .heart.is-break, .card.is-shake, .burst i {
+        animation: none !important;
+      }
+      .fill { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg" aria-hidden="true"></div>
+  <a class="back" href="../../index.html">ギャラリー</a>
+  <button type="button" class="mute" id="mute" aria-pressed="false" aria-label="音を消す">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="M4 9h4l5-4v14l-5-4H4z"/>
+      <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 9.5a4 4 0 0 1 0 5"/>
+      <path class="slash" fill="none" stroke="#e11d48" stroke-width="2.4" stroke-linecap="round" d="M6 5l13 14"/>
+    </svg>
+  </button>
+  <p class="sr" id="live" aria-live="polite"></p>
+
+  <div class="shell" id="shell" hidden>
+    <header class="hud">
+      <div class="hud-top">
+        <p id="q-label">Q 1 / 10</p>
+        <div class="hearts" id="hearts" role="img" aria-label="ハート 残り 3"></div>
+      </div>
+      <p class="time" id="time-label">時間制限なし</p>
+      <div class="bar is-frozen" id="time-bar" role="progressbar" aria-valuemin="0" aria-valuemax="10" aria-valuenow="10" aria-label="時間制限なし">
+        <div id="time-fill"></div>
+      </div>
+    </header>
+    <div class="coach">
+      <div class="fox" id="fox-play" data-mood="idle" aria-hidden="true"></div>
+      <div class="bubble">
+        <p class="who">コンちゃん</p>
+        <p class="say" id="say"></p>
+      </div>
+    </div>
+    <div class="panel" id="panel">
+      <div class="choices" id="choice-wrap">
+        <button type="button" class="choice" id="btn-a"></button>
+        <button type="button" class="choice" id="btn-b"></button>
+      </div>
+      <div id="reveal-wrap" hidden>
+        <p class="asked" id="asked"></p>
+        <p class="bang" id="bang"></p>
+        <p class="crowd" id="crowd"></p>
+        <div class="meter" id="meter-l">
+          <div class="meter-top">
+            <span class="name"></span>
+            <span class="badges"></span>
+            <b class="pct"></b>
+          </div>
+          <div class="track"><div class="fill"></div></div>
+        </div>
+        <div class="meter" id="meter-r">
+          <div class="meter-top">
+            <span class="name"></span>
+            <span class="badges"></span>
+            <b class="pct"></b>
+          </div>
+          <div class="track"><div class="fill"></div></div>
+        </div>
+        <button type="button" class="primary" id="btn-next" disabled>つぎへ</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="title-overlay">
+    <div class="card" id="title-card">
+      <div class="hero">
+        <div class="fox" id="fox-title" data-mood="idle" role="img" aria-label="マイクを持ったきつねの記者、コンちゃん">
+          <svg viewBox="0 0 160 180" aria-hidden="true">
+            <ellipse cx="82" cy="172" rx="46" ry="6" fill="rgba(42,33,24,.16)"/>
+            <ellipse cx="124" cy="118" rx="16" ry="26" transform="rotate(24 124 118)" fill="#f1842e"/>
+            <ellipse cx="136" cy="98" rx="8" ry="11" transform="rotate(24 136 98)" fill="#fff8ef"/>
+            <ellipse cx="78" cy="140" rx="34" ry="24" fill="#f1842e"/>
+            <ellipse cx="78" cy="148" rx="18" ry="13" fill="#fff8ef"/>
+            <ellipse cx="60" cy="160" rx="11" ry="6.5" fill="#e06a1c"/>
+            <ellipse cx="98" cy="160" rx="11" ry="6.5" fill="#e06a1c"/>
+            <path d="M52 122h52l-6 26H58z" fill="#1f6fe6"/>
+            <path d="M74 122h8v26h-8z" fill="#154ea8"/>
+            <rect x="56" y="130" width="14" height="10" rx="2" fill="#ffd24a" stroke="#2a2118" stroke-width="1.2"/>
+            <circle cx="63" cy="135" r="1.7" fill="#2a2118"/>
+            <polygon points="48,68 30,18 72,50" fill="#f1842e"/>
+            <polygon points="108,68 126,18 84,50" fill="#f1842e"/>
+            <polygon points="48,60 38,28 66,48" fill="#6a3818"/>
+            <polygon points="108,60 118,28 90,48" fill="#6a3818"/>
+            <polygon points="49,62 42,36 66,52" fill="#ffd7c2"/>
+            <polygon points="107,62 114,36 90,52" fill="#ffd7c2"/>
+            <circle cx="78" cy="82" r="36" fill="#f1842e"/>
+            <ellipse cx="78" cy="98" rx="20" ry="15" fill="#fff8ef"/>
+            <ellipse cx="78" cy="90" rx="4.6" ry="3.6" fill="#2a2118"/>
+            <g class="mic" transform="translate(8 0)">
+              <ellipse cx="34" cy="126" rx="11" ry="8" fill="#f1842e"/>
+              <rect x="18" y="74" width="20" height="30" rx="10" fill="#ef3b4a"/>
+              <rect x="21.5" y="78" width="13" height="14" rx="6.5" fill="#ffe4e6"/>
+              <g stroke="#ef3b4a" stroke-width="1.5" stroke-linecap="round">
+                <path d="M24 82h8"/>
+                <path d="M24 86h8"/>
+                <path d="M24 90h8"/>
+              </g>
+              <rect x="25" y="102" width="6" height="22" rx="2.4" fill="#4a4038"/>
+              <rect x="23" y="122" width="10" height="4" rx="1.5" fill="#2a2118"/>
+            </g>
+            <g class="face idle">
+              <ellipse cx="64" cy="76" rx="5.4" ry="6.4" fill="#2a2118"/>
+              <ellipse cx="94" cy="76" rx="5.4" ry="6.4" fill="#2a2118"/>
+              <circle cx="66" cy="74" r="1.8" fill="#fff"/>
+              <circle cx="96" cy="74" r="1.8" fill="#fff"/>
+              <path d="M68 104q10 8 20 0" fill="none" stroke="#2a2118" stroke-width="2.2" stroke-linecap="round"/>
+            </g>
+            <g class="face happy">
+              <path d="M56 78q8-10 16 0" fill="none" stroke="#2a2118" stroke-width="3" stroke-linecap="round"/>
+              <path d="M86 78q8-10 16 0" fill="none" stroke="#2a2118" stroke-width="3" stroke-linecap="round"/>
+              <path d="M66 102q12 12 24 0" fill="none" stroke="#2a2118" stroke-width="2.3" stroke-linecap="round"/>
+              <ellipse cx="48" cy="90" rx="6" ry="3.4" fill="#ff8aa6"/>
+              <ellipse cx="108" cy="90" rx="6" ry="3.4" fill="#ff8aa6"/>
+            </g>
+            <g class="face shock">
+              <ellipse cx="64" cy="76" rx="8" ry="9" fill="#fff"/>
+              <ellipse cx="94" cy="76" rx="8" ry="9" fill="#fff"/>
+              <circle cx="64" cy="78" r="3.2" fill="#2a2118"/>
+              <circle cx="94" cy="78" r="3.2" fill="#2a2118"/>
+              <path d="M54 66q8-7 14 1" fill="none" stroke="#2a2118" stroke-width="2.2" stroke-linecap="round"/>
+              <path d="M88 67q8-8 16 0" fill="none" stroke="#2a2118" stroke-width="2.2" stroke-linecap="round"/>
+              <ellipse cx="78" cy="106" rx="5.5" ry="6.5" fill="#2a2118"/>
+              <ellipse cx="48" cy="92" rx="6" ry="3.2" fill="#ff8aa6"/>
+              <ellipse cx="108" cy="92" rx="6" ry="3.2" fill="#ff8aa6"/>
+            </g>
+          </svg>
+        </div>
+        <div class="hero-text">
+          <p class="who">コンちゃん</p>
+          <p class="say" id="title-say">みんなの答え、読める？ はじめるを押して。</p>
+        </div>
+      </div>
+      <h1>みんなどっち？<span>コンちゃん街頭アンケート</span></h1>
+      <p class="fictional">数字は架空の100人アンケートです。</p>
+      <p class="how">架空の100人の二択。多数派だと思うほうを選ぶ。</p>
+      <p class="how">ハートは3つ。はずすと1つ減り、0でゲームオーバー。</p>
+      <p class="how">全10問。4問目から10秒。時間切れもミス。</p>
+      <p class="best" id="title-best">ベスト なし</p>
+      <div class="btns">
+        <button type="button" class="primary" id="btn-start">はじめる</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="result-overlay" hidden>
+    <div class="burst" id="burst" aria-hidden="true"></div>
+    <div class="card" id="result-card">
+      <div class="hero">
+        <div class="fox" id="fox-result" data-mood="idle" aria-hidden="true"></div>
+        <div class="hero-text">
+          <p class="who">コンちゃん</p>
+          <p class="say" id="result-say"></p>
+        </div>
+      </div>
+      <h2 class="verdict" id="verdict">クリア！</h2>
+      <p class="reason" id="reason"></p>
+      <p class="score-kicker">正解</p>
+      <p class="score" id="score">0 / 10</p>
+      <p class="zure" id="zure">世間ズレ度 0%</p>
+      <p class="zure-note">はずすほど、そして大差ほど、上がる。</p>
+      <p class="tier" id="tier">ど真ん中の民</p>
+      <p class="fictional">数字は架空の100人アンケートです。</p>
+      <p class="record" id="record" hidden>ベスト更新！</p>
+      <p class="best" id="result-best">ベスト なし</p>
+      <h3 class="list-title">今回の10問</h3>
+      <ol class="qlog" id="log"></ol>
+      <div class="btns">
+        <button type="button" class="primary" id="btn-retry">もういちど</button>
+        <a class="share" id="btn-share" target="_blank" rel="noopener noreferrer" href="https://twitter.com/intent/tweet">Xでシェア</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var STORE = "konchan-majority-2026-10-17";
+      var PLAY_URL = "https://grokbot365game.github.io/daily-casual-games/games/2026-10-17-majority-guess/";
+      var LIMIT_MS = 10000;
+
+      function Q(text, aLabel, aPct, bLabel, bPct) {
+        return {
+          text: text,
+          a: { label: aLabel, pct: aPct },
+          b: { label: bLabel, pct: bPct }
+        };
+      }
+
+      var QUESTIONS = [
+        Q("朝ごはんは、食べる？", "食べる", 82, "抜く", 18),
+        Q("傘を買うなら、どっち？", "折りたたみ", 76, "長傘", 24),
+        Q("ふだん飲むお茶は、どっち？", "温かい", 74, "冷たい", 26),
+        Q("レジで袋は、どうする？", "袋はいらない", 79, "袋をもらう", 21),
+        Q("歯みがきは、ふだん何回？", "2回以上", 84, "1回だけ", 16),
+        Q("夜のスマホ、明るさは？", "暗め", 71, "最大の明るさ", 29),
+        Q("散歩の行き先は、どう決める？", "その場の気分", 73, "先に決める", 27),
+        Q("リモコンは、どこに置く？", "手元に置く", 77, "テレビの前", 23),
+        Q("靴ひもがほどけたら？", "すぐ結ぶ", 85, "あとで結ぶ", 15),
+        Q("買ったアイスは、いつ食べる？", "すぐ食べる", 70, "少し置く", 30),
+        Q("新しいノート、最初のページは？", "すぐ書く", 72, "1ページ空ける", 28),
+        Q("信号待ちのあいだ、見ているのは？", "スマホ", 75, "まわりの景色", 25),
+        Q("カレーの辛さ、頼むなら？", "中辛", 66, "甘口", 34),
+        Q("洗濯洗剤の香りは？", "無香料", 62, "香りつき", 38),
+        Q("物語、どっちで読む？", "紙の本", 63, "画面", 37),
+        Q("お風呂、先に洗うのは？", "からだ", 68, "髪", 32),
+        Q("朝の一杯は、どっち？", "コーヒー", 67, "紅茶", 33),
+        Q("お寿司のしょうゆは、どうする？", "つける", 69, "つけない", 31),
+        Q("寝るとき、窓は？", "少し開ける", 61, "全部閉める", 39),
+        Q("食パンの耳は、どうする？", "耳も食べる", 65, "残す", 35),
+        Q("思いついたメモは、どこへ？", "スマホ", 64, "紙", 36),
+        Q("今日の味噌汁、具はどっち？", "わかめ", 63, "豆腐", 37),
+        Q("ラーメンを頼むとき、麺は？", "ふつう", 58, "かため", 42),
+        Q("卵かけごはんのしょうゆは？", "先にかける", 53, "混ぜてから", 47),
+        Q("左右のある靴下は、合わせる？", "合わせる", 55, "気にしない", 45),
+        Q("パスタを頼むなら、どっち？", "ペペロンチーノ", 56, "カルボナーラ", 44),
+        Q("お昼のあと、昼寝はする？", "昼寝する", 57, "昼寝しない", 43),
+        Q("買う食パンは、どの厚さ？", "6枚切り", 59, "8枚切り", 41),
+        Q("プリンのカラメルは、どうする？", "上からかける", 54, "混ぜる", 46),
+        Q("休日の朝、先にするのは？", "ごろごろ", 52, "そうじ", 48),
+        Q("夏のエアコンは、どう使う？", "つけっぱなし", 51, "こまめに切る", 49),
+        Q("寝る前、充電器は？", "抜いておく", 60, "差したまま", 40),
+        Q("歩きながら、イヤホンは？", "つける", 55, "つけない", 45),
+        Q("餃子、好きな焼き方は？", "羽根つき", 57, "羽根なし", 43),
+        Q("かき氷のシロップは、どれ？", "いちご", 56, "メロン", 44),
+        Q("ホットケーキにバターは、のせる？", "のせる", 52, "のせない", 48)
+      ];
+
+      var LINES = {
+        okWide: [
+          "その通り。街の空気、読めてる。",
+          "ばっちり多数派。メモと一緒。",
+          "うん、そこはみんな揃ってた。"
+        ],
+        okMid: [
+          "よし、多数派に乗れた。",
+          "その読み、悪くない。",
+          "うん、半数より多い。"
+        ],
+        okClose: [
+          "僅差を当てた。すごい勘。",
+          "紙一重。でも多数派だよ。",
+          "半分に見えて、ちゃんとこっち。"
+        ],
+        ngWide: [
+          "あれ、街の声は逆だった。",
+          "ここは多数がはっきりしてた。",
+          "ハート、一つ飛んじゃった。"
+        ],
+        ngMid: [
+          "おっと、向こうが多かった。",
+          "読みが一段、ずれたね。",
+          "多数派は、反対側。"
+        ],
+        ngClose: [
+          "惜しい。ほんの数人差。",
+          "気持ちはわかる。多数は逆。",
+          "僅差で裏目。コンちゃんも悩んだ。"
+        ],
+        timeout: [
+          "時間切れ！ 10秒、あっという間。",
+          "時間切れ！ マイクの前で固まっちゃった。",
+          "時間切れ！ 無回答はミスだよ。"
+        ]
+      };
+
+      var TIER_SAY = {
+        "ど真ん中の民": "ど真ん中の民だね。もういちど聞く？",
+        "ちょいズレさん": "ちょいズレさん。もういちど聞く？",
+        "独自路線の旅人": "独自路線の旅人だ。もういちど聞く？",
+        "宇宙人": "宇宙人認定。もういちど聞く？"
+      };
+
+      var shell = document.getElementById("shell");
+      var qLabel = document.getElementById("q-label");
+      var hearts = document.getElementById("hearts");
+      var timeLabel = document.getElementById("time-label");
+      var timeBar = document.getElementById("time-bar");
+      var timeFill = document.getElementById("time-fill");
+      var foxTitle = document.getElementById("fox-title");
+      var foxPlay = document.getElementById("fox-play");
+      var foxResult = document.getElementById("fox-result");
+      var say = document.getElementById("say");
+      var choiceWrap = document.getElementById("choice-wrap");
+      var revealWrap = document.getElementById("reveal-wrap");
+      var btnA = document.getElementById("btn-a");
+      var btnB = document.getElementById("btn-b");
+      var btnNext = document.getElementById("btn-next");
+      var asked = document.getElementById("asked");
+      var bang = document.getElementById("bang");
+      var crowd = document.getElementById("crowd");
+      var meterL = document.getElementById("meter-l");
+      var meterR = document.getElementById("meter-r");
+      var titleOverlay = document.getElementById("title-overlay");
+      var resultOverlay = document.getElementById("result-overlay");
+      var resultCard = document.getElementById("result-card");
+      var resultSay = document.getElementById("result-say");
+      var verdict = document.getElementById("verdict");
+      var reason = document.getElementById("reason");
+      var scoreEl = document.getElementById("score");
+      var zureEl = document.getElementById("zure");
+      var tierEl = document.getElementById("tier");
+      var recordEl = document.getElementById("record");
+      var titleBest = document.getElementById("title-best");
+      var resultBest = document.getElementById("result-best");
+      var logEl = document.getElementById("log");
+      var btnStart = document.getElementById("btn-start");
+      var btnRetry = document.getElementById("btn-retry");
+      var btnShare = document.getElementById("btn-share");
+      var muteBtn = document.getElementById("mute");
+      var live = document.getElementById("live");
+      var burstEl = document.getElementById("burst");
+
+      var phase = "title";
+      var deck = [];
+      var index = 0;
+      var lives = 3;
+      var log = [];
+      var bestScore = 0;
+      var muted = false;
+      var rafId = 0;
+      var nextTimer = 0;
+      var lastLine = "";
+      var audioCtx = null;
+
+      function validatePool() {
+        var wide = 0;
+        var mid = 0;
+        var close = 0;
+        QUESTIONS.forEach(function (q) {
+          if (q.a.pct + q.b.pct !== 100) throw new Error("percent");
+          if (q.a.pct <= q.b.pct) throw new Error("majority");
+          if (!q.text || !q.a.label || !q.b.label) throw new Error("label");
+          if (q.a.pct >= 70) wide += 1;
+          else if (q.a.pct >= 61) mid += 1;
+          else close += 1;
+        });
+        if (QUESTIONS.length < 30 || wide < 3 || mid < 3 || close < 4) throw new Error("pool");
+      }
+
+      function shuffle(list) {
+        var a = list.slice();
+        for (var i = a.length - 1; i > 0; i--) {
+          var j = Math.floor(Math.random() * (i + 1));
+          var t = a[i];
+          a[i] = a[j];
+          a[j] = t;
+        }
+        return a;
+      }
+
+      function present(q) {
+        var left = q.a;
+        var right = q.b;
+        if (Math.random() < 0.5) {
+          left = q.b;
+          right = q.a;
+        }
+        return { text: q.text, left: left, right: right };
+      }
+
+      function drawDeck() {
+        var wide = QUESTIONS.filter(function (q) { return q.a.pct >= 70; });
+        var mid = QUESTIONS.filter(function (q) { return q.a.pct >= 61 && q.a.pct <= 69; });
+        var close = QUESTIONS.filter(function (q) { return q.a.pct <= 60; });
+        function take(list, n) {
+          return shuffle(list).slice(0, n).sort(function (a, b) { return b.a.pct - a.a.pct; });
+        }
+        var picked = take(wide, 3).concat(take(mid, 3), take(close, 4));
+        if (picked.length < 10) {
+          var rest = QUESTIONS.filter(function (q) { return picked.indexOf(q) < 0; });
+          picked = picked.concat(shuffle(rest).slice(0, 10 - picked.length));
+        }
+        return picked.slice(0, 10).map(present);
+      }
+
+      function loadStore() {
+        try {
+          var raw = localStorage.getItem(STORE);
+          if (!raw) return;
+          var data = JSON.parse(raw);
+          if (data && typeof data.best === "number" && data.best > 0) bestScore = data.best;
+          if (data && data.muted) muted = true;
+        } catch (e) {}
+      }
+
+      function saveStore() {
+        try {
+          var data = { muted: muted };
+          if (bestScore > 0) data.best = bestScore;
+          localStorage.setItem(STORE, JSON.stringify(data));
+        } catch (e) {}
+      }
+
+      function bestText() {
+        if (bestScore > 0) return "ベスト " + bestScore + " / 10";
+        return "ベスト なし";
+      }
+
+      function applyMute() {
+        muteBtn.classList.toggle("is-muted", muted);
+        muteBtn.setAttribute("aria-pressed", muted ? "true" : "false");
+        muteBtn.setAttribute("aria-label", muted ? "音を出す" : "音を消す");
+      }
+
+      function unlockAudio() {
+        if (muted) return;
+        try {
+          var AC = window.AudioContext || window.webkitAudioContext;
+          if (!AC) return;
+          if (!audioCtx) audioCtx = new AC();
+          if (audioCtx.state === "suspended") audioCtx.resume();
+        } catch (e) {}
+      }
+
+      function beep(freq, when, dur, type, vol) {
+        if (muted || !audioCtx) return;
+        try {
+          var t = audioCtx.currentTime + (when || 0);
+          var o = audioCtx.createOscillator();
+          var g = audioCtx.createGain();
+          o.type = type || "sine";
+          o.frequency.setValueAtTime(freq, t);
+          g.gain.setValueAtTime(vol || 0.05, t);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+          o.connect(g);
+          g.connect(audioCtx.destination);
+          o.start(t);
+          o.stop(t + dur + 0.02);
+        } catch (e) {}
+      }
+
+      function sfxOk() {
+        beep(523, 0, 0.08, "sine", 0.05);
+        beep(784, 0.09, 0.12, "sine", 0.05);
+      }
+      function sfxMiss() { beep(196, 0, 0.16, "triangle", 0.05); }
+      function sfxTime() {
+        beep(220, 0, 0.1, "square", 0.03);
+        beep(160, 0.12, 0.16, "square", 0.03);
+      }
+      function sfxClear() {
+        beep(523, 0, 0.1, "sine", 0.05);
+        beep(659, 0.1, 0.1, "sine", 0.05);
+        beep(784, 0.2, 0.18, "sine", 0.05);
+      }
+      function sfxOver() {
+        beep(311, 0, 0.12, "triangle", 0.05);
+        beep(233, 0.14, 0.2, "triangle", 0.05);
+      }
+
+      function mountFoxes() {
+        var svg = foxTitle.querySelector("svg");
+        foxPlay.appendChild(svg.cloneNode(true));
+        foxResult.appendChild(svg.cloneNode(true));
+      }
+
+      function setMood(mood) {
+        [foxTitle, foxPlay, foxResult].forEach(function (el) {
+          el.setAttribute("data-mood", mood);
+          el.classList.remove("is-pop");
+          if (mood === "happy" || mood === "shock") {
+            void el.offsetWidth;
+            el.classList.add("is-pop");
+          }
+        });
+      }
+
+      function heartSvg() {
+        var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.setAttribute("viewBox", "0 0 24 24");
+        svg.setAttribute("aria-hidden", "true");
+        var path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("fill", "currentColor");
+        path.setAttribute("d", "M12 21s-6.7-4.2-9.3-8.2C.8 10 1.6 6.2 4.8 5.4 7 4.8 8.8 6 12 9.2 15.2 6 17 4.8 19.2 5.4c3.2.8 4 4.6 2.1 7.4C18.7 16.8 12 21 12 21z");
+        svg.appendChild(path);
+        return svg;
+      }
+
+      function renderHearts(justLost) {
+        hearts.textContent = "";
+        for (var i = 0; i < 3; i++) {
+          var span = document.createElement("span");
+          span.className = "heart" + (i < lives ? " is-on" : " is-off");
+          if (justLost && i === lives) span.className += " is-break";
+          span.appendChild(heartSvg());
+          hearts.appendChild(span);
+        }
+        hearts.setAttribute("aria-label", "ハート 残り " + lives);
+      }
+
+      function cancelTimer() {
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = 0;
+      }
+
+      function showTimer(active) {
+        cancelTimer();
+        timeLabel.classList.remove("warn");
+        timeBar.classList.remove("warn");
+        if (!active) {
+          timeLabel.textContent = "時間制限なし";
+          timeBar.classList.add("is-frozen");
+          timeFill.style.transform = "scaleX(1)";
+          timeBar.setAttribute("aria-valuenow", "10");
+          timeBar.setAttribute("aria-label", "時間制限なし");
+          return;
+        }
+        timeBar.classList.remove("is-frozen");
+        timeBar.setAttribute("aria-label", "制限時間");
+        var start = performance.now();
+        timeLabel.textContent = "残り 10.0";
+        timeFill.style.transform = "scaleX(1)";
+        timeBar.setAttribute("aria-valuenow", "10");
+        function tick(now) {
+          if (phase !== "question") return;
+          var left = LIMIT_MS - (now - start);
+          if (left <= 0) {
+            timeFill.style.transform = "scaleX(0)";
+            timeLabel.textContent = "時間切れ！";
+            timeLabel.classList.add("warn");
+            timeBar.classList.add("warn");
+            timeBar.setAttribute("aria-valuenow", "0");
+            commit("timeout", null);
+            return;
+          }
+          var sec = left / 1000;
+          timeFill.style.transform = "scaleX(" + (left / LIMIT_MS) + ")";
+          timeLabel.textContent = "残り " + sec.toFixed(1);
+          timeBar.setAttribute("aria-valuenow", String(Math.ceil(sec)));
+          var warn = sec <= 3;
+          timeLabel.classList.toggle("warn", warn);
+          timeBar.classList.toggle("warn", warn);
+          rafId = requestAnimationFrame(tick);
+        }
+        rafId = requestAnimationFrame(tick);
+      }
+
+      function setChoice(btn, key, label) {
+        btn.textContent = "";
+        var k = document.createElement("span");
+        k.className = "key";
+        k.textContent = key;
+        var t = document.createElement("span");
+        t.className = "label";
+        t.textContent = label;
+        btn.appendChild(k);
+        btn.appendChild(t);
+      }
+
+      function pickLine(list) {
+        var i = Math.floor(Math.random() * list.length);
+        if (list.length > 1 && list[i] === lastLine) i = (i + 1) % list.length;
+        lastLine = list[i];
+        return list[i];
+      }
+
+      function commentFor(entry) {
+        if (entry.timeout) return pickLine(LINES.timeout);
+        var wide = entry.major.pct >= 70;
+        var close = entry.major.pct <= 60;
+        if (entry.correct) {
+          if (wide) return pickLine(LINES.okWide);
+          if (close) return pickLine(LINES.okClose);
+          return pickLine(LINES.okMid);
+        }
+        if (wide) return pickLine(LINES.ngWide);
+        if (close) return pickLine(LINES.ngClose);
+        return pickLine(LINES.ngMid);
+      }
+
+      function popSay(el) {
+        el.classList.remove("is-pop");
+        void el.offsetWidth;
+        el.classList.add("is-pop");
+      }
+
+      function pill(text, cls) {
+        var s = document.createElement("span");
+        s.className = "pill " + cls;
+        s.textContent = text;
+        return s;
+      }
+
+      function fillMeter(box, opt, entry) {
+        var name = box.querySelector(".name");
+        var pct = box.querySelector(".pct");
+        var fill = box.querySelector(".fill");
+        var badges = box.querySelector(".badges");
+        var isMajor = opt === entry.major;
+        var isYou = !!(entry.picked && opt === entry.picked);
+        name.textContent = opt.label;
+        pct.textContent = opt.pct + "%";
+        badges.textContent = "";
+        if (isMajor) badges.appendChild(pill("多数", "is-major"));
+        if (isYou) badges.appendChild(pill("あなた", "is-you"));
+        box.classList.toggle("is-major", isMajor);
+        box.classList.toggle("is-you", isYou);
+        box.classList.toggle("is-miss", isYou && !entry.correct);
+        fill.style.transition = "none";
+        fill.style.width = "0%";
+        var target = opt.pct + "%";
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            fill.style.transition = "";
+            fill.style.width = target;
+          });
+        });
+      }
+
+      function beginQuestion() {
+        phase = "question";
+        cancelTimer();
+        clearTimeout(nextTimer);
+        var item = deck[index];
+        qLabel.textContent = "Q " + (index + 1) + " / 10";
+        setMood("idle");
+        say.textContent = item.text;
+        popSay(say);
+        asked.hidden = true;
+        setChoice(btnA, "1", item.left.label);
+        setChoice(btnB, "2", item.right.label);
+        btnA.disabled = false;
+        btnB.disabled = false;
+        btnA.classList.remove("is-picked");
+        btnB.classList.remove("is-picked");
+        choiceWrap.hidden = false;
+        revealWrap.hidden = true;
+        var panel = document.getElementById("panel");
+        panel.scrollTop = 0;
+        showTimer(index >= 3);
+        live.textContent = qLabel.textContent + "。" + item.text;
+      }
+
+      function armNext() {
+        btnNext.disabled = true;
+        clearTimeout(nextTimer);
+        nextTimer = setTimeout(function () {
+          if (phase === "reveal") btnNext.disabled = false;
+        }, 420);
+      }
+
+      function showReveal(entry, item) {
+        asked.hidden = false;
+        asked.textContent = entry.text;
+        say.textContent = commentFor(entry);
+        popSay(say);
+        if (entry.timeout) {
+          bang.textContent = "時間切れ！";
+          bang.className = "bang is-bad";
+          timeLabel.textContent = "時間切れ！";
+          timeLabel.classList.add("warn");
+        } else if (entry.correct) {
+          bang.textContent = "正解！";
+          bang.className = "bang is-good";
+        } else {
+          bang.textContent = "はずれた！";
+          bang.className = "bang is-bad";
+        }
+        crowd.textContent = "みんなは " + entry.major.pct + "% で " + entry.major.label + "派！";
+        fillMeter(meterL, item.left, entry);
+        fillMeter(meterR, item.right, entry);
+        choiceWrap.hidden = true;
+        revealWrap.hidden = false;
+        live.textContent = bang.textContent + " " + crowd.textContent + " " + say.textContent + " ハート残り" + lives;
+      }
+
+      function commit(kind, side) {
+        if (phase !== "question") return;
+        phase = "reveal";
+        cancelTimer();
+        var item = deck[index];
+        var major = item.left.pct > item.right.pct ? item.left : item.right;
+        var minor = major === item.left ? item.right : item.left;
+        var picked = side ? item[side] : null;
+        var correct = kind === "pick" && picked === major;
+        var timeout = kind === "timeout";
+        if (!correct) {
+          lives -= 1;
+          renderHearts(true);
+          setMood("shock");
+          if (timeout) sfxTime();
+          else sfxMiss();
+        } else {
+          renderHearts(false);
+          setMood("happy");
+          sfxOk();
+        }
+        var entry = {
+          text: item.text,
+          major: major,
+          minor: minor,
+          picked: picked,
+          correct: correct,
+          timeout: timeout,
+          answered: true
+        };
+        log.push(entry);
+        btnA.disabled = true;
+        btnB.disabled = true;
+        showReveal(entry, item);
+        armNext();
+      }
+
+      function choose(side) {
+        if (phase !== "question") return;
+        unlockAudio();
+        (side === "left" ? btnA : btnB).classList.add("is-picked");
+        commit("pick", side);
+      }
+
+      function zureOf(entries) {
+        var answered = entries.filter(function (e) { return e.answered; });
+        if (!answered.length) return 0;
+        var off = 0;
+        answered.forEach(function (e) {
+          if (!e.correct) off += e.major.pct;
+        });
+        return Math.round(off / answered.length);
+      }
+
+      function tierFor(zure) {
+        if (zure <= 10) return "ど真ん中の民";
+        if (zure <= 28) return "ちょいズレさん";
+        if (zure <= 60) return "独自路線の旅人";
+        return "宇宙人";
+      }
+
+      function fullLog() {
+        var out = log.slice();
+        for (var i = log.length; i < deck.length; i++) {
+          var item = deck[i];
+          var major = item.left.pct > item.right.pct ? item.left : item.right;
+          var minor = major === item.left ? item.right : item.left;
+          out.push({
+            text: item.text,
+            major: major,
+            minor: minor,
+            picked: null,
+            correct: false,
+            timeout: false,
+            answered: false
+          });
+        }
+        return out;
+      }
+
+      function renderLog(entries) {
+        logEl.textContent = "";
+        entries.forEach(function (e, i) {
+          var li = document.createElement("li");
+          var status = !e.answered ? "未回答" : e.timeout ? "時間切れ" : e.correct ? "当てた" : "はずれた";
+          var statusClass = !e.answered ? "is-yet" : e.correct ? "is-ok" : "is-bad";
+          var qn = document.createElement("b");
+          qn.className = "qn";
+          qn.textContent = "Q" + (i + 1);
+          var qt = document.createElement("span");
+          qt.className = "qt";
+          qt.textContent = e.text;
+          var qs = document.createElement("em");
+          qs.className = "qs " + statusClass;
+          qs.textContent = status;
+          var qd = document.createElement("span");
+          qd.className = "qd";
+          var detail = e.major.label + " " + e.major.pct + "% ・ " + e.minor.label + " " + e.minor.pct + "%";
+          if (e.answered && !e.correct && !e.timeout && e.picked) {
+            detail += " ／ あなた " + e.picked.label;
+          }
+          qd.textContent = detail;
+          li.appendChild(qn);
+          li.appendChild(qt);
+          li.appendChild(qs);
+          li.appendChild(qd);
+          logEl.appendChild(li);
+        });
+      }
+
+      function burst(on) {
+        burstEl.textContent = "";
+        if (!on) return;
+        if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+        var colors = ["#f1842e", "#ffd24a", "#1f6fe6", "#ef3b4a", "#fffdf8"];
+        for (var i = 0; i < 18; i++) {
+          var bit = document.createElement("i");
+          bit.style.left = (8 + Math.random() * 84) + "%";
+          bit.style.background = colors[i % colors.length];
+          bit.style.animationDelay = (Math.random() * 0.15) + "s";
+          burstEl.appendChild(bit);
+        }
+      }
+
+      function showResult() {
+        phase = "result";
+        cancelTimer();
+        clearTimeout(nextTimer);
+        var entries = fullLog();
+        var score = entries.filter(function (e) { return e.correct; }).length;
+        var zure = zureOf(entries);
+        var tier = tierFor(zure);
+        var cleared = lives > 0 && log.length === deck.length;
+        var updated = false;
+        if (score > 0 && score > bestScore) {
+          bestScore = score;
+          updated = true;
+          saveStore();
+        }
+        verdict.textContent = cleared ? "クリア！" : "ゲームオーバー";
+        verdict.className = "verdict is-pop " + (cleared ? "is-clear" : "is-over");
+        resultCard.classList.toggle("is-shake", !cleared);
+        if (cleared) {
+          reason.textContent = "10問完走。残りハートは" + lives + "こ。";
+          reason.className = "reason is-good";
+          setMood("happy");
+          sfxClear();
+        } else {
+          var last = log[log.length - 1];
+          var n = log.length;
+          var split = last.major.label + " " + last.major.pct + "%、" + last.minor.label + " " + last.minor.pct + "%";
+          if (last.timeout) {
+            reason.textContent = "ハートが尽きたのは、Q" + n + "「" + last.text + "」の時間切れ！ 多数派は " + split + "。";
+          } else {
+            reason.textContent = "ハートが尽きたのは、Q" + n + "「" + last.text + "」。多数派は " + split + "。あなたは「" + last.picked.label + "」。";
+          }
+          reason.className = "reason is-bad";
+          setMood("shock");
+          sfxOver();
+        }
+        scoreEl.textContent = score + " / 10";
+        zureEl.textContent = "世間ズレ度 " + zure + "%";
+        tierEl.textContent = tier;
+        resultSay.textContent = TIER_SAY[tier];
+        recordEl.hidden = !updated;
+        titleBest.textContent = bestText();
+        resultBest.textContent = bestText();
+        renderLog(entries);
+        var share = [
+          "みんなどっち？ コンちゃん街頭アンケート",
+          "世間ズレ度 " + zure + "%「" + tier + "」 " + score + "/10",
+          PLAY_URL,
+          "#ねむねむゲーム部"
+        ].join("\n");
+        btnShare.href = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(share);
+        burst(cleared);
+        resultCard.scrollTop = 0;
+        shell.hidden = true;
+        resultOverlay.hidden = false;
+        live.textContent = verdict.textContent + " 正解 " + score + " / 10。 " + zureEl.textContent + "。" + tier + "。" + reason.textContent;
+      }
+
+      function startRun() {
+        unlockAudio();
+        deck = drawDeck();
+        index = 0;
+        lives = 3;
+        log = [];
+        titleOverlay.hidden = true;
+        resultOverlay.hidden = true;
+        resultCard.classList.remove("is-shake");
+        burst(false);
+        shell.hidden = false;
+        renderHearts(false);
+        beginQuestion();
+        beep(660, 0, 0.06, "sine", 0.04);
+      }
+
+      function onNext() {
+        if (phase !== "reveal" || btnNext.disabled) return;
+        if (lives <= 0 || index >= deck.length - 1) {
+          showResult();
+          return;
+        }
+        index += 1;
+        beginQuestion();
+      }
+
+      validatePool();
+      mountFoxes();
+      loadStore();
+      applyMute();
+      renderHearts(false);
+      titleBest.textContent = bestText();
+      setMood("idle");
+
+      btnStart.addEventListener("click", startRun);
+      btnRetry.addEventListener("click", startRun);
+      btnNext.addEventListener("click", onNext);
+      btnA.addEventListener("click", function () { choose("left"); });
+      btnB.addEventListener("click", function () { choose("right"); });
+      muteBtn.addEventListener("click", function () {
+        muted = !muted;
+        applyMute();
+        saveStore();
+        if (!muted) unlockAudio();
+      });
+      document.addEventListener("keydown", function (ev) {
+        if (ev.repeat || ev.metaKey || ev.ctrlKey || ev.altKey) return;
+        if (phase !== "question") return;
+        if (ev.key === "1" || ev.key === "ArrowLeft") {
+          ev.preventDefault();
+          choose("left");
+        } else if (ev.key === "2" || ev.key === "ArrowRight") {
+          ev.preventDefault();
+          choose("right");
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
