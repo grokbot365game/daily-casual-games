@@ -1,0 +1,2138 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#8ecdf2">
+  <meta name="description" content="ことば重量挙げ。ことばがバーベル選手になる。パワー・スタミナ・キレはことばから。クリーンとジャークのタイミングで、ハート2つ、5人抜き。">
+  <meta property="og:title" content="ことば重量挙げ — Word Lift">
+  <meta property="og:description" content="ことばがバーベル選手。クリーンは長押しではなす。ジャークはゆれるしるしをタップ。ハート2つ。">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://grokbot365game.github.io/daily-casual-games/games/2026-10-18-word-lift/">
+  <title>ことば重量挙げ</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%238ecdf2'/%3E%3Crect x='1.2' y='6' width='2.6' height='4' rx='.6' fill='%23e11d48'/%3E%3Crect x='12.2' y='6' width='2.6' height='4' rx='.6' fill='%23e11d48'/%3E%3Crect x='3.2' y='7.3' width='9.6' height='1.4' rx='.4' fill='%23e2e8f0'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      --ink: #2a160f;
+      --muted: #6b4b3e;
+      --paper: #fffdf8;
+      --line: rgba(42, 22, 15, .14);
+      --accent: #d62828;
+      --good: #15803d;
+      --gold: #f5c542;
+      --sky: #8ecdf2;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+    body {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      color: var(--ink);
+      background:
+        radial-gradient(90px 70px at 78% 12%, rgba(255, 255, 255, .7), transparent 70%),
+        linear-gradient(180deg, #8ecdf2 0%, #d9f3c4 42%, #e7c49a 42%, #c9844a 100%);
+      font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Yu Gothic", "WenQuanYi Micro Hei", "Droid Sans Fallback", "Meiryo", sans-serif;
+      font-size: 16px;
+      line-height: 1.45;
+      -webkit-text-size-adjust: 100%;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: manipulation;
+    }
+    [hidden] { display: none !important; }
+    button, a, input, textarea { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+    button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible {
+      outline: 3px solid var(--gold);
+      outline-offset: 2px;
+    }
+    .back, .mute {
+      position: fixed;
+      z-index: 70;
+      top: max(10px, env(safe-area-inset-top));
+      border: 0;
+      border-radius: 999px;
+      color: var(--ink);
+      background: rgba(255, 253, 248, .94);
+      box-shadow: inset 0 0 0 1px var(--line);
+      font-weight: 800;
+      text-decoration: none;
+    }
+    .back {
+      left: max(12px, env(safe-area-inset-left));
+      padding: 8px 14px;
+      min-height: 44px;
+      display: grid;
+      place-items: center;
+    }
+    .mute {
+      right: max(12px, env(safe-area-inset-right));
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+    }
+    .mute svg { width: 22px; height: 22px; display: block; }
+    .mute .slash { display: none; }
+    .mute.is-muted .slash { display: block; }
+    .shell {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      max-width: 520px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding:
+        calc(max(10px, env(safe-area-inset-top)) + 52px)
+        max(12px, env(safe-area-inset-right))
+        max(10px, env(safe-area-inset-bottom))
+        max(12px, env(safe-area-inset-left));
+      min-height: 0;
+    }
+    .play-head { flex: none; text-align: center; }
+    .kicker {
+      margin: 0;
+      color: #7f1d1d;
+      font-size: .72rem;
+      font-weight: 800;
+      letter-spacing: .16em;
+    }
+    .play-head h1 {
+      margin: 0;
+      font-size: clamp(1.35rem, 6vw, 1.8rem);
+      letter-spacing: .08em;
+      line-height: 1.1;
+    }
+    .hud, .bubble, .rival-banner, .card {
+      border-radius: 18px;
+      background: rgba(255, 253, 248, .96);
+      box-shadow: inset 0 0 0 1px var(--line), 0 8px 18px rgba(42, 22, 15, .08);
+    }
+    .hud { flex: none; padding: 8px 10px; }
+    .hud-top, .hearts {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .hearts { justify-content: flex-start; gap: 2px; }
+    .heart-label, .bout-label span, #hud-best {
+      font-size: .72rem;
+      font-weight: 800;
+      letter-spacing: .06em;
+      color: var(--muted);
+    }
+    #bout-num { font-size: 1.15rem; font-weight: 900; letter-spacing: .04em; }
+    .bout-label { margin: 0; text-align: center; }
+    .bout-label span { display: block; }
+    #hud-best { margin: 0; text-align: right; font-weight: 900; }
+    .heart {
+      width: 28px;
+      height: 28px;
+      display: block;
+      color: #e7d5c8;
+    }
+    .heart svg { width: 28px; height: 28px; display: block; }
+    .heart.is-on { color: #e11d48; }
+    .heart.is-break { animation: heartpop .4s ease; }
+    @keyframes heartpop {
+      0% { transform: scale(1.35); }
+      100% { transform: scale(1); }
+    }
+    #you-stats {
+      margin: 4px 0 0;
+      font-size: .92rem;
+      font-weight: 900;
+      letter-spacing: .02em;
+    }
+    .coach {
+      flex: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 0;
+    }
+    .coach-art { flex: none; width: 108px; }
+    .coach-art svg { width: 100%; height: auto; display: block; overflow: visible; }
+    .coach-art .face { display: none; }
+    .coach-art[data-mood="idle"] .face.idle,
+    .coach-art[data-mood="happy"] .face.happy,
+    .coach-art[data-mood="shock"] .face.shock,
+    .coach-art[data-mood="focus"] .face.focus { display: block; }
+    .coach-art[data-mood="idle"] { animation: bob 2.6s ease-in-out infinite; }
+    .coach-art.is-pop[data-mood="happy"] { animation: hop .45s ease; }
+    .coach-art.is-pop[data-mood="shock"] { animation: shake .42s ease; }
+    .coach-art .whistle { transform-box: fill-box; transform-origin: 20% 50%; }
+    .coach-art[data-mood="happy"] .whistle { transform: rotate(-12deg); }
+    .coach-art[data-mood="shock"] .whistle { transform: rotate(16deg); }
+    @keyframes bob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+    @keyframes hop {
+      0% { transform: translateY(0); }
+      40% { transform: translateY(-10px); }
+      100% { transform: translateY(0); }
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px) rotate(-3deg); }
+      75% { transform: translateX(5px) rotate(3deg); }
+    }
+    .bubble { flex: 1; padding: 8px 12px; min-width: 0; }
+    .who { margin: 0; color: var(--accent); font-size: .75rem; font-weight: 900; letter-spacing: .08em; }
+    .say { margin: 2px 0 0; font-size: 1.02rem; font-weight: 900; line-height: 1.35; }
+    .rival-banner {
+      flex: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+    }
+    .rival-banner svg { width: 64px; height: auto; display: block; flex: none; }
+    .rival-banner .nm { margin: 0; font-size: 1.05rem; font-weight: 900; }
+    .rival-banner .st, .rival-banner .kg {
+      margin: 0;
+      font-size: .82rem;
+      font-weight: 800;
+      color: var(--muted);
+    }
+    .rival-banner .kg { color: var(--ink); font-size: .95rem; }
+    .stage-wrap {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      gap: 8px;
+      position: relative;
+    }
+    .gauge-col, .jerk-name, .gauge-name {
+      font-size: .72rem;
+      font-weight: 900;
+      letter-spacing: .08em;
+      text-align: center;
+    }
+    .gauge-col {
+      flex: none;
+      width: 58px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .gauge, .jerk {
+      position: relative;
+      background: rgba(255, 253, 248, .92);
+      box-shadow: inset 0 0 0 2px rgba(42, 22, 15, .18);
+      overflow: hidden;
+    }
+    .gauge {
+      width: 36px;
+      flex: 1;
+      border-radius: 999px;
+    }
+    .zone, .jzone {
+      position: absolute;
+      background: repeating-linear-gradient(135deg, #22c55e, #22c55e 6px, #16a34a 6px, #16a34a 12px);
+      box-shadow: inset 0 0 0 2px #fff;
+    }
+    .gauge .zone { left: 2px; right: 2px; border-radius: 8px; }
+    .mark, .jmark {
+      position: absolute;
+      background: var(--ink);
+      box-shadow: 0 0 0 2px #fff;
+    }
+    .mark {
+      left: -2px;
+      right: -2px;
+      height: 8px;
+      border-radius: 4px;
+      margin-bottom: -4px;
+    }
+    .spot {
+      flex: 1;
+      min-width: 0;
+      position: relative;
+      border-radius: 22px;
+      overflow: hidden;
+      background:
+        linear-gradient(#c9844a, #c9844a) bottom / 100% 16% no-repeat,
+        linear-gradient(180deg, #c4ebf8 0%, #e7f6c8 70%);
+      box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .6);
+    }
+    #athlete { width: 100%; height: 100%; display: block; }
+    #athlete .aface { display: none; }
+    #athlete[data-face="idle"] .aface.idle,
+    #athlete[data-face="happy"] .aface.happy,
+    #athlete[data-face="shock"] .aface.shock,
+    #athlete[data-face="focus"] .aface.focus { display: block; }
+    svg text { font-family: inherit; }
+    .jerk-row {
+      flex: none;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      touch-action: none;
+    }
+    .jerk {
+      height: 36px;
+      border-radius: 999px;
+    }
+    .jerk .jzone { top: 3px; bottom: 3px; border-radius: 8px; }
+    .jmark {
+      top: 2px;
+      bottom: 2px;
+      width: 14px;
+      margin-left: -7px;
+      border-radius: 7px;
+    }
+    .gauge.in-zone .zone, .jerk.in-zone .jzone {
+      filter: saturate(1.2) brightness(1.08);
+      box-shadow: inset 0 0 0 2px #fff, 0 0 0 2px #fef08a;
+    }
+    #legend {
+      flex: none;
+      margin: 0;
+      color: #3f2a22;
+      font-size: .75rem;
+      font-weight: 800;
+      line-height: 1.35;
+      text-shadow: 0 1px 0 rgba(255, 253, 248, .7);
+    }
+    #btn-action {
+      flex: none;
+      width: 100%;
+      min-height: 56px;
+      border: 0;
+      border-radius: 16px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 1.15rem;
+      font-weight: 900;
+      letter-spacing: .08em;
+      cursor: pointer;
+      touch-action: none;
+      box-shadow: 0 4px 0 #7f1d1d;
+    }
+    #btn-action.sweet {
+      background: #eab308;
+      color: #422006;
+      box-shadow: 0 0 0 3px #fef3c7, 0 4px 0 #a16207;
+    }
+    #btn-action.holding { transform: translateY(2px); box-shadow: 0 2px 0 #7f1d1d; }
+    #btn-action:disabled { cursor: default; opacity: .72; transform: none; }
+    #pop, #bang {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      pointer-events: none;
+      padding: 16px;
+    }
+    #pop-kicker, #bang-sub {
+      margin: 0;
+      font-weight: 900;
+      letter-spacing: .08em;
+    }
+    #pop-big, #bang-main {
+      margin: 0;
+      font-size: clamp(4rem, 18vw, 6.2rem);
+      font-weight: 900;
+      line-height: .95;
+      color: #fffdf8;
+      text-shadow: 0 4px 0 #7f1d1d, 0 10px 24px rgba(42, 22, 15, .35);
+    }
+    #bang-main { font-size: clamp(4.4rem, 20vw, 7rem); color: #fef08a; }
+    #bang-sub {
+      font-size: clamp(1.6rem, 7vw, 2.2rem);
+      color: #fff;
+      text-shadow: 0 3px 0 #7f1d1d;
+    }
+    #bang { background: rgba(214, 40, 40, .18); }
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding:
+        calc(max(10px, env(safe-area-inset-top)) + 52px)
+        12px
+        max(12px, env(safe-area-inset-bottom));
+      overflow: hidden;
+      background: rgba(42, 22, 15, .38);
+    }
+    .card {
+      width: min(100%, 460px);
+      max-height: 100%;
+      min-height: 0;
+      margin: 0;
+      padding: 14px 14px 12px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      text-align: center;
+    }
+    .card-body {
+      overflow: auto;
+      min-height: 0;
+      -webkit-overflow-scrolling: touch;
+    }
+    .card h1 {
+      margin: 4px 0 0;
+      font-size: clamp(1.7rem, 8vw, 2.15rem);
+      letter-spacing: .08em;
+      line-height: 1.15;
+    }
+    .en, .lead, .fine, .best, .error {
+      margin: 4px 0 0;
+      font-weight: 800;
+    }
+    .en { letter-spacing: .18em; font-size: .72rem; color: var(--muted); }
+    .lead { font-size: .95rem; }
+    .challenge {
+      margin: 8px 0 0;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: #fef3c7;
+      color: #7c2d12;
+      font-weight: 900;
+      line-height: 1.4;
+    }
+    label {
+      display: block;
+      margin: 10px 0 4px;
+      font-size: .75rem;
+      font-weight: 900;
+      letter-spacing: .12em;
+      color: var(--muted);
+    }
+    input[type="text"], textarea {
+      width: 100%;
+      border: 0;
+      border-radius: 12px;
+      background: #fff7ed;
+      box-shadow: inset 0 0 0 2px rgba(214, 40, 40, .2);
+      color: var(--ink);
+      font-weight: 800;
+      text-align: center;
+      -webkit-user-select: text;
+      user-select: text;
+    }
+    input[type="text"] {
+      min-height: 48px;
+      padding: 8px 12px;
+      font-size: 1.15rem;
+    }
+    textarea {
+      min-height: 4.6em;
+      padding: 8px;
+      font-size: .82rem;
+      line-height: 1.4;
+      resize: none;
+    }
+    .countline { margin: 4px 0 0; color: var(--muted); font-size: .78rem; font-weight: 800; }
+    .error { color: var(--accent); min-height: 1.2em; }
+    .self {
+      margin-top: 8px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      text-align: left;
+    }
+    #self-portrait { flex: none; width: 72px; }
+    #self-portrait svg { width: 100%; height: auto; display: block; }
+    .stat { margin-top: 6px; text-align: left; }
+    .stat-num { margin: 0; font-size: 1rem; font-weight: 900; }
+    .stat-why, .fine { margin: 1px 0 0; color: var(--muted); font-size: .78rem; font-weight: 800; line-height: 1.4; }
+    .block-title {
+      margin: 12px 0 6px;
+      font-size: .78rem;
+      font-weight: 900;
+      letter-spacing: .14em;
+      color: var(--muted);
+    }
+    .rival-row {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      text-align: left;
+    }
+    .mini {
+      flex: 0 0 112px;
+      padding: 6px;
+      border-radius: 14px;
+      background: #fff7ed;
+      box-shadow: inset 0 0 0 1px var(--line);
+    }
+    .mini svg { width: 100%; height: auto; display: block; }
+    .mini b { display: block; margin-top: 2px; font-size: .82rem; }
+    .mini small { display: block; color: var(--muted); font-size: .68rem; font-weight: 800; line-height: 1.3; }
+    .rule { margin: 0; font-size: 1.02rem; font-weight: 900; line-height: 1.45; }
+    .rule + .rule { margin-top: 4px; }
+    .demos {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .demos figure {
+      margin: 0;
+      padding: 8px;
+      border-radius: 14px;
+      background: #fff7ed;
+    }
+    .demo-row { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 86px; }
+    .demo-gauge, .demo-jerk {
+      position: relative;
+      background: #efe6da;
+      box-shadow: inset 0 0 0 2px rgba(42, 22, 15, .18);
+    }
+    .demo-gauge { width: 28px; height: 78px; border-radius: 999px; }
+    .demo-gauge i {
+      position: absolute;
+      left: 3px;
+      right: 3px;
+      top: 22%;
+      height: 34%;
+      border-radius: 6px;
+      background: repeating-linear-gradient(135deg, #22c55e, #22c55e 4px, #16a34a 4px, #16a34a 8px);
+      box-shadow: inset 0 0 0 2px #fff;
+    }
+    .demo-gauge b {
+      position: absolute;
+      left: -3px;
+      right: -3px;
+      bottom: 46%;
+      height: 7px;
+      border-radius: 4px;
+      background: var(--ink);
+      box-shadow: 0 0 0 2px #fff;
+    }
+    .demo-jerk { width: 78px; height: 26px; border-radius: 999px; }
+    .demo-jerk i {
+      position: absolute;
+      top: 3px;
+      bottom: 3px;
+      left: 28%;
+      width: 44%;
+      border-radius: 6px;
+      background: repeating-linear-gradient(135deg, #22c55e, #22c55e 4px, #16a34a 4px, #16a34a 8px);
+      box-shadow: inset 0 0 0 2px #fff;
+    }
+    .demo-jerk b {
+      position: absolute;
+      top: 2px;
+      bottom: 2px;
+      left: 18%;
+      width: 10px;
+      border-radius: 5px;
+      background: var(--ink);
+      box-shadow: 0 0 0 2px #fff;
+    }
+    .hand { width: 42px; height: 54px; display: block; }
+    figcaption { font-weight: 900; letter-spacing: .12em; }
+    .primary, .ghost, .share {
+      width: 100%;
+      min-height: 52px;
+      margin-top: 8px;
+      border: 0;
+      border-radius: 14px;
+      font-size: 1.05rem;
+      font-weight: 900;
+      letter-spacing: .08em;
+      cursor: pointer;
+      text-decoration: none;
+      display: grid;
+      place-items: center;
+    }
+    .primary { background: var(--accent); color: #fff; box-shadow: 0 4px 0 #7f1d1d; }
+    .ghost { min-height: 44px; background: transparent; color: var(--muted); box-shadow: none; }
+    .share { background: #111827; color: #fff; }
+    .primary:disabled, .share[aria-disabled="true"] { opacity: .45; cursor: default; }
+    .sticky {
+      flex: none;
+      padding-top: 8px;
+      background: var(--paper);
+    }
+    .card.win { box-shadow: inset 0 0 0 3px #f59e0b, 0 12px 30px rgba(42, 22, 15, .18); }
+    .card.lose { box-shadow: inset 0 0 0 3px #e11d48, 0 12px 30px rgba(42, 22, 15, .18); }
+    .card h2 {
+      margin: 4px 0 0;
+      font-size: clamp(2rem, 9vw, 2.8rem);
+      letter-spacing: .12em;
+    }
+    .card.win h2 { color: #b45309; }
+    .card.lose h2 { color: #e11d48; }
+    .big-result {
+      margin: 4px 0 0;
+      font-size: clamp(1.4rem, 6vw, 1.8rem);
+      font-weight: 900;
+    }
+    .record { margin: 6px 0 0; color: #b45309; font-size: 1.05rem; font-weight: 900; letter-spacing: .12em; }
+    #share-link {
+      display: block;
+      margin-top: 8px;
+      color: #1d4ed8;
+      font-size: .75rem;
+      font-weight: 800;
+      line-height: 1.35;
+      word-break: break-all;
+      -webkit-user-select: text;
+      user-select: text;
+    }
+    .reason { margin: 6px 0 0; font-size: 1.15rem; font-weight: 900; }
+    .hero {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      text-align: left;
+    }
+    .hero .coach-art { width: 96px; }
+    .sr {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+    @media (max-height: 740px) {
+      .coach-art { width: 84px; }
+      .play-head h1 { font-size: 1.25rem; }
+      #legend { font-size: .68rem; }
+      .say { font-size: .92rem; }
+      .rival-banner { padding: 4px 8px; }
+      #btn-action { min-height: 48px; }
+    }
+    @media (max-height: 620px) {
+      .kicker, #legend { display: none; }
+      .coach-art { width: 72px; }
+      .rival-banner svg { width: 48px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .coach-art, .coach-art.is-pop, .heart.is-break { animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <a class="back" href="../../index.html">ギャラリー</a>
+  <button type="button" class="mute" id="mute" aria-pressed="false" aria-label="音を消す">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="M4 9h4l5-4v14l-5-4H4z"/>
+      <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 9.5a4 4 0 0 1 0 5"/>
+      <path class="slash" fill="none" stroke="#e11d48" stroke-width="2.4" stroke-linecap="round" d="M6 5l13 14"/>
+    </svg>
+  </button>
+  <p class="sr" id="live" aria-live="polite"></p>
+  <template id="coach-tpl">
+    <svg viewBox="0 0 180 190" aria-hidden="true">
+      <ellipse cx="90" cy="178" rx="48" ry="8" fill="rgba(42,22,15,.16)"/>
+      <ellipse cx="138" cy="148" rx="14" ry="9" fill="#e7a56a"/>
+      <ellipse cx="66" cy="168" rx="16" ry="9" fill="#d9924e"/>
+      <ellipse cx="114" cy="168" rx="16" ry="9" fill="#d9924e"/>
+      <ellipse cx="90" cy="136" rx="46" ry="34" fill="#f3c08a"/>
+      <path d="M50 140 h80 v12 c0 18 -16 28 -40 28 s-40 -10 -40 -28z" fill="#1d4ed8"/>
+      <path d="M84 140 h12 v34 h-12z" fill="#1e3a8a"/>
+      <ellipse cx="72" cy="118" rx="13" ry="9" fill="#f6cda0"/>
+      <ellipse cx="108" cy="118" rx="13" ry="9" fill="#f6cda0"/>
+      <path d="M48 114 C26 120 20 146 38 154 C50 160 60 144 56 128 C54 120 50 116 48 114Z" fill="#f3c08a"/>
+      <ellipse cx="30" cy="136" rx="11" ry="8" fill="#e39b62"/>
+      <ellipse cx="42" cy="156" rx="8" ry="7" fill="#f3c08a"/>
+      <path d="M132 114 C154 120 160 146 142 154 C130 160 120 144 124 128 C126 120 130 116 132 114Z" fill="#f3c08a"/>
+      <ellipse cx="150" cy="136" rx="11" ry="8" fill="#e39b62"/>
+      <ellipse cx="138" cy="156" rx="8" ry="7" fill="#f3c08a"/>
+      <circle cx="90" cy="74" r="40" fill="#f3c08a"/>
+      <circle cx="58" cy="42" r="16" fill="#f3c08a"/>
+      <circle cx="122" cy="42" r="16" fill="#f3c08a"/>
+      <circle cx="58" cy="42" r="9" fill="#f7b6c8"/>
+      <circle cx="122" cy="42" r="9" fill="#f7b6c8"/>
+      <path d="M52 66 Q90 44 128 66 Q124 80 116 76 Q90 60 64 76 Q56 80 52 66Z" fill="#e11d48"/>
+      <path d="M124 64 l22 8 -6 12 -16 -6z" fill="#e11d48"/>
+      <ellipse cx="90" cy="88" rx="20" ry="14" fill="#fff7ee"/>
+      <ellipse cx="90" cy="82" rx="4.2" ry="3.2" fill="#c45b6a"/>
+      <g class="whistle">
+        <path d="M102 90 q12 4 14 12" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round"/>
+        <rect x="108" y="98" width="24" height="13" rx="6.5" fill="#e5e7eb" stroke="#475569" stroke-width="1.4"/>
+        <circle cx="124" cy="104.5" r="2.3" fill="#334155"/>
+      </g>
+      <g class="face idle">
+        <ellipse cx="74" cy="70" rx="5.2" ry="6.2" fill="#2a160f"/>
+        <ellipse cx="106" cy="70" rx="5.2" ry="6.2" fill="#2a160f"/>
+        <circle cx="76" cy="68" r="1.7" fill="#fff"/>
+        <circle cx="108" cy="68" r="1.7" fill="#fff"/>
+        <path d="M78 98 q12 8 24 0" fill="none" stroke="#2a160f" stroke-width="2.2" stroke-linecap="round"/>
+      </g>
+      <g class="face happy">
+        <path d="M66 72 q8 -10 16 0" fill="none" stroke="#2a160f" stroke-width="3" stroke-linecap="round"/>
+        <path d="M98 72 q8 -10 16 0" fill="none" stroke="#2a160f" stroke-width="3" stroke-linecap="round"/>
+        <path d="M76 96 q14 12 28 0" fill="none" stroke="#2a160f" stroke-width="2.3" stroke-linecap="round"/>
+        <ellipse cx="58" cy="84" rx="6" ry="3.4" fill="#fb7185"/>
+        <ellipse cx="122" cy="84" rx="6" ry="3.4" fill="#fb7185"/>
+      </g>
+      <g class="face shock">
+        <ellipse cx="74" cy="70" rx="7.2" ry="8.2" fill="#fff"/>
+        <ellipse cx="106" cy="70" rx="7.2" ry="8.2" fill="#fff"/>
+        <circle cx="74" cy="72" r="3.1" fill="#2a160f"/>
+        <circle cx="106" cy="72" r="3.1" fill="#2a160f"/>
+        <ellipse cx="90" cy="100" rx="5" ry="6.5" fill="#2a160f"/>
+        <ellipse cx="58" cy="86" rx="6" ry="3.2" fill="#fb7185"/>
+        <ellipse cx="122" cy="86" rx="6" ry="3.2" fill="#fb7185"/>
+      </g>
+      <g class="face focus">
+        <path d="M66 70 h16" stroke="#2a160f" stroke-width="3.2" stroke-linecap="round"/>
+        <path d="M98 70 h16" stroke="#2a160f" stroke-width="3.2" stroke-linecap="round"/>
+        <path d="M78 98 h24" stroke="#2a160f" stroke-width="2.3" stroke-linecap="round"/>
+      </g>
+    </svg>
+  </template>
+
+  <div class="shell" id="shell" hidden>
+    <header class="play-head">
+      <p class="kicker">DAY 23</p>
+      <h1>ことば重量挙げ</h1>
+    </header>
+    <div class="hud">
+      <div class="hud-top">
+        <div class="hearts" id="hearts" role="img" aria-label="ハート 残り2">
+          <span class="heart-label">ハート</span>
+          <i class="heart is-on" data-i="0"></i>
+          <i class="heart is-on" data-i="1"></i>
+        </div>
+        <p class="bout-label"><span>ライバル</span><b id="bout-num">1 / 5</b></p>
+        <p id="hud-best">ベスト なし</p>
+      </div>
+      <p id="you-stats">パワー —　スタミナ —　キレ —</p>
+    </div>
+    <div class="coach">
+      <div class="coach-art" id="coach-play" data-mood="idle"></div>
+      <div class="bubble">
+        <p class="who">ガッツ先生</p>
+        <p class="say" id="say">ことばを入れて、バーを上げろ！</p>
+      </div>
+    </div>
+    <div class="rival-banner">
+      <div id="rival-portrait"></div>
+      <div>
+        <p class="nm" id="rival-name">ライバル</p>
+        <p class="st" id="rival-stats"></p>
+        <p class="kg" id="rival-kg"></p>
+      </div>
+    </div>
+    <div class="stage-wrap" id="stage">
+      <div class="gauge-col">
+        <div class="gauge" id="gauge" data-value="0" data-lo="0" data-hi="0" data-inside="0">
+          <div class="zone" id="clean-zone"></div>
+          <div class="mark" id="clean-mark"></div>
+        </div>
+        <div class="gauge-name">クリーン</div>
+      </div>
+      <div class="spot" id="athlete" data-face="idle"></div>
+    </div>
+    <div class="jerk-row" id="jerk-row">
+      <div class="jerk" id="jerk" data-pos="0" data-window="0" data-inside="0" data-t="0">
+        <div class="jzone" id="jerk-zone"></div>
+        <div class="jmark" id="jerk-mark"></div>
+      </div>
+      <div class="jerk-name">ジャーク</div>
+    </div>
+    <p id="legend">パワー：高いほどクリーンの緑が広い。スタミナ：多いほどゲージの上がりがゆっくり。キレ：高いほどジャークの緑が広い。</p>
+    <button type="button" id="btn-action">クリーン（長押し）</button>
+    <div id="pop" hidden>
+      <div>
+        <p id="pop-kicker"></p>
+        <p id="pop-big">3</p>
+      </div>
+    </div>
+    <div id="bang" hidden>
+      <div>
+        <p id="bang-main">よし！</p>
+        <p id="bang-sub">リフト成功！</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="title-overlay">
+    <div class="card" id="title-card">
+      <div class="card-body">
+      <div class="hero">
+        <div class="coach-art" id="coach-title" data-mood="idle" role="img" aria-label="笛をくわえたムキムキのハムスター、ガッツ先生"></div>
+        <div>
+          <p class="who">ガッツ先生</p>
+          <p class="say" id="title-say">ことばを入れて、バーを上げろ！</p>
+        </div>
+      </div>
+      <p class="kicker">DAY 23</p>
+      <h1>ことば重量挙げ</h1>
+      <p class="en">WORD LIFT</p>
+      <p class="lead">ことばが、バーベル選手になる。</p>
+      <p class="challenge" id="challenge" hidden></p>
+      <label for="word">ことば（1〜10文字）</label>
+      <input id="word" type="text" maxlength="20" placeholder="たとえば プリン" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done">
+      <p class="countline" id="countline">0/10</p>
+      <p class="error" id="word-error"></p>
+      <div class="self">
+        <div id="self-portrait"></div>
+        <p class="fine" id="self-name">ことばを入れると選手になる</p>
+      </div>
+      <div class="stat">
+        <p class="stat-num" id="stat-power">パワー —</p>
+        <p class="stat-why" id="explain-power">漢字は+3、濁点・半濁点は+2、ほかの字は+1。高いほどクリーンの緑が広い。</p>
+      </div>
+      <div class="stat">
+        <p class="stat-num" id="stat-stamina">スタミナ —</p>
+        <p class="stat-why" id="explain-stamina">文字数。多いほどゲージの上がりがゆっくり。</p>
+      </div>
+      <div class="stat">
+        <p class="stat-num" id="stat-kire">キレ —</p>
+        <p class="stat-why" id="explain-kire">カタカナ÷かなを四捨五入した0〜10。かななしは5。高いほどジャークの緑が広い。</p>
+      </div>
+      <p class="fine" id="explain-kg">バーのkgは、あいてのパワー×4+20。見た目だけで、勝敗はタイミング。</p>
+      <p class="fine" id="explain-ramp">うしろのライバルほど、緑はせまく、ゲージは速い。パワー・スタミナ・キレの差でも変わる。</p>
+      <p class="block-title">ライバル</p>
+      <div class="rival-row" id="rival-row"></div>
+      <p class="best" id="title-best">ベスト なし</p>
+      </div>
+      <div class="sticky">
+        <button type="button" class="primary" id="btn-rules">ルールへ</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="rules-overlay" hidden>
+    <div class="card">
+      <div class="card-body">
+      <div class="hero">
+        <div class="coach-art" id="coach-rules" data-mood="focus"></div>
+        <div>
+          <p class="who">ガッツ先生</p>
+          <p class="say" id="rules-say">緑で決めろ。見ているぞ。</p>
+        </div>
+      </div>
+      <p class="rule">長押しでバーとゲージを上げ、緑ではなしてクリーン。</p>
+      <p class="rule">ゆれるしるしが緑のとき、1回タップでジャーク。</p>
+      <p class="rule">ハートは2つ。5人抜きでチャンピオン。</p>
+      <div class="demos">
+        <figure>
+          <div class="demo-row">
+            <div class="demo-gauge" aria-hidden="true"><i></i><b></b></div>
+            <svg class="hand" viewBox="0 0 64 80" aria-hidden="true">
+              <rect x="22" y="8" width="18" height="40" rx="9" fill="#ffd7ba" stroke="#2a160f" stroke-width="2"/>
+              <rect x="16" y="28" width="30" height="34" rx="12" fill="#ffd7ba" stroke="#2a160f" stroke-width="2"/>
+              <path d="M20 62 q12 10 24 0" fill="none" stroke="#2a160f" stroke-width="2"/>
+            </svg>
+          </div>
+          <figcaption>クリーン</figcaption>
+        </figure>
+        <figure>
+          <div class="demo-row">
+            <div class="demo-jerk" aria-hidden="true"><i></i><b></b></div>
+            <svg class="hand" viewBox="0 0 64 80" aria-hidden="true">
+              <rect x="24" y="4" width="16" height="36" rx="8" fill="#ffd7ba" stroke="#2a160f" stroke-width="2"/>
+              <circle cx="32" cy="52" r="16" fill="#ffd7ba" stroke="#2a160f" stroke-width="2"/>
+              <path d="M22 18 h8 M34 18 h8" stroke="#e11d48" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <figcaption>ジャーク</figcaption>
+        </figure>
+      </div>
+      </div>
+      <div class="sticky">
+        <button type="button" class="primary" id="btn-start">スタート</button>
+        <button type="button" class="ghost" id="btn-back-word">ことばをかえる</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="fail-overlay" hidden>
+    <div class="card">
+      <div class="hero">
+        <div class="coach-art" id="coach-fail" data-mood="shock"></div>
+        <div>
+          <p class="who">ガッツ先生</p>
+          <p class="say" id="fail-say"></p>
+        </div>
+      </div>
+      <h2 id="fail-title">クリーン失敗</h2>
+      <p class="reason" id="fail-reason"></p>
+      <p class="big-result" id="fail-heart">ハート あと1</p>
+      <button type="button" class="primary" id="btn-continue">もういちど</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="result-overlay" hidden>
+    <div class="card" id="result-card">
+      <div class="card-body">
+      <div class="hero">
+        <div class="coach-art" id="coach-result" data-mood="happy"></div>
+        <div>
+          <p class="who">ガッツ先生</p>
+          <p class="say" id="result-say"></p>
+        </div>
+      </div>
+      <h2 id="result-title">チャンピオン</h2>
+      <p class="big-result" id="result-count"></p>
+      <p class="reason" id="result-reason"></p>
+      <p class="record" id="result-record" hidden>ベスト更新！</p>
+      <p class="best" id="result-best">ベスト なし</p>
+      <textarea id="share-text" readonly></textarea>
+      <a id="share-link" href="https://grokbot365game.github.io/daily-casual-games/games/2026-10-18-word-lift/"></a>
+      </div>
+      <div class="sticky">
+        <button type="button" class="primary" id="btn-retry" disabled>もういちど</button>
+        <button type="button" class="ghost" id="btn-rename" disabled>ことばをかえる</button>
+        <button type="button" class="ghost" id="btn-copy" disabled>結果をコピー</button>
+        <a class="share" id="btn-x" target="_blank" rel="noopener noreferrer" aria-disabled="true" href="https://x.com/intent/tweet">Xでシェア</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var STORE = "word-lift-2026-10-18";
+      var PAGES = "https://grokbot365game.github.io/daily-casual-games/games/2026-10-18-word-lift/";
+      var BOUTS = 5;
+      var HEARTS_MAX = 2;
+      var COUNT_STEP = 800;
+      var RIVAL_MS = 1700;
+      var BRIDGE_MS = 750;
+      var SUCCESS_MS = 1600;
+      var RESULT_LOCK = 800;
+      var CLEAN_CENTER = 0.58;
+      var CLEAN_HALF = [0.17, 0.135, 0.108, 0.088, 0.072];
+      var CLEAN_SPEED = [0.34, 0.44, 0.54, 0.66, 0.80];
+      var JERK_PERIOD = [2.9, 2.25, 1.75, 1.42, 1.18];
+      var JERK_WINDOW = [0.64, 0.54, 0.46, 0.40, 0.34];
+      var JERK_PHASE0 = -1.2;
+      var SHOULDER = 0.48;
+      var HUES = [210, 262, 328, 152, 28, 190, 48, 4];
+      var DAKU = "がぎぐげござじずぜぞだぢづでどばびぶべぼゔぱぴぷぺぽガギグゲゴザジズゼゾダヂヅデドバビブベボヴパピプペポ゛゜ﾞﾟ";
+      var RIVALS = [
+        "リモコン", "月曜日", "洗濯ばさみ", "ヨーグルト", "しゃもじ", "傘",
+        "目覚まし時計", "こんにゃく", "ティッシュ", "消ゴム", "たこ焼き", "段ボール",
+        "ぞうきん", "プリン", "歯ブラシ", "こたつ", "カレンダー", "ぎょうざ",
+        "ねこじゃらし", "ホッチキス", "しゃぼん玉", "冷蔵庫", "バナナ", "ふりかけ"
+      ];
+
+      var params = new URLSearchParams(location.search);
+      var urlWord = parseWord(params.get("w"));
+      var urlSeed = parseSeed(params.get("s"));
+      var urlN = parseN(params.get("n"));
+      var activeSeed = urlSeed !== null ? urlSeed : randomSeed();
+
+      var phase = "title";
+      var best = 0;
+      var muted = false;
+      var wins = 0;
+      var hearts = HEARTS_MAX;
+      var bout = 0;
+      var player = null;
+      var rivals = [];
+      var runWord = "";
+      var runSeed = activeSeed;
+      var tune = null;
+      var gauge = 0;
+      var holding = false;
+      var attemptOpen = false;
+      var jerkT = 0;
+      var jerkPos = Math.sin(JERK_PHASE0);
+      var countN = 3;
+      var phaseUntil = 0;
+      var lastReason = "";
+      var lastStep = "";
+      var resultAt = 0;
+      var lastTs = 0;
+      var nowTs = 0;
+      var audioCtx = null;
+      var copyTimer = 0;
+      var brokeHeart = -1;
+
+      var wordInput = document.getElementById("word");
+      var countline = document.getElementById("countline");
+      var wordError = document.getElementById("word-error");
+      var challengeEl = document.getElementById("challenge");
+      var statPower = document.getElementById("stat-power");
+      var statStamina = document.getElementById("stat-stamina");
+      var statKire = document.getElementById("stat-kire");
+      var selfPortrait = document.getElementById("self-portrait");
+      var selfName = document.getElementById("self-name");
+      var rivalRow = document.getElementById("rival-row");
+      var titleBest = document.getElementById("title-best");
+      var titleSay = document.getElementById("title-say");
+      var shell = document.getElementById("shell");
+      var titleOverlay = document.getElementById("title-overlay");
+      var rulesOverlay = document.getElementById("rules-overlay");
+      var failOverlay = document.getElementById("fail-overlay");
+      var resultOverlay = document.getElementById("result-overlay");
+      var sayEl = document.getElementById("say");
+      var heartsWrap = document.getElementById("hearts");
+      var heartNodes = heartsWrap.querySelectorAll(".heart");
+      var boutNum = document.getElementById("bout-num");
+      var hudBest = document.getElementById("hud-best");
+      var youStats = document.getElementById("you-stats");
+      var rivalPortrait = document.getElementById("rival-portrait");
+      var rivalName = document.getElementById("rival-name");
+      var rivalStats = document.getElementById("rival-stats");
+      var rivalKg = document.getElementById("rival-kg");
+      var gaugeEl = document.getElementById("gauge");
+      var cleanZone = document.getElementById("clean-zone");
+      var cleanMark = document.getElementById("clean-mark");
+      var jerkEl = document.getElementById("jerk");
+      var jerkZone = document.getElementById("jerk-zone");
+      var jerkMark = document.getElementById("jerk-mark");
+      var athlete = document.getElementById("athlete");
+      var stage = document.getElementById("stage");
+      var actionBtn = document.getElementById("btn-action");
+      var pop = document.getElementById("pop");
+      var popKicker = document.getElementById("pop-kicker");
+      var popBig = document.getElementById("pop-big");
+      var bang = document.getElementById("bang");
+      var failTitle = document.getElementById("fail-title");
+      var failReason = document.getElementById("fail-reason");
+      var failHeart = document.getElementById("fail-heart");
+      var failSay = document.getElementById("fail-say");
+      var btnContinue = document.getElementById("btn-continue");
+      var resultCard = document.getElementById("result-card");
+      var resultTitle = document.getElementById("result-title");
+      var resultCount = document.getElementById("result-count");
+      var resultReason = document.getElementById("result-reason");
+      var resultRecord = document.getElementById("result-record");
+      var resultBest = document.getElementById("result-best");
+      var resultSay = document.getElementById("result-say");
+      var shareText = document.getElementById("share-text");
+      var shareLink = document.getElementById("share-link");
+      var btnRetry = document.getElementById("btn-retry");
+      var btnRename = document.getElementById("btn-rename");
+      var btnCopy = document.getElementById("btn-copy");
+      var btnX = document.getElementById("btn-x");
+      var live = document.getElementById("live");
+      var muteBtn = document.getElementById("mute");
+
+      function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+
+      function charsOf(s) { return Array.from(String(s || "")); }
+
+      function esc(s) {
+        return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+      }
+
+      function hashString(s) {
+        var h = 2166136261;
+        var i;
+        for (i = 0; i < s.length; i++) {
+          h ^= s.charCodeAt(i);
+          h = Math.imul(h, 16777619);
+        }
+        return h >>> 0;
+      }
+
+      function isKanji(ch) {
+        var c = ch.codePointAt(0);
+        return (c >= 0x3400 && c <= 0x9fff) || (c >= 0xf900 && c <= 0xfaff);
+      }
+
+      function isHiragana(ch) {
+        var c = ch.codePointAt(0);
+        return c >= 0x3041 && c <= 0x3096;
+      }
+
+      function isKatakana(ch) {
+        var c = ch.codePointAt(0);
+        return (c >= 0x30a1 && c <= 0x30fa) || (c >= 0xff66 && c <= 0xff9d);
+      }
+
+      function hasDakuten(ch) {
+        if (DAKU.indexOf(ch) >= 0) return true;
+        var c = ch.codePointAt(0);
+        return c === 0x3099 || c === 0x309a || c === 0x309b || c === 0x309c || c === 0xff9e || c === 0xff9f;
+      }
+
+      function analyze(word) {
+        var chars = charsOf(word);
+        var kanji = 0;
+        var daku = 0;
+        var other = 0;
+        var hira = 0;
+        var kata = 0;
+        var i;
+        for (i = 0; i < chars.length; i++) {
+          var ch = chars[i];
+          if (isKanji(ch)) kanji += 1;
+          else if (hasDakuten(ch)) daku += 1;
+          else other += 1;
+          if (isHiragana(ch)) hira += 1;
+          else if (isKatakana(ch)) kata += 1;
+        }
+        var kana = hira + kata;
+        var kire = kana === 0 ? 5 : Math.round((10 * kata) / kana);
+        var power = kanji * 3 + daku * 2 + other;
+        return {
+          word: chars.join(""),
+          kanji: kanji,
+          daku: daku,
+          other: other,
+          hira: hira,
+          kata: kata,
+          power: power,
+          stamina: chars.length,
+          kire: kire,
+          kg: 20 + power * 4
+        };
+      }
+
+      function powerText(st) {
+        return "パワー " + st.power + "（漢字 " + st.kanji + "、濁点・半濁点 " + st.daku + "、ほか " + st.other + "）";
+      }
+
+      function staminaText(st) {
+        return "スタミナ " + st.stamina + "（" + st.stamina + "文字）";
+      }
+
+      function kireText(st) {
+        if (st.hira + st.kata === 0) return "キレ " + st.kire + "（かななし）";
+        return "キレ " + st.kire + "（カタカナ" + st.kata + "／かな" + (st.hira + st.kata) + "）";
+      }
+
+      function shortStats(st) {
+        return "パワー" + st.power + "　スタミナ" + st.stamina + "　キレ" + st.kire;
+      }
+
+      function parseWord(raw) {
+        if (raw == null) return "";
+        var s = String(raw).replace(/[\n\r\t]/g, "").trim();
+        var chars = charsOf(s);
+        if (chars.length < 1 || chars.length > 10) return "";
+        return chars.join("");
+      }
+
+      function parseSeed(raw) {
+        if (raw == null) return null;
+        if (!/^[0-9]{1,10}$/.test(String(raw))) return null;
+        var n = Number(raw);
+        if (!isFinite(n)) return null;
+        return n >>> 0;
+      }
+
+      function parseN(raw) {
+        if (raw == null) return null;
+        if (!/^[0-5]$/.test(String(raw))) return null;
+        return Number(raw);
+      }
+
+      function randomSeed() {
+        return Math.floor(Math.random() * 2147483647);
+      }
+
+      function mulberry32(seed) {
+        var a = seed >>> 0;
+        return function () {
+          a |= 0;
+          a = (a + 0x6D2B79F5) | 0;
+          var t = Math.imul(a ^ (a >>> 15), 1 | a);
+          t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+      }
+
+      function readWord() {
+        var raw = wordInput.value.replace(/[\n\r\t]/g, "");
+        var s = charsOf(raw).join("").trim();
+        var chars = charsOf(s);
+        if (chars.length < 1 || chars.length > 10) return "";
+        return chars.join("");
+      }
+
+      function lineup(seed, avoid) {
+        var pool = RIVALS.slice();
+        var rng = mulberry32(seed);
+        var i;
+        for (i = pool.length - 1; i > 0; i--) {
+          var j = Math.floor(rng() * (i + 1));
+          var tmp = pool[i];
+          pool[i] = pool[j];
+          pool[j] = tmp;
+        }
+        var out = [];
+        for (i = 0; i < pool.length && out.length < BOUTS; i++) {
+          if (pool[i] === avoid) continue;
+          out.push(analyze(pool[i]));
+        }
+        return out;
+      }
+
+      function currentAvoid() {
+        if (urlWord) return urlWord;
+        return readWord();
+      }
+
+      function bestLabel(n) {
+        if (!n) return "ベスト なし";
+        return "ベスト " + n + "人抜き";
+      }
+
+      function challengeText() {
+        if (!urlWord) return "";
+        if (urlN !== null) return urlWord + "が" + urlN + "人抜き！同じライバルに挑戦";
+        return urlWord + "と同じライバルに挑戦";
+      }
+
+      function hueOf(word) {
+        return HUES[hashString(word || "?") % HUES.length];
+      }
+
+      function shirtFill(h) {
+        var light = (h > 40 && h < 70) ? 36 : 42;
+        return "hsl(" + h + " 70% " + light + "%)";
+      }
+
+      function hairBig(kind) {
+        if (kind === 0) return '<path d="M78 60 Q90 30 110 52 Q122 32 142 60 Q122 50 110 62 Q96 48 78 60Z" fill="#3b2a22"/>';
+        if (kind === 1) return '<path d="M72 84 Q70 44 110 40 Q150 44 148 84 Q148 62 110 56 Q72 62 72 84Z" fill="#3b2a22"/>';
+        if (kind === 2) return '<path d="M74 72 Q110 50 146 72 Q138 62 110 60 Q82 62 74 72Z" fill="#e11d48"/><path d="M144 68 l16 6 -4 8 -12 -4z" fill="#e11d48"/>';
+        return '<path d="M82 66 L92 36 L102 62 L112 32 L124 62 L136 38 L144 68Z" fill="#3b2a22"/>';
+      }
+
+      function hairMini(kind) {
+        if (kind === 1) return '<path d="M26 30 Q40 14 54 30 Q48 22 40 22 Q32 22 26 30Z" fill="#3b2a22"/>';
+        if (kind === 2) return '<path d="M26 28 Q40 18 54 28 Q48 24 40 23 Q32 24 26 28Z" fill="#e11d48"/>';
+        if (kind === 3) return '<path d="M28 28 L34 16 L40 28 L46 15 L54 28Z" fill="#3b2a22"/>';
+        return '<path d="M30 26 Q40 12 50 26 Q44 20 40 22 Q34 20 30 26Z" fill="#3b2a22"/>';
+      }
+
+      function miniSVG(word) {
+        var shown = word || "？";
+        var len = charsOf(shown).length;
+        var hue = hueOf(shown);
+        var kind = hashString(shown) % 4;
+        var size = len <= 4 ? 11 : 8;
+        var stretch = len >= 3 ? ' textLength="40" lengthAdjust="spacingAndGlyphs"' : "";
+        return '<svg viewBox="0 0 80 86" aria-hidden="true">' +
+          '<circle cx="40" cy="30" r="16" fill="#ffd7ba"/>' +
+          hairMini(kind) +
+          '<circle cx="34" cy="30" r="1.7" fill="#2a160f"/>' +
+          '<circle cx="46" cy="30" r="1.7" fill="#2a160f"/>' +
+          '<path d="M35 36 q5 4 10 0" fill="none" stroke="#2a160f" stroke-width="1.4" stroke-linecap="round"/>' +
+          '<rect x="18" y="48" width="44" height="28" rx="10" fill="' + shirtFill(hue) + '"/>' +
+          '<text x="40" y="66" text-anchor="middle" font-size="' + size + '" font-weight="800" fill="#fffdf8"' + stretch + '>' + esc(shown) + '</text>' +
+          '<line x1="10" y1="16" x2="70" y2="16" stroke="#cbd5e1" stroke-width="3" stroke-linecap="round"/>' +
+          '<rect x="8" y="10" width="6" height="12" rx="1.5" fill="#e11d48"/>' +
+          '<rect x="66" y="10" width="6" height="12" rx="1.5" fill="#e11d48"/>' +
+          '</svg>';
+      }
+
+      function plateMarkup(n) {
+        var html = "";
+        var i;
+        for (i = 0; i < n; i++) {
+          var dx = i * 12;
+          html += '<rect x="' + (20 - dx) + '" y="-20" width="11" height="40" rx="3" fill="#e11d48" stroke="#7f1d1d" stroke-width="1"/>';
+          html += '<rect x="' + (189 + dx) + '" y="-20" width="11" height="40" rx="3" fill="#e11d48" stroke="#7f1d1d" stroke-width="1"/>';
+        }
+        return html;
+      }
+
+      function plateCount(kg) {
+        if (kg >= 120) return 4;
+        if (kg >= 90) return 3;
+        if (kg >= 60) return 2;
+        return 1;
+      }
+
+      function buildAthlete(word) {
+        var shown = word || "？";
+        var len = charsOf(shown).length;
+        var hue = hueOf(shown);
+        var kind = hashString(shown) % 4;
+        var size = len <= 2 ? 22 : len <= 4 ? 18 : len <= 6 ? 15 : len <= 8 ? 12 : 10;
+        var stretch = len >= 6 ? ' textLength="104" lengthAdjust="spacingAndGlyphs"' : "";
+        var barSize = len <= 6 ? 13 : 11;
+        var barStretch = len >= 6 ? ' textLength="120" lengthAdjust="spacingAndGlyphs"' : "";
+        athlete.innerHTML =
+          '<svg id="athlete-svg" viewBox="-16 0 252 280" aria-hidden="true">' +
+            '<ellipse cx="110" cy="268" rx="78" ry="8" fill="rgba(42,22,15,.15)"/>' +
+            '<rect x="76" y="206" width="22" height="48" rx="10" fill="#ffd7ba"/>' +
+            '<rect x="122" y="206" width="22" height="48" rx="10" fill="#ffd7ba"/>' +
+            '<rect x="72" y="246" width="32" height="12" rx="6" fill="#2a160f"/>' +
+            '<rect x="116" y="246" width="32" height="12" rx="6" fill="#2a160f"/>' +
+            '<rect x="52" y="128" width="116" height="90" rx="28" fill="' + shirtFill(hue) + '"/>' +
+            '<rect x="104" y="128" width="12" height="90" fill="rgba(0,0,0,.18)"/>' +
+            '<text id="shirt-word" x="110" y="182" text-anchor="middle" font-size="' + size + '" font-weight="800" fill="#fffdf8"' + stretch + '>' + esc(shown) + '</text>' +
+            '<circle cx="110" cy="86" r="40" fill="#ffd7ba"/>' +
+            hairBig(kind) +
+            '<ellipse cx="86" cy="96" rx="6" ry="3.2" fill="#fb7185" opacity=".8"/>' +
+            '<ellipse cx="134" cy="96" rx="6" ry="3.2" fill="#fb7185" opacity=".8"/>' +
+            '<g class="aface idle">' +
+              '<ellipse cx="96" cy="84" rx="4.4" ry="5.2" fill="#2a160f"/>' +
+              '<ellipse cx="126" cy="84" rx="4.4" ry="5.2" fill="#2a160f"/>' +
+              '<circle cx="97.5" cy="82.4" r="1.4" fill="#fff"/>' +
+              '<circle cx="127.5" cy="82.4" r="1.4" fill="#fff"/>' +
+              '<path d="M100 104 q10 8 20 0" fill="none" stroke="#2a160f" stroke-width="2.2" stroke-linecap="round"/>' +
+            '</g>' +
+            '<g class="aface focus">' +
+              '<path d="M88 84 h16" stroke="#2a160f" stroke-width="3" stroke-linecap="round"/>' +
+              '<path d="M118 84 h16" stroke="#2a160f" stroke-width="3" stroke-linecap="round"/>' +
+              '<path d="M102 106 h16" stroke="#2a160f" stroke-width="2.2" stroke-linecap="round"/>' +
+            '</g>' +
+            '<g class="aface happy">' +
+              '<path d="M88 86 q8 -10 16 0" fill="none" stroke="#2a160f" stroke-width="3" stroke-linecap="round"/>' +
+              '<path d="M118 86 q8 -10 16 0" fill="none" stroke="#2a160f" stroke-width="3" stroke-linecap="round"/>' +
+              '<path d="M98 102 q12 12 24 0" fill="none" stroke="#2a160f" stroke-width="2.3" stroke-linecap="round"/>' +
+            '</g>' +
+            '<g class="aface shock">' +
+              '<ellipse cx="96" cy="84" rx="6" ry="7" fill="#fff"/>' +
+              '<ellipse cx="126" cy="84" rx="6" ry="7" fill="#fff"/>' +
+              '<circle cx="96" cy="85" r="2.6" fill="#2a160f"/>' +
+              '<circle cx="126" cy="85" r="2.6" fill="#2a160f"/>' +
+              '<ellipse cx="110" cy="108" rx="5" ry="6" fill="#2a160f"/>' +
+            '</g>' +
+            '<line id="arm-l" x1="70" y1="150" x2="36" y2="210" stroke="#ffd7ba" stroke-width="16" stroke-linecap="round"/>' +
+            '<line id="arm-r" x1="150" y1="150" x2="184" y2="210" stroke="#ffd7ba" stroke-width="16" stroke-linecap="round"/>' +
+            '<g id="bar-g">' +
+              '<text id="bar-kg" x="110" y="-26" text-anchor="middle" font-size="16" font-weight="900" fill="#2a160f">0kg</text>' +
+              '<text id="bar-word" x="110" y="22" text-anchor="middle" font-size="' + barSize + '" font-weight="800" fill="#7f1d1d"' + barStretch + '>' + esc(shown) + '</text>' +
+              '<g id="plates"></g>' +
+              '<line x1="18" y1="0" x2="202" y2="0" stroke="#e2e8f0" stroke-width="10" stroke-linecap="round"/>' +
+              '<line x1="18" y1="0" x2="202" y2="0" stroke="#94a3b8" stroke-width="4" stroke-linecap="round"/>' +
+            '</g>' +
+          '</svg>';
+        athlete.dataset.face = "idle";
+      }
+
+      function mountCoaches() {
+        var nodes = document.querySelectorAll(".coach-art");
+        var tpl = document.getElementById("coach-tpl");
+        var i;
+        for (i = 0; i < nodes.length; i++) {
+          if (!nodes[i].querySelector("svg")) nodes[i].appendChild(tpl.content.cloneNode(true));
+        }
+      }
+
+      function setMood(mood) {
+        var nodes = document.querySelectorAll(".coach-art");
+        var i;
+        for (i = 0; i < nodes.length; i++) {
+          nodes[i].dataset.mood = mood;
+          nodes[i].classList.remove("is-pop");
+          if (mood === "happy" || mood === "shock") {
+            void nodes[i].offsetWidth;
+            nodes[i].classList.add("is-pop");
+          }
+        }
+      }
+
+      function say(text) {
+        sayEl.textContent = text;
+        titleSay.textContent = text;
+      }
+
+      function announce(text) {
+        if (live.textContent === text) return;
+        live.textContent = "";
+        window.setTimeout(function () { live.textContent = text; }, 20);
+      }
+
+      function setPhase(next) {
+        phase = next;
+        document.body.dataset.phase = next;
+      }
+
+      function loadStore() {
+        try {
+          var raw = localStorage.getItem(STORE);
+          if (!raw) return;
+          var data = JSON.parse(raw);
+          if (data && typeof data.best === "number" && isFinite(data.best)) best = clamp(data.best | 0, 0, BOUTS);
+          if (data && data.mute === true) muted = true;
+        } catch (err) {}
+      }
+
+      function saveStore() {
+        try {
+          localStorage.setItem(STORE, JSON.stringify({ best: best, mute: muted }));
+        } catch (err) {}
+      }
+
+      function applyMute() {
+        muteBtn.classList.toggle("is-muted", muted);
+        muteBtn.setAttribute("aria-pressed", muted ? "true" : "false");
+        muteBtn.setAttribute("aria-label", muted ? "音を出す" : "音を消す");
+      }
+
+      function unlockAudio() {
+        try {
+          var AC = window.AudioContext || window.webkitAudioContext;
+          if (!AC) return;
+          if (!audioCtx) audioCtx = new AC();
+          if (audioCtx.state === "suspended") {
+            var pending = audioCtx.resume();
+            if (pending && pending.catch) pending.catch(function () {});
+          }
+        } catch (err) {}
+      }
+
+      function tone(freq, dur, type, gain, delay) {
+        if (muted) return;
+        try {
+          if (!audioCtx || audioCtx.state !== "running") return;
+          var t = audioCtx.currentTime + (delay || 0);
+          var osc = audioCtx.createOscillator();
+          var amp = audioCtx.createGain();
+          osc.type = type || "sine";
+          osc.frequency.value = freq;
+          amp.gain.setValueAtTime(gain, t);
+          amp.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+          osc.connect(amp);
+          amp.connect(audioCtx.destination);
+          osc.start(t);
+          osc.stop(t + dur + 0.02);
+        } catch (err) {}
+      }
+
+      function buzz(ms) {
+        try { if (navigator.vibrate) navigator.vibrate(ms); } catch (err) {}
+      }
+
+      function makeTune(i, you, them) {
+        var pGap = clamp(you.power - them.power, -12, 12);
+        var sGap = clamp(you.stamina - them.stamina, -6, 6);
+        var kGap = clamp(you.kire - them.kire, -6, 6);
+        var half = clamp(CLEAN_HALF[i] * (1 + pGap * 0.045), 0.05, 0.20);
+        var speed = clamp(CLEAN_SPEED[i] * (1 - sGap * 0.055), 0.22, 1.15);
+        var windowW = clamp(JERK_WINDOW[i] * (1 + kGap * 0.06), 0.12, 0.82);
+        var period = clamp(JERK_PERIOD[i] * (1 + kGap * 0.04), 0.9, 3.8);
+        return {
+          cleanLo: CLEAN_CENTER - half,
+          cleanHi: CLEAN_CENTER + half,
+          cleanSpeed: speed,
+          jerkWindow: windowW,
+          jerkPeriod: period,
+          kg: them.kg
+        };
+      }
+
+      function jerkState(elapsed, period) {
+        var omega = (Math.PI * 2) / period;
+        var phaseNow = JERK_PHASE0 + omega * elapsed;
+        return { pos: Math.sin(phaseNow), phase: phaseNow, omega: omega };
+      }
+
+      function jerkMiss(elapsed, period, windowW) {
+        var st = jerkState(elapsed, period);
+        var half = Math.asin(Math.min(0.999, Math.max(0.001, windowW)));
+        if (Math.abs(st.pos) <= windowW + 1e-8) return { ok: true, sec: 0, early: false };
+        var k0 = Math.round(st.phase / Math.PI);
+        var bestEarly = 1e9;
+        var bestLate = 1e9;
+        var k;
+        for (k = k0 - 3; k <= k0 + 3; k++) {
+          var a = k * Math.PI - half;
+          var b = k * Math.PI + half;
+          if (st.phase < a) {
+            var until = (a - st.phase) / st.omega;
+            if (until < bestEarly) bestEarly = until;
+          } else if (st.phase > b) {
+            var since = (st.phase - b) / st.omega;
+            if (since < bestLate) bestLate = since;
+          } else {
+            return { ok: true, sec: 0, early: false };
+          }
+        }
+        if (bestEarly <= bestLate) return { ok: false, sec: bestEarly, early: true };
+        return { ok: false, sec: bestLate, early: false };
+      }
+
+      function formatSec(sec, early) {
+        var v = Math.max(0.01, Math.round(sec * 100) / 100);
+        return v.toFixed(2) + "秒" + (early ? "はやい" : "おそい");
+      }
+
+      function formatGauge(g, lo, hi) {
+        if (g < lo) {
+          var under = Math.max(1, Math.round((lo - g) * 100));
+          return "ゲージ " + under + "% たりない";
+        }
+        var over = Math.max(1, Math.round((g - hi) * 100));
+        return "ゲージ " + over + "% オーバー";
+      }
+
+      function paintHearts() {
+        var nodes = heartNodes;
+        var i;
+        for (i = 0; i < nodes.length; i++) {
+          var on = i < hearts;
+          nodes[i].classList.toggle("is-on", on);
+          nodes[i].classList.toggle("is-break", !on && brokeHeart === i);
+        }
+        heartsWrap.setAttribute("aria-label", "ハート 残り" + hearts);
+      }
+
+      function refreshTitle() {
+        var word = readWord();
+        var typed = charsOf(wordInput.value.replace(/[\n\r\t]/g, "").trim());
+        countline.textContent = Math.min(10, typed.length) + "/10";
+        var list = lineup(activeSeed, currentAvoid());
+        var names = [];
+        var i;
+        rivalRow.innerHTML = "";
+        for (i = 0; i < list.length; i++) {
+          names.push(list[i].word);
+          var card = document.createElement("div");
+          card.className = "mini";
+          card.innerHTML = miniSVG(list[i].word) +
+            "<b></b><small></small>";
+          card.querySelector("b").textContent = list[i].word;
+          card.querySelector("small").textContent = "パワー" + list[i].power + " スタミナ" + list[i].stamina + " キレ" + list[i].kire;
+          rivalRow.appendChild(card);
+        }
+        document.body.dataset.seed = String(activeSeed);
+        document.body.dataset.rivals = names.join("|");
+        if (!word) {
+          statPower.textContent = "パワー —";
+          statStamina.textContent = "スタミナ —";
+          statKire.textContent = "キレ —";
+          selfName.textContent = "ことばを入れると選手になる";
+          selfPortrait.innerHTML = miniSVG("");
+          document.body.dataset.power = "";
+          document.body.dataset.stamina = "";
+          document.body.dataset.kire = "";
+        } else {
+          var st = analyze(word);
+          statPower.textContent = powerText(st);
+          statStamina.textContent = staminaText(st);
+          statKire.textContent = kireText(st);
+          selfName.textContent = word;
+          selfPortrait.innerHTML = miniSVG(word);
+          document.body.dataset.power = String(st.power);
+          document.body.dataset.stamina = String(st.stamina);
+          document.body.dataset.kire = String(st.kire);
+          document.body.dataset.kanji = String(st.kanji);
+          document.body.dataset.daku = String(st.daku);
+          document.body.dataset.hira = String(st.hira);
+          document.body.dataset.kata = String(st.kata);
+        }
+        var line = challengeText();
+        challengeEl.hidden = !line;
+        challengeEl.textContent = line;
+        titleBest.textContent = bestLabel(best);
+        hudBest.textContent = bestLabel(best);
+        document.body.dataset.best = String(best);
+      }
+
+      function showOnly(which) {
+        titleOverlay.hidden = which !== "title";
+        rulesOverlay.hidden = which !== "rules";
+        failOverlay.hidden = which !== "fail";
+        resultOverlay.hidden = which !== "result";
+        shell.hidden = which === "title" || which === "rules";
+      }
+
+      function goTitle() {
+        holding = false;
+        attemptOpen = false;
+        setPhase("title");
+        showOnly("title");
+        setMood("idle");
+        titleSay.textContent = "ことばを入れて、バーを上げろ！";
+        refreshTitle();
+      }
+
+      function goRules() {
+        var word = readWord();
+        if (!word) {
+          wordError.textContent = "1〜10文字にしてね";
+          wordInput.focus();
+          return;
+        }
+        wordError.textContent = "";
+        wordInput.value = word;
+        setPhase("rules");
+        showOnly("rules");
+        setMood("focus");
+        document.getElementById("rules-say").textContent = "緑で決めろ。見ているぞ。";
+        announce("ルール");
+      }
+
+      function updateBarKg(kg) {
+        var kgEl = document.getElementById("bar-kg");
+        var plates = document.getElementById("plates");
+        if (kgEl) kgEl.textContent = kg + "kg";
+        if (plates) plates.innerHTML = plateMarkup(plateCount(kg));
+      }
+
+      function showRival(info) {
+        rivalPortrait.innerHTML = miniSVG(info.word);
+        rivalName.textContent = info.word;
+        rivalStats.textContent = shortStats(info);
+        rivalKg.textContent = info.kg + "kg";
+        updateBarKg(info.kg);
+      }
+
+      function goCount() {
+        holding = false;
+        attemptOpen = false;
+        var info = rivals[bout];
+        tune = makeTune(bout, player, info);
+        showRival(info);
+        countN = 3;
+        setPhase("count");
+        phaseUntil = performance.now() + COUNT_STEP;
+        setMood("focus");
+        say("いくぞ！");
+        announce("3");
+        tone(480, 0.08, "square", 0.04);
+      }
+
+      function goRival() {
+        holding = false;
+        setPhase("rival");
+        phaseUntil = performance.now() + RIVAL_MS;
+        var info = rivals[bout];
+        setMood("focus");
+        say(info.word + "のバー、" + info.kg + "kg！");
+        announce(info.word + " " + info.kg + "kg");
+      }
+
+      function goClean() {
+        gauge = 0;
+        holding = false;
+        attemptOpen = true;
+        setPhase("clean");
+        setMood("focus");
+        say("おして、緑ではなせ！");
+        announce("クリーン");
+        if (athlete) athlete.dataset.face = "focus";
+      }
+
+      function goBridge() {
+        holding = false;
+        attemptOpen = false;
+        setPhase("bridge");
+        phaseUntil = performance.now() + BRIDGE_MS;
+        setMood("happy");
+        say("よし！ ジャークだ！");
+        if (athlete) athlete.dataset.face = "happy";
+        tone(620, 0.1, "triangle", 0.05);
+      }
+
+      function goJerk() {
+        jerkT = 0;
+        jerkPos = Math.sin(JERK_PHASE0);
+        attemptOpen = true;
+        holding = false;
+        setPhase("jerk");
+        setMood("focus");
+        say("緑で、ジャーク！");
+        announce("ジャーク");
+        if (athlete) athlete.dataset.face = "focus";
+      }
+
+      function succeed() {
+        attemptOpen = false;
+        holding = false;
+        wins += 1;
+        setPhase("success");
+        phaseUntil = performance.now() + SUCCESS_MS;
+        setMood("happy");
+        say("よし！ リフト成功！");
+        announce("よし！ リフト成功！");
+        if (athlete) athlete.dataset.face = "happy";
+        tone(660, 0.1, "triangle", 0.06);
+        tone(880, 0.18, "sine", 0.05, 0.08);
+        buzz(12);
+        document.body.dataset.wins = String(wins);
+      }
+
+      function fail(step, reason, early) {
+        if (phase !== "clean" && phase !== "jerk") return;
+        if (!attemptOpen) return;
+        attemptOpen = false;
+        holding = false;
+        hearts -= 1;
+        brokeHeart = hearts;
+        lastStep = step;
+        lastReason = reason;
+        setPhase("fail");
+        paintHearts();
+        var coachLine;
+        if (hearts <= 0) coachLine = "ハートがなくなった";
+        else if (step === "クリーン") coachLine = early ? "まだ、緑の前だ！" : "はなすのが、おそい！";
+        else if (reason === "タップがなかった") coachLine = "タップが、なかったぞ！";
+        else coachLine = early ? "はやい！ 緑を待て！" : "おそい！ 次の緑だ！";
+        setMood("shock");
+        say(coachLine);
+        failSay.textContent = coachLine;
+        failTitle.textContent = step + "失敗";
+        failReason.textContent = reason;
+        failHeart.textContent = hearts <= 0 ? "ハートがなくなった" : "ハート あと" + hearts;
+        btnContinue.textContent = hearts <= 0 ? "けっかを見る" : "もういちど";
+        showOnly("fail");
+        if (athlete) athlete.dataset.face = "shock";
+        announce(step + "失敗。" + reason);
+        tone(160, 0.18, "sawtooth", 0.04);
+        buzz(20);
+        document.body.dataset.hearts = String(hearts);
+      }
+
+      function sharePayload() {
+        var text = "ことば重量挙げ『" + runWord + "』で" + wins + "人抜き！ #ねむねむゲーム部";
+        var url = buildShareUrl(runWord, runSeed, wins);
+        return { text: text, url: url, full: text + "\n" + url };
+      }
+
+      function buildShareUrl(word, seed, n) {
+        var u = new URL(PAGES);
+        u.searchParams.set("w", word);
+        u.searchParams.set("s", String(seed >>> 0));
+        u.searchParams.set("n", String(n));
+        return u.href;
+      }
+
+      function lockResult(on) {
+        btnRetry.disabled = on;
+        btnRename.disabled = on;
+        btnCopy.disabled = on;
+        shareText.disabled = on;
+        if (on) btnX.setAttribute("aria-disabled", "true");
+        else btnX.removeAttribute("aria-disabled");
+      }
+
+      function goResult() {
+        setPhase("result");
+        resultAt = performance.now();
+        var champ = wins >= BOUTS;
+        var celebrate = wins > best && wins > 0;
+        if (wins > best) {
+          best = wins;
+          saveStore();
+        }
+        resultCard.classList.toggle("win", champ);
+        resultCard.classList.toggle("lose", !champ);
+        resultTitle.textContent = champ ? "チャンピオン" : "ゲームオーバー";
+        resultCount.textContent = runWord + "で" + wins + "人抜き！";
+        if (!champ && lastReason) {
+          resultReason.hidden = false;
+          resultReason.textContent = lastStep + "失敗　" + lastReason;
+        } else {
+          resultReason.hidden = true;
+          resultReason.textContent = "";
+        }
+        resultRecord.hidden = !celebrate;
+        resultBest.textContent = bestLabel(best);
+        hudBest.textContent = bestLabel(best);
+        titleBest.textContent = bestLabel(best);
+        var payload = sharePayload();
+        shareText.value = payload.full;
+        shareLink.href = payload.url;
+        shareLink.textContent = payload.url;
+        btnX.href = "https://x.com/intent/tweet?text=" + encodeURIComponent(payload.full);
+        resultSay.textContent = champ ? "チャンピオンだ！" : "ハートがなくなった";
+        setMood(champ ? "happy" : "shock");
+        showOnly("result");
+        lockResult(true);
+        announce(resultTitle.textContent + "。" + resultCount.textContent);
+        document.body.dataset.best = String(best);
+        document.body.dataset.wins = String(wins);
+        window.setTimeout(function () {
+          if (phase !== "result") return;
+          lockResult(false);
+        }, RESULT_LOCK);
+      }
+
+      function startRun(replay) {
+        var word = readWord();
+        if (!word) {
+          goTitle();
+          wordError.textContent = "1〜10文字にしてね";
+          return;
+        }
+        wordInput.value = word;
+        if (replay && urlSeed === null) activeSeed = randomSeed();
+        if (replay && urlSeed !== null) activeSeed = urlSeed;
+        runWord = word;
+        runSeed = activeSeed;
+        player = analyze(runWord);
+        rivals = lineup(runSeed, urlWord || runWord);
+        wins = 0;
+        hearts = HEARTS_MAX;
+        brokeHeart = -1;
+        bout = 0;
+        lastReason = "";
+        lastStep = "";
+        buildAthlete(runWord);
+        youStats.textContent = shortStats(player);
+        paintHearts();
+        document.body.dataset.word = runWord;
+        document.body.dataset.wins = "0";
+        document.body.dataset.hearts = String(hearts);
+        document.body.dataset.seed = String(runSeed);
+        document.body.dataset.rivals = rivals.map(function (r) { return r.word; }).join("|");
+        showOnly("play");
+        goCount();
+      }
+
+      function visualLift() {
+        if (!tune) return 0.08;
+        if (phase === "success") {
+          var t = 1 - Math.max(0, (phaseUntil - nowTs) / SUCCESS_MS);
+          return SHOULDER + (1 - SHOULDER) * Math.min(1, t * 1.2);
+        }
+        if (phase === "jerk") return SHOULDER + (1 - Math.min(1, Math.abs(jerkPos))) * 0.035;
+        if (phase === "bridge") return SHOULDER;
+        if (phase === "clean") return gauge * (SHOULDER / CLEAN_CENTER);
+        if (phase === "fail") return 0.1;
+        if (phase === "rival") return 0.16;
+        return 0.08;
+      }
+
+      function renderAthlete() {
+        var bar = document.getElementById("bar-g");
+        var armL = document.getElementById("arm-l");
+        var armR = document.getElementById("arm-r");
+        if (!bar || !armL || !armR) return;
+        var y = 214 - visualLift() * 186;
+        bar.setAttribute("transform", "translate(0 " + y.toFixed(2) + ")");
+        armL.setAttribute("x2", "36");
+        armL.setAttribute("y2", y.toFixed(2));
+        armR.setAttribute("x2", "184");
+        armR.setAttribute("y2", y.toFixed(2));
+      }
+
+      function renderMeters() {
+        if (!tune) return;
+        var lo = tune.cleanLo;
+        var hi = tune.cleanHi;
+        var cleanIn = gauge >= lo && gauge <= hi;
+        cleanZone.style.bottom = (lo * 100) + "%";
+        cleanZone.style.height = ((hi - lo) * 100) + "%";
+        cleanMark.style.bottom = (gauge * 100) + "%";
+        gaugeEl.dataset.value = gauge.toFixed(4);
+        gaugeEl.dataset.lo = lo.toFixed(4);
+        gaugeEl.dataset.hi = hi.toFixed(4);
+        gaugeEl.dataset.inside = cleanIn ? "1" : "0";
+        gaugeEl.classList.toggle("in-zone", phase === "clean" && holding && cleanIn);
+        var jIn = false;
+        if (phase === "jerk" || phase === "bridge" || phase === "success") {
+          var st = phase === "jerk" ? jerkState(jerkT, tune.jerkPeriod) : { pos: 0 };
+          if (phase === "jerk") jerkPos = st.pos;
+          else jerkPos = 0;
+          jIn = Math.abs(jerkPos) <= tune.jerkWindow;
+        }
+        var x = (jerkPos + 1) / 2;
+        jerkZone.style.left = ((1 - tune.jerkWindow) / 2 * 100) + "%";
+        jerkZone.style.width = (tune.jerkWindow * 100) + "%";
+        jerkMark.style.left = (x * 100) + "%";
+        jerkEl.dataset.pos = jerkPos.toFixed(4);
+        jerkEl.dataset.window = tune.jerkWindow.toFixed(4);
+        jerkEl.dataset.inside = jIn ? "1" : "0";
+        jerkEl.dataset.t = jerkT.toFixed(4);
+        jerkEl.classList.toggle("in-zone", phase === "jerk" && jIn);
+        var sweet = (phase === "clean" && holding && cleanIn) || (phase === "jerk" && jIn);
+        actionBtn.classList.toggle("sweet", sweet);
+      }
+
+      function renderChrome() {
+        var label = "クリーン（長押し）";
+        var disabled = false;
+        var hide = false;
+        if (phase === "count") { label = "ようい"; disabled = true; }
+        else if (phase === "rival") { label = "みていて"; disabled = true; }
+        else if (phase === "clean") label = "クリーン（長押し）";
+        else if (phase === "bridge") { label = "ジャーク"; disabled = true; }
+        else if (phase === "jerk") label = "ジャーク（タップ）";
+        else if (phase === "success") { label = "リフト成功！"; disabled = true; }
+        else hide = true;
+        actionBtn.hidden = hide;
+        actionBtn.disabled = disabled;
+        if (actionBtn.textContent !== label) actionBtn.textContent = label;
+        actionBtn.classList.toggle("holding", holding && phase === "clean");
+        boutNum.textContent = (bout + 1) + " / " + BOUTS;
+        document.body.dataset.bout = String(bout + 1);
+        document.body.dataset.wins = String(wins);
+        document.body.dataset.hearts = String(hearts);
+        pop.hidden = !(phase === "count" || phase === "rival");
+        if (phase === "count") {
+          popKicker.textContent = "ようい";
+          popBig.textContent = String(countN);
+        } else if (phase === "rival" && rivals[bout]) {
+          popKicker.textContent = rivals[bout].word;
+          popBig.textContent = rivals[bout].kg + "kg";
+        }
+        bang.hidden = phase !== "success";
+      }
+
+      function tick(ts, dt) {
+        nowTs = ts;
+        if (phase === "count" && ts >= phaseUntil) {
+          countN -= 1;
+          if (countN <= 0) goRival();
+          else {
+            phaseUntil = ts + COUNT_STEP;
+            announce(String(countN));
+            tone(480 + (3 - countN) * 40, 0.08, "square", 0.04);
+          }
+        } else if (phase === "rival" && ts >= phaseUntil) {
+          goClean();
+        } else if (phase === "clean") {
+          if (holding) {
+            gauge = Math.min(1, gauge + tune.cleanSpeed * dt);
+            if (gauge >= 1 && attemptOpen) {
+              gauge = 1;
+              fail("クリーン", formatGauge(1, tune.cleanLo, tune.cleanHi), false);
+            }
+          }
+        } else if (phase === "bridge" && ts >= phaseUntil) {
+          goJerk();
+        } else if (phase === "jerk") {
+          jerkT += dt;
+          if (attemptOpen && jerkT > tune.jerkPeriod * 3) {
+            fail("ジャーク", "タップがなかった", false);
+          }
+        } else if (phase === "success" && ts >= phaseUntil) {
+          if (wins >= BOUTS) goResult();
+          else {
+            bout += 1;
+            goCount();
+          }
+        }
+      }
+
+      function loop(ts) {
+        var dt = 0;
+        if (lastTs) dt = Math.min(0.05, (ts - lastTs) / 1000);
+        lastTs = ts;
+        if (phase === "count" || phase === "rival" || phase === "clean" || phase === "bridge" || phase === "jerk" || phase === "success") {
+          tick(ts, dt);
+        } else {
+          nowTs = ts;
+        }
+        if (!shell.hidden) {
+          renderMeters();
+          renderAthlete();
+          renderChrome();
+        }
+        requestAnimationFrame(loop);
+      }
+
+      function judgeClean() {
+        if (phase !== "clean" || !attemptOpen) return;
+        var lo = tune.cleanLo;
+        var hi = tune.cleanHi;
+        if (gauge >= lo && gauge <= hi) {
+          attemptOpen = false;
+          holding = false;
+          goBridge();
+          return;
+        }
+        fail("クリーン", formatGauge(gauge, lo, hi), gauge < lo);
+      }
+
+      function judgeJerk() {
+        if (phase !== "jerk" || !attemptOpen) return;
+        var miss = jerkMiss(jerkT, tune.jerkPeriod, tune.jerkWindow);
+        if (miss.ok) {
+          attemptOpen = false;
+          succeed();
+          return;
+        }
+        fail("ジャーク", formatSec(miss.sec, miss.early), miss.early);
+      }
+
+      function onPointerDown(e) {
+        if (e.button !== undefined && e.button !== 0) return;
+        if (phase !== "clean" && phase !== "jerk") return;
+        if (e.cancelable) e.preventDefault();
+        unlockAudio();
+        if (phase === "jerk") {
+          judgeJerk();
+          return;
+        }
+        if (holding) return;
+        holding = true;
+        try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {}
+      }
+
+      function onPointerUp() {
+        if (phase === "clean" && holding) judgeClean();
+      }
+
+      function typing() {
+        var el = document.activeElement;
+        if (!el) return false;
+        var tag = el.tagName;
+        return tag === "INPUT" || tag === "TEXTAREA";
+      }
+
+      function resultLocked() {
+        return phase === "result" && (performance.now() - resultAt < RESULT_LOCK);
+      }
+
+      var composing = false;
+      function clampWordField() {
+        var chars = charsOf(wordInput.value.replace(/[\n\r\t]/g, ""));
+        if (chars.length > 10) wordInput.value = chars.slice(0, 10).join("");
+      }
+      wordInput.addEventListener("compositionstart", function () { composing = true; });
+      wordInput.addEventListener("compositionend", function () {
+        composing = false;
+        clampWordField();
+        wordError.textContent = "";
+        refreshTitle();
+      });
+      wordInput.addEventListener("input", function () {
+        wordError.textContent = "";
+        if (!composing) clampWordField();
+        refreshTitle();
+      });
+      wordInput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          wordInput.blur();
+        }
+      });
+
+      document.getElementById("btn-rules").addEventListener("click", function () {
+        unlockAudio();
+        goRules();
+      });
+      document.getElementById("btn-start").addEventListener("click", function () {
+        unlockAudio();
+        startRun(false);
+      });
+      document.getElementById("btn-back-word").addEventListener("click", function () {
+        goTitle();
+      });
+      btnContinue.addEventListener("click", function () {
+        if (phase !== "fail") return;
+        unlockAudio();
+        if (hearts <= 0) goResult();
+        else {
+          showOnly("play");
+          goCount();
+        }
+      });
+      btnRetry.addEventListener("click", function () {
+        if (phase !== "result" || resultLocked()) return;
+        unlockAudio();
+        startRun(true);
+      });
+      btnRename.addEventListener("click", function () {
+        if (phase !== "result" || resultLocked()) return;
+        goTitle();
+      });
+      btnCopy.addEventListener("click", function () {
+        if (phase !== "result" || resultLocked()) return;
+        var full = shareText.value;
+        function done(ok) {
+          btnCopy.textContent = ok ? "コピーした" : "コピーできませんでした";
+          window.clearTimeout(copyTimer);
+          copyTimer = window.setTimeout(function () {
+            if (phase === "result") btnCopy.textContent = "結果をコピー";
+          }, 1200);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(full).then(function () { done(true); }, function () {
+            shareText.disabled = false;
+            shareText.focus();
+            shareText.select();
+            try { done(document.execCommand("copy")); } catch (err) { done(false); }
+          });
+        } else {
+          shareText.disabled = false;
+          shareText.focus();
+          shareText.select();
+          try { done(document.execCommand("copy")); } catch (err) { done(false); }
+        }
+      });
+
+      resultOverlay.addEventListener("pointerdown", function (e) {
+        if (phase !== "result") return;
+        if (resultLocked()) {
+          if (e.cancelable) e.preventDefault();
+          e.stopPropagation();
+        }
+      });
+      failOverlay.addEventListener("pointerdown", function (e) {
+        if (e.target === failOverlay) {
+          if (e.cancelable) e.preventDefault();
+          e.stopPropagation();
+        }
+      });
+
+      actionBtn.addEventListener("pointerdown", onPointerDown);
+      stage.addEventListener("pointerdown", onPointerDown);
+      document.getElementById("jerk-row").addEventListener("pointerdown", onPointerDown);
+      btnX.addEventListener("click", function (e) {
+        if (btnX.getAttribute("aria-disabled") === "true" || resultLocked()) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      });
+      window.addEventListener("pointerup", onPointerUp);
+      window.addEventListener("pointercancel", onPointerUp);
+
+      document.addEventListener("keydown", function (e) {
+        if (e.code === "Space" && !typing()) e.preventDefault();
+        if (e.repeat) return;
+        if (e.code !== "Space") return;
+        if (typing()) return;
+        if (phase === "clean") {
+          if (!holding) {
+            holding = true;
+            unlockAudio();
+          }
+        } else if (phase === "jerk") {
+          unlockAudio();
+          judgeJerk();
+        }
+      });
+      document.addEventListener("keyup", function (e) {
+        if (e.code !== "Space") return;
+        if (typing()) return;
+        if (phase === "clean" && holding) judgeClean();
+      });
+
+      muteBtn.addEventListener("click", function () {
+        muted = !muted;
+        applyMute();
+        saveStore();
+        if (!muted) unlockAudio();
+      });
+
+      function paintHeartSVG() {
+        var i;
+        var svg = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 20s-7-4.4-7-9.1C5 8 6.8 6.2 9 6.2c1.2 0 2.3.6 3 1.5.7-.9 1.8-1.5 3-1.5 2.2 0 4 1.8 4 4.7C19 15.6 12 20 12 20z"/></svg>';
+        for (i = 0; i < heartNodes.length; i++) heartNodes[i].innerHTML = svg;
+      }
+
+      paintHeartSVG();
+      mountCoaches();
+      loadStore();
+      applyMute();
+      if (urlWord) wordInput.value = urlWord;
+      setMood("idle");
+      goTitle();
+      requestAnimationFrame(loop);
+    })();
+  </script>
+</body>
+</html>
