@@ -1,0 +1,2083 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#e7a15a">
+  <meta name="description" content="かさねキャンドル。見習いペンギンのロウペンと、ガラスの型に色ろうを4層。押して注ぎ、はなして止め、固まるまで待つ。あふれは失敗。">
+  <meta property="og:title" content="かさねキャンドル — Layer Candle">
+  <meta property="og:description" content="押して注ぐ、はなすと止まる。ねらいの帯、冷却、ふちに気をつけて4層。">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://grokbot365game.github.io/daily-casual-games/games/2026-10-19-layer-candle/">
+  <title>かさねキャンドル</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23f0b429'/%3E%3Crect x='6' y='5.2' width='4' height='8' rx='1' fill='%23fff6e4'/%3E%3Crect x='6' y='5.2' width='4' height='2.3' fill='%23e5484d'/%3E%3Crect x='6' y='7.5' width='4' height='2' fill='%236eb6e8'/%3E%3Cpath d='M8 1.8c.9 1 .9 1.8 0 2.6-.9-.8-.9-1.6 0-2.6z' fill='%23ff8a2a'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      --ink: #3a2416;
+      --muted: #7a5340;
+      --paper: #fffaf2;
+      --line: rgba(58, 36, 22, .14);
+      --accent: #c4552a;
+      --good: #1f7a3a;
+      --bad: #c4273a;
+      --gold: #f0b429;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none; }
+    body {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      color: var(--ink);
+      background:
+        radial-gradient(140px 90px at 50% -10px, rgba(255, 244, 214, .95), transparent 70%),
+        linear-gradient(180deg, #f6d7a4 0%, #e7b56a 42%, #d0894a 72%, #8d5a34 100%);
+      font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Yu Gothic", "WenQuanYi Micro Hei", "Droid Sans Fallback", "Meiryo", sans-serif;
+      font-size: 16px;
+      line-height: 1.45;
+      -webkit-text-size-adjust: 100%;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: manipulation;
+    }
+    [hidden] { display: none !important; }
+    button, a, textarea { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+    button:focus-visible, a:focus-visible, textarea:focus-visible {
+      outline: 3px solid var(--gold);
+      outline-offset: 2px;
+    }
+    .back, .mute {
+      position: fixed;
+      z-index: 70;
+      top: max(10px, env(safe-area-inset-top));
+      border: 0;
+      border-radius: 999px;
+      color: var(--ink);
+      background: rgba(255, 250, 242, .94);
+      box-shadow: inset 0 0 0 1px var(--line);
+      font-weight: 800;
+      text-decoration: none;
+    }
+    .back {
+      left: max(12px, env(safe-area-inset-left));
+      padding: 8px 14px;
+      min-height: 44px;
+      display: grid;
+      place-items: center;
+    }
+    .mute {
+      right: max(12px, env(safe-area-inset-right));
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+    }
+    .mute svg { width: 22px; height: 22px; display: block; }
+    .mute .slash { display: none; }
+    .mute.is-muted .slash { display: block; }
+    .sr {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+      border: 0;
+    }
+    .shell {
+      height: 100%;
+      max-width: 520px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding:
+        calc(max(10px, env(safe-area-inset-top)) + 52px)
+        max(12px, env(safe-area-inset-right))
+        max(8px, env(safe-area-inset-bottom))
+        max(12px, env(safe-area-inset-left));
+      min-height: 0;
+    }
+    .play-title {
+      margin: 0;
+      text-align: center;
+      font-size: .95rem;
+      letter-spacing: .12em;
+      line-height: 1.1;
+    }
+    .hud, .bubble, .meters div, .card {
+      background: rgba(255, 250, 242, .96);
+      box-shadow: inset 0 0 0 1px var(--line), 0 8px 18px rgba(58, 36, 22, .08);
+    }
+    .hud { border-radius: 16px; padding: 8px 10px; flex: none; }
+    .hud-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .hearts { display: flex; align-items: center; gap: 2px; }
+    .heart-label, .layer-label span, #hud-best {
+      font-size: .72rem;
+      font-weight: 800;
+      letter-spacing: .06em;
+      color: var(--muted);
+    }
+    .layer-label { margin: 0; text-align: center; }
+    .layer-label span { display: block; }
+    #layer-num { font-size: 1.15rem; font-weight: 900; }
+    #hud-best { margin: 0; text-align: right; font-weight: 900; }
+    .heart { width: 26px; height: 26px; display: block; color: #e7d3c4; }
+    .heart svg { width: 26px; height: 26px; display: block; }
+    .heart.is-on { color: #e11d48; }
+    .heart.is-break { animation: heartpop .4s ease; }
+    @keyframes heartpop {
+      0% { transform: scale(1.35); }
+      100% { transform: scale(1); }
+    }
+    .coach { display: flex; align-items: center; gap: 8px; flex: none; min-height: 0; }
+    .pen { width: 104px; flex: none; }
+    .pen svg { width: 100%; height: auto; display: block; overflow: visible; }
+    .pen .face { display: none; }
+    .pen[data-mood="idle"] .face.idle,
+    .pen[data-mood="happy"] .face.happy,
+    .pen[data-mood="nervous"] .face.nervous,
+    .pen[data-mood="shock"] .face.shock { display: block; }
+    .pen[data-mood="idle"] { animation: bob 2.4s ease-in-out infinite; }
+    .pen.is-pop[data-mood="happy"] { animation: hop .5s ease; }
+    .pen.is-pop[data-mood="shock"] { animation: shake .42s ease; }
+    @keyframes bob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+    @keyframes hop {
+      0% { transform: translateY(0); }
+      40% { transform: translateY(-10px); }
+      100% { transform: translateY(0); }
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px) rotate(-3deg); }
+      75% { transform: translateX(5px) rotate(3deg); }
+    }
+    .bubble { flex: 1; min-width: 0; border-radius: 18px; padding: 8px 12px; }
+    .who { margin: 0; color: var(--accent); font-size: .75rem; font-weight: 900; letter-spacing: .08em; }
+    .say { margin: 2px 0 0; font-size: 1.02rem; font-weight: 900; line-height: 1.35; }
+    .wax-order {
+      list-style: none;
+      display: flex;
+      gap: 6px;
+      margin: 0;
+      padding: 0;
+      flex: none;
+    }
+    .wax-order li {
+      flex: 1;
+      min-width: 0;
+      text-align: center;
+      font-size: .68rem;
+      font-weight: 800;
+      color: var(--muted);
+      opacity: .5;
+    }
+    .wax-order li.now { opacity: 1; color: var(--ink); }
+    .wax-order li.done { opacity: .88; }
+    .wax-order i {
+      display: block;
+      height: 12px;
+      border-radius: 999px;
+      margin-bottom: 2px;
+      box-shadow: inset 0 0 0 1px rgba(58, 36, 22, .18);
+    }
+    .wax-order li.now i { outline: 2px solid var(--ink); outline-offset: 1px; }
+    .wax-order b {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .stage {
+      position: relative;
+      flex: 1;
+      min-height: 180px;
+      border-radius: 22px;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(255, 236, 200, .25), rgba(255, 236, 200, 0) 30%),
+        rgba(176, 98, 48, .18);
+      box-shadow: inset 0 0 0 1px rgba(255, 250, 242, .28);
+      touch-action: none;
+    }
+    #view { width: 100%; height: 100%; display: block; touch-action: none; }
+    #banner, #callout {
+      position: absolute;
+      left: 8px;
+      right: 8px;
+      margin: 0;
+      padding: 10px 12px;
+      border-radius: 16px;
+      background: rgba(255, 250, 242, .97);
+      text-align: center;
+      box-shadow: 0 10px 24px rgba(58, 36, 22, .18);
+    }
+    #banner { top: 8px; }
+    #banner b, #callout b { display: block; font-size: 1.05rem; line-height: 1.35; }
+    #banner span, #callout span { display: block; margin-top: 2px; font-weight: 800; font-size: .92rem; }
+    #banner span { color: var(--accent); }
+    #callout { top: 46%; color: var(--bad); }
+    #callout span { color: var(--ink); }
+    #count {
+      position: absolute;
+      inset: 0;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      font-size: 6rem;
+      font-weight: 900;
+      color: #fffaf2;
+      text-shadow: 0 6px 0 rgba(58, 36, 22, .28);
+    }
+    .meters {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      flex: none;
+    }
+    .meters div { border-radius: 12px; padding: 4px 8px 6px; }
+    .meters span, .meters em {
+      display: block;
+      font-style: normal;
+      font-size: .68rem;
+      font-weight: 800;
+      color: var(--muted);
+      letter-spacing: .04em;
+    }
+    .meters strong { display: block; font-size: 1.15rem; line-height: 1.15; }
+    .meters[data-zone="good"] #cell-now strong { color: var(--good); }
+    .meters[data-zone="hot"] #cell-now strong,
+    .meters[data-zone="danger"] #cell-now strong { color: var(--bad); }
+    .meters[data-zone="danger"] #cell-now { background: #fde2e2; }
+    #cell-speed.pop strong { animation: heartpop .45s ease; }
+    #cool {
+      flex: none;
+      border-radius: 16px;
+      padding: 6px 12px 8px;
+      background: #1e4f86;
+      color: #fff;
+    }
+    .cool-top { display: flex; align-items: baseline; gap: 6px; }
+    .cool-top span { font-weight: 800; letter-spacing: .08em; }
+    #cool-sec { font-size: 1.8rem; line-height: 1; }
+    .cool-bar { height: 10px; border-radius: 99px; background: rgba(255, 255, 255, .28); overflow: hidden; }
+    .cool-bar i { display: block; height: 100%; width: 0; background: #fff; border-radius: 99px; }
+    #cool p { margin: 4px 0 0; font-weight: 800; font-size: .85rem; }
+    #pour {
+      flex: none;
+      min-height: 64px;
+      border: 0;
+      border-radius: 18px;
+      background: #8d6a52;
+      color: #fffaf2;
+      font-weight: 900;
+      touch-action: none;
+    }
+    #pour .sub { display: block; font-size: .75rem; font-weight: 800; opacity: .92; }
+    #pour.is-wait { background: #7f1d1d; }
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      overflow: auto;
+      padding:
+        calc(max(12px, env(safe-area-inset-top)) + 52px)
+        16px
+        max(16px, env(safe-area-inset-bottom));
+      background: rgba(90, 48, 24, .28);
+    }
+    .card {
+      width: min(100%, 440px);
+      margin: 0 auto;
+      border-radius: 24px;
+      padding: 16px 16px 14px;
+    }
+    .hero { display: flex; align-items: center; gap: 8px; }
+    .kicker {
+      margin: 8px 0 0;
+      text-align: center;
+      color: var(--accent);
+      font-size: .72rem;
+      font-weight: 800;
+      letter-spacing: .16em;
+    }
+    .card h1, .card h2 { margin: 0; text-align: center; line-height: 1.2; }
+    .card h1 { font-size: 1.7rem; letter-spacing: .08em; }
+    .card h2 { font-size: 1.25rem; }
+    .en, .lead, .fine, .keys, .best { text-align: center; }
+    .en { margin: 2px 0 0; color: var(--muted); font-size: .75rem; font-weight: 800; letter-spacing: .14em; }
+    .lead { margin: 8px 0; font-weight: 800; }
+    .rules { margin: 8px 0; padding-left: 1.2em; }
+    .rules li { margin: 3px 0; font-weight: 800; font-size: .92rem; }
+    .fine, .keys { margin: 6px 0; color: var(--muted); font-size: .78rem; font-weight: 800; }
+    .best { margin: 8px 0; font-weight: 900; }
+    .go, .btns button {
+      width: 100%;
+      min-height: 48px;
+      border: 0;
+      border-radius: 14px;
+      font-weight: 900;
+      background: var(--accent);
+      color: #fff;
+    }
+    .btns { display: grid; gap: 8px; margin-top: 10px; }
+    .btns .ghost {
+      background: #fff;
+      color: var(--ink);
+      box-shadow: inset 0 0 0 2px rgba(58, 36, 22, .16);
+    }
+    .go:disabled, .btns button:disabled { opacity: .45; }
+    #title.overlay, #result.overlay { display: flex; align-items: center; justify-content: center; }
+    #title .card, #result .card {
+      max-height: 100%;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      margin: 0 auto;
+    }
+    #title .card-body, #result .card-body { overflow: auto; min-height: 0; }
+    #title .go { flex: none; margin-top: 8px; }
+    #result .pen { width: 84px; }
+    #result .btns { flex: none; }
+    #preview {
+      display: block;
+      width: 132px;
+      height: 164px;
+      margin: 4px auto;
+      border-radius: 18px;
+      background: #f6d7a8;
+    }
+    .grade {
+      margin: 0;
+      text-align: center;
+      font-size: 2.4rem;
+      font-weight: 900;
+      letter-spacing: .08em;
+      line-height: 1;
+    }
+    .grade.S { color: #b45309; }
+    .grade.A { color: #1f7a3a; }
+    .grade.B { color: #1d4ed8; }
+    .grade.C { color: #7a5340; }
+    #res-score { margin: 2px 0 6px; text-align: center; font-weight: 900; font-size: 1.05rem; }
+    .why {
+      margin: 6px 0;
+      padding: 8px 10px;
+      border-radius: 12px;
+      font-weight: 900;
+      text-align: center;
+    }
+    .why.win { background: #e7f6df; color: #1f6b32; }
+    .why.overflow { background: #fde8c8; color: #9a3412; }
+    .why.miss { background: #fde68a; color: #854d0e; }
+    .why.crack { background: #fee2e2; color: #9f1239; }
+    #res-detail { margin: 4px 0; text-align: center; font-size: .85rem; font-weight: 800; }
+    #res-layers {
+      margin: 6px 0;
+      padding-left: 1.1em;
+      font-size: .82rem;
+      font-weight: 800;
+    }
+    #res-layers li { margin: 2px 0; }
+    .record { margin: 4px 0; text-align: center; color: #b45309; font-weight: 900; }
+    #share-text {
+      width: 100%;
+      min-height: 4.6em;
+      margin-top: 6px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      padding: 8px;
+      resize: none;
+      background: #fff;
+      font-size: .78rem;
+      user-select: text;
+      -webkit-user-select: text;
+    }
+    .end-link { color: #9a3412; font-weight: 900; text-decoration: none; }
+    @media (max-height: 740px) {
+      .pen { width: 84px; }
+      .play-title { display: none; }
+      .meters strong { font-size: 1rem; }
+      #pour { min-height: 56px; }
+      .say { font-size: .92rem; }
+    }
+    @media (max-height: 640px) {
+      .pen { width: 68px; }
+      .wax-order b { display: none; }
+      #cool-sec { font-size: 1.4rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .pen, .pen.is-pop, .heart.is-break, #cell-speed.pop strong { animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <a class="back" href="../../index.html">ギャラリー</a>
+  <button type="button" class="mute" id="mute" aria-pressed="false" aria-label="音を消す">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="M4 9h4l5-4v14l-5-4H4z"/>
+      <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 9.5a4 4 0 0 1 0 5"/>
+      <path class="slash" fill="none" stroke="#e11d48" stroke-width="2.4" stroke-linecap="round" d="M6 5l13 14"/>
+    </svg>
+  </button>
+  <p class="sr" id="live" aria-live="polite"></p>
+  <template id="pen-tpl">
+    <svg viewBox="0 0 160 188" aria-hidden="true">
+      <ellipse cx="80" cy="176" rx="42" ry="8" fill="rgba(58,36,22,.18)"/>
+      <ellipse cx="60" cy="166" rx="16" ry="8" fill="#f4a03c"/>
+      <ellipse cx="104" cy="166" rx="16" ry="8" fill="#f4a03c"/>
+      <ellipse cx="36" cy="128" rx="13" ry="20" fill="#243038" transform="rotate(18 36 128)"/>
+      <ellipse cx="124" cy="128" rx="13" ry="20" fill="#243038" transform="rotate(-18 124 128)"/>
+      <ellipse cx="80" cy="126" rx="46" ry="42" fill="#243038"/>
+      <ellipse cx="80" cy="134" rx="30" ry="32" fill="#fff9f0"/>
+      <path d="M50 114 h60 l-8 44 h-44 z" fill="#f6e4c8"/>
+      <path d="M50 114 h60" stroke="#d86a45" stroke-width="4" stroke-linecap="round"/>
+      <path d="M80 116 v40" stroke="#e7c9a4" stroke-width="2"/>
+      <rect x="68" y="130" width="16" height="12" rx="3" fill="#fff9f0" stroke="#d86a45" stroke-width="2"/>
+      <circle cx="100" cy="142" r="5" fill="#f08c28"/>
+      <circle cx="80" cy="64" r="34" fill="#243038"/>
+      <ellipse cx="80" cy="72" rx="22" ry="18" fill="#fff9f0"/>
+      <path d="M46 52 q34 14 68 0" fill="none" stroke="#e25b3a" stroke-width="8" stroke-linecap="round"/>
+      <path d="M112 50 l18 6 -2 14 -14 -8 z" fill="#e25b3a"/>
+      <ellipse cx="80" cy="80" rx="7" ry="4.5" fill="#f4a03c"/>
+      <g class="face idle">
+        <ellipse cx="66" cy="66" rx="4.2" ry="5" fill="#1c1612"/>
+        <ellipse cx="94" cy="66" rx="4.2" ry="5" fill="#1c1612"/>
+        <circle cx="67.5" cy="64.4" r="1.4" fill="#fff"/>
+        <circle cx="95.5" cy="64.4" r="1.4" fill="#fff"/>
+        <path d="M72 86 q8 6 16 0" fill="none" stroke="#1c1612" stroke-width="2" stroke-linecap="round"/>
+      </g>
+      <g class="face happy">
+        <path d="M60 68 q6 -8 12 0" fill="none" stroke="#1c1612" stroke-width="2.6" stroke-linecap="round"/>
+        <path d="M88 68 q6 -8 12 0" fill="none" stroke="#1c1612" stroke-width="2.6" stroke-linecap="round"/>
+        <path d="M70 84 q10 10 20 0" fill="none" stroke="#1c1612" stroke-width="2.2" stroke-linecap="round"/>
+        <ellipse cx="54" cy="76" rx="5" ry="3" fill="#ff9eb5"/>
+        <ellipse cx="106" cy="76" rx="5" ry="3" fill="#ff9eb5"/>
+      </g>
+      <g class="face nervous">
+        <ellipse cx="66" cy="67" rx="4" ry="4.6" fill="#1c1612"/>
+        <ellipse cx="94" cy="67" rx="4" ry="4.6" fill="#1c1612"/>
+        <path d="M58 58 l10 4" stroke="#1c1612" stroke-width="2.2" stroke-linecap="round"/>
+        <path d="M102 58 l-10 4" stroke="#1c1612" stroke-width="2.2" stroke-linecap="round"/>
+        <path d="M72 88 q8 -6 16 0" fill="none" stroke="#1c1612" stroke-width="2" stroke-linecap="round"/>
+        <path d="M110 64 q6 8 -2 12 q-6 -4 2 -12z" fill="#7ec8f0"/>
+      </g>
+      <g class="face shock">
+        <ellipse cx="66" cy="66" rx="6.4" ry="7.2" fill="#fff"/>
+        <ellipse cx="94" cy="66" rx="6.4" ry="7.2" fill="#fff"/>
+        <circle cx="66" cy="67" r="2.5" fill="#1c1612"/>
+        <circle cx="94" cy="67" r="2.5" fill="#1c1612"/>
+        <ellipse cx="80" cy="88" rx="5.5" ry="6.5" fill="#1c1612"/>
+        <path d="M112 60 q6 8 -2 12 q-6 -4 2 -12z" fill="#7ec8f0"/>
+      </g>
+    </svg>
+  </template>
+
+  <div class="shell" id="shell" hidden>
+    <h1 class="play-title">かさねキャンドル</h1>
+    <div class="hud">
+      <div class="hud-top">
+        <div class="hearts" id="hearts" role="img" aria-label="ハート 残り2">
+          <span class="heart-label">ハート</span>
+          <i class="heart is-on" data-i="0"></i>
+          <i class="heart is-on" data-i="1"></i>
+        </div>
+        <p class="layer-label"><span>層</span><b id="layer-num">1 / 4</b></p>
+        <p id="hud-best">ベスト なし</p>
+      </div>
+    </div>
+    <div class="coach">
+      <div class="pen" id="pen-play" data-mood="idle" role="img" aria-label="エプロン姿の見習いペンギン、ロウペン"></div>
+      <div class="bubble">
+        <p class="who">ロウペン</p>
+        <p class="say" id="say">ねらいの緑まで注ごう</p>
+      </div>
+    </div>
+    <ol class="wax-order" id="wax-order"></ol>
+    <div class="stage" id="stage">
+      <canvas id="view"></canvas>
+      <p id="banner" hidden><b id="banner-title"></b><span id="banner-detail"></span></p>
+      <p id="count" hidden>3</p>
+      <p id="callout" hidden><b id="callout-title"></b><span id="callout-sub"></span></p>
+    </div>
+    <div class="meters" id="meters" data-zone="low">
+      <div id="cell-now"><span>この層</span><strong id="m-now">0.0%</strong></div>
+      <div id="cell-aim"><span>ねらい</span><strong id="m-aim">0.0%</strong><em id="m-tol">±0%</em></div>
+      <div id="cell-speed"><span>注ぎ速度</span><strong id="m-speed">ゆっくり</strong><em id="m-rate">8%/秒</em></div>
+      <div id="cell-rim"><span>ふちまであと</span><strong id="m-rim">100.0%</strong></div>
+    </div>
+    <div id="cool" hidden>
+      <div class="cool-top"><span>冷却</span><b id="cool-sec">0.0</b><span>秒</span></div>
+      <div class="cool-bar"><i id="cool-fill"></i></div>
+      <p>固まるまで注がないで</p>
+    </div>
+    <button type="button" id="pour" class="is-off">
+      <span id="pour-label">ちょっと待って</span>
+      <span class="sub" id="pour-sub">見ててね</span>
+    </button>
+  </div>
+
+  <div class="overlay" id="title">
+    <div class="card">
+      <div class="card-body">
+      <div class="hero">
+        <div class="pen" id="pen-title" data-mood="idle" role="img" aria-label="エプロン姿の見習いペンギン、ロウペン"></div>
+        <div>
+          <p class="who">ロウペン</p>
+          <p class="say" id="title-say">ねらいの緑まで、ゆっくり注ごう</p>
+        </div>
+      </div>
+      <p class="kicker">DAY 24</p>
+      <h1>かさねキャンドル</h1>
+      <p class="en">LAYER CANDLE</p>
+      <p class="lead">見習いのペンギン、ロウペンと、色ろうを4層。</p>
+      <ol class="rules">
+        <li>押しているあいだ注ぐ。はなすと止まる。</li>
+        <li>緑の帯がねらい。外すとハートが減る。</li>
+        <li>冷却が終わるまで待つ。早いとひび割れで、ハートが減る。</li>
+        <li>ふちをこえたら、その場で失敗。</li>
+      </ol>
+      <p class="fine">ハートは2つ。なくなったら失敗。あふれはハートに関係なく失敗。4層そろえば完成。</p>
+      <p class="fine">1層目はゆっくり。あとの層は、注ぎが速くなったり帯がせまくなったりする。変わる前に画面で知らせる。</p>
+      <p class="keys">操作: 下のボタン、型、スペースキー</p>
+      <p class="best" id="title-best">ベスト なし</p>
+      </div>
+      <button type="button" class="go" id="btn-start">はじめる</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="result" hidden>
+    <div class="card" id="result-card">
+      <div class="card-body">
+      <div class="hero">
+        <div class="pen" id="pen-result" data-mood="idle" role="img" aria-label="エプロン姿の見習いペンギン、ロウペン"></div>
+        <div>
+          <p class="who">ロウペン</p>
+          <p class="say" id="result-say">……</p>
+        </div>
+      </div>
+      <canvas id="preview" width="320" height="400"></canvas>
+      <h2 id="res-name">できあがり</h2>
+      <p class="grade" id="res-grade" hidden>A</p>
+      <p id="res-score" hidden>スコア 0</p>
+      <p class="why" id="res-why"></p>
+      <p id="res-detail"></p>
+      <ul id="res-layers"></ul>
+      <p class="record" id="res-record" hidden>ベスト更新！</p>
+      <p class="best" id="res-best">ベスト なし</p>
+      <textarea id="share-text" readonly></textarea>
+      </div>
+      <div class="btns">
+        <button type="button" id="btn-retry" disabled>もういちど</button>
+        <button type="button" class="ghost" id="btn-png" disabled>画像を保存</button>
+        <button type="button" class="ghost" id="btn-copy" disabled>結果をコピー</button>
+      </div>
+      <p class="fine"><a class="end-link" href="../../index.html">ギャラリーへ</a></p>
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    "use strict";
+
+    var PLAY_URL = "https://grokbot365game.github.io/daily-casual-games/games/2026-10-19-layer-candle/";
+    var STORE = "layer-candle-2026-10-19";
+    var LOCK_MS = 600;
+    var JP = '"Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Yu Gothic", "WenQuanYi Micro Hei", "Droid Sans Fallback", sans-serif';
+
+    var LAYERS = [
+      { speed: 8, tol: 8, min: 18, max: 24, speedName: "ゆっくり", cool: 3.4, bannerSec: 1.45,
+        banner: "1層目：ゆっくり注げるよ" },
+      { speed: 14, tol: 4, min: 15, max: 20, speedName: "少しはやい", cool: 3.0, bannerSec: 1.8,
+        banner: "2層目：帯がせまく、注ぎも少し速くなるよ" },
+      { speed: 20, tol: 3, min: 13, max: 17, speedName: "はやい", cool: 2.7, bannerSec: 1.8,
+        banner: "3層目：注ぎが速くなるよ" },
+      { speed: 28, tol: 2.5, min: 11, max: 15, speedName: "とてもはやい", cool: 2.4, bannerSec: 1.9,
+        banner: "4層目：注ぎが速くなるよ", extra: "帯もせまいよ" }
+    ];
+
+    var WAX = [
+      { name: "いちご", hex: "#e5484d", deep: "#b4232c", group: "sunset" },
+      { name: "みかん", hex: "#f08c28", deep: "#c46a10", group: "sunset" },
+      { name: "レモン", hex: "#f2c14e", deep: "#d4a017", group: "sunset" },
+      { name: "さんご", hex: "#ff7b6b", deep: "#e2554a", group: "sunset" },
+      { name: "さくら", hex: "#f4a0c0", deep: "#d56b96", group: "blossom" },
+      { name: "もも", hex: "#ff8fb8", deep: "#e45b90", group: "blossom" },
+      { name: "ミント", hex: "#6ec9a0", deep: "#3e9a72", group: "forest" },
+      { name: "わかば", hex: "#7cbc3a", deep: "#4e8a1e", group: "forest" },
+      { name: "そらいろ", hex: "#6eb6e8", deep: "#3d86c4", group: "water" },
+      { name: "みずいろ", hex: "#4eb0c8", deep: "#2a849c", group: "water" },
+      { name: "ぶどう", hex: "#8d62c8", deep: "#6844a4", group: "night" },
+      { name: "ふじ", hex: "#b89ad8", deep: "#8a6cb4", group: "night" },
+      { name: "カカオ", hex: "#8d5a3c", deep: "#694026", group: "cacao" },
+      { name: "ミルク", hex: "#f3ddb0", deep: "#d7bf86", group: "milk" }
+    ];
+
+    var THEME_WORD = {
+      sunset: "夕焼け",
+      blossom: "はなびら",
+      forest: "わかば",
+      water: "みずべ",
+      night: "よぞら",
+      cacao: "こがし",
+      milk: "ミルク",
+      rainbow: "にじ"
+    };
+
+    var shell = document.getElementById("shell");
+    var heartsEl = document.getElementById("hearts");
+    var layerNum = document.getElementById("layer-num");
+    var hudBest = document.getElementById("hud-best");
+    var penPlay = document.getElementById("pen-play");
+    var penTitle = document.getElementById("pen-title");
+    var penResult = document.getElementById("pen-result");
+    var sayEl = document.getElementById("say");
+    var waxOrder = document.getElementById("wax-order");
+    var stage = document.getElementById("stage");
+    var canvas = document.getElementById("view");
+    var ctx = canvas.getContext("2d");
+    var bannerEl = document.getElementById("banner");
+    var bannerTitle = document.getElementById("banner-title");
+    var bannerDetail = document.getElementById("banner-detail");
+    var countEl = document.getElementById("count");
+    var callout = document.getElementById("callout");
+    var calloutTitle = document.getElementById("callout-title");
+    var calloutSub = document.getElementById("callout-sub");
+    var meters = document.getElementById("meters");
+    var mNow = document.getElementById("m-now");
+    var mAim = document.getElementById("m-aim");
+    var mTol = document.getElementById("m-tol");
+    var mSpeed = document.getElementById("m-speed");
+    var mRate = document.getElementById("m-rate");
+    var mRim = document.getElementById("m-rim");
+    var cellSpeed = document.getElementById("cell-speed");
+    var coolBox = document.getElementById("cool");
+    var coolSec = document.getElementById("cool-sec");
+    var coolFill = document.getElementById("cool-fill");
+    var pourBtn = document.getElementById("pour");
+    var pourLabel = document.getElementById("pour-label");
+    var pourSub = document.getElementById("pour-sub");
+    var titleEl = document.getElementById("title");
+    var titleBest = document.getElementById("title-best");
+    var resultEl = document.getElementById("result");
+    var resultCard = document.getElementById("result-card");
+    var resultSay = document.getElementById("result-say");
+    var preview = document.getElementById("preview");
+    var pctx = preview.getContext("2d");
+    var resName = document.getElementById("res-name");
+    var resGrade = document.getElementById("res-grade");
+    var resScore = document.getElementById("res-score");
+    var resWhy = document.getElementById("res-why");
+    var resDetail = document.getElementById("res-detail");
+    var resLayers = document.getElementById("res-layers");
+    var resRecord = document.getElementById("res-record");
+    var resBest = document.getElementById("res-best");
+    var shareText = document.getElementById("share-text");
+    var btnRetry = document.getElementById("btn-retry");
+    var btnPng = document.getElementById("btn-png");
+    var btnCopy = document.getElementById("btn-copy");
+    var btnStart = document.getElementById("btn-start");
+    var muteBtn = document.getElementById("mute");
+    var liveEl = document.getElementById("live");
+
+    var HEART_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 20s-7-4.4-7-9.1C5 8 6.8 6.2 9.1 6.2c1.3 0 2.4.6 2.9 1.6.5-1 1.6-1.6 2.9-1.6 2.3 0 4.1 1.8 4.1 4.7C19 15.6 12 20 12 20z"/></svg>';
+
+    var state = "title";
+    var plan = [];
+    var done = [];
+    var layerIndex = 0;
+    var base = 0;
+    var poured = 0;
+    var hearts = 2;
+    var cracks = 0;
+    var crackLines = [];
+    var overflowed = false;
+    var countN = 3;
+    var countLeft = 0;
+    var bannerLeft = 0;
+    var coolLeft = 0;
+    var coolMax = 1;
+    var waitLeft = 0;
+    var waitNext = null;
+    var holdCount = 0;
+    var downArmed = true;
+    var said = "";
+    var wobbleT = 0;
+    var wobbleSeed = 0;
+    var lastTs = 0;
+    var viewW = 300;
+    var viewH = 360;
+    var bestScore = -1;
+    var bestGrade = "";
+    var muted = false;
+    var storeReady = false;
+    var lockUntil = 0;
+    var resultOpen = false;
+    var resultKind = "";
+    var slowAt = 0;
+    var slowDone = false;
+    var winInfo = null;
+    var copyTimer = 0;
+    var ac = null;
+    var noiseBuf = null;
+    var pourNodes = null;
+    var master = null;
+
+    mountPen(penPlay);
+    mountPen(penTitle);
+    mountPen(penResult);
+    fillHearts();
+    loadStore();
+    paintBest();
+    requestAnimationFrame(frame);
+
+    btnStart.addEventListener("click", function () {
+      audio();
+      beginRun();
+    });
+    muteBtn.addEventListener("click", function () {
+      audio();
+      setMuted(!muted);
+    });
+    btnRetry.addEventListener("click", function () {
+      if (performance.now() < lockUntil) return;
+      beginRun();
+    });
+    btnPng.addEventListener("click", function () {
+      if (performance.now() < lockUntil) return;
+      savePng();
+    });
+    btnCopy.addEventListener("click", function () {
+      if (performance.now() < lockUntil) return;
+      copyShare();
+    });
+
+    bindHold(pourBtn);
+    bindHold(stage);
+    window.addEventListener("keydown", function (e) {
+      if (e.code !== "Space") return;
+      if (e.repeat) return;
+      if (e.target && e.target.closest && e.target.closest("a, textarea, button") && e.target.id !== "pour") return;
+      if (state === "title" || state === "result") return;
+      e.preventDefault();
+      pressStart();
+    });
+    window.addEventListener("keyup", function (e) {
+      if (e.code !== "Space") return;
+      if (state === "title" || state === "result") return;
+      pressEnd();
+    });
+    shell.addEventListener("touchmove", function (e) { e.preventDefault(); }, { passive: false });
+    window.addEventListener("resize", fitCanvas);
+
+    function mountPen(host) {
+      host.appendChild(document.getElementById("pen-tpl").content.cloneNode(true));
+    }
+
+    function fillHearts() {
+      var nodes = heartsEl.querySelectorAll(".heart");
+      for (var i = 0; i < nodes.length; i++) nodes[i].innerHTML = HEART_SVG;
+    }
+
+    function makeRng(seed) {
+      var s = seed >>> 0;
+      return function () {
+        s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
+        return s / 4294967296;
+      };
+    }
+
+    function shuffle(list, rng) {
+      var a = list.slice();
+      for (var i = a.length - 1; i > 0; i--) {
+        var j = Math.floor(rng() * (i + 1));
+        var t = a[i];
+        a[i] = a[j];
+        a[j] = t;
+      }
+      return a;
+    }
+
+    function pickColors(rng) {
+      var bag = shuffle(WAX, rng);
+      var picked = [];
+      var i;
+      for (i = 0; i < bag.length && picked.length < 4; i++) {
+        if (picked.length && picked[picked.length - 1].group === bag[i].group) continue;
+        picked.push(bag[i]);
+      }
+      for (i = 0; i < bag.length && picked.length < 4; i++) {
+        if (picked.indexOf(bag[i]) < 0) picked.push(bag[i]);
+      }
+      return picked;
+    }
+
+    function layerDetail(def) {
+      var text = "注ぎ速度 " + def.speed + "%/秒　ねらいの幅 ±" + def.tol + "%";
+      if (def.extra) text = def.extra + "　" + text;
+      return text;
+    }
+
+    function beginRun() {
+      var rng = makeRng((Date.now() ^ ((Math.random() * 0x100000000) >>> 0)) >>> 0);
+      var colors = pickColors(rng);
+      plan = [];
+      for (var i = 0; i < LAYERS.length; i++) {
+        var def = LAYERS[i];
+        var target = def.min + Math.floor(rng() * (def.max - def.min + 1));
+        plan.push({
+          color: colors[i],
+          target: target,
+          tol: def.tol,
+          speed: def.speed,
+          speedName: def.speedName,
+          cool: def.cool,
+          bannerSec: def.bannerSec,
+          banner: def.banner,
+          extra: def.extra || "",
+          poured: 0,
+          rel: 0
+        });
+      }
+      done = [];
+      layerIndex = 0;
+      base = 0;
+      poured = 0;
+      hearts = 2;
+      cracks = 0;
+      crackLines = [];
+      overflowed = false;
+      holdCount = 0;
+      downArmed = true;
+      wobbleSeed = rng() * Math.PI * 2;
+      wobbleT = 0;
+      winInfo = null;
+      resultKind = "";
+      resultOpen = false;
+      slowDone = false;
+      said = "";
+      hideCallout();
+      bannerEl.hidden = true;
+      coolBox.hidden = true;
+      resultEl.hidden = true;
+      titleEl.hidden = true;
+      shell.hidden = false;
+      renderHearts(false);
+      renderWax();
+      setMood(penPlay, "nervous");
+      say("いくよ");
+      state = "count";
+      countN = 3;
+      countLeft = 0.8;
+      countEl.hidden = false;
+      countEl.textContent = "3";
+      live("3");
+      blip(660, 0.08);
+      fitCanvas();
+      syncHud();
+    }
+
+    function frame(ts) {
+      var dt = lastTs ? Math.min(0.05, (ts - lastTs) / 1000) : 0;
+      lastTs = ts;
+      if (state === "count") tickCount(dt);
+      else if (state === "banner") tickBanner(dt);
+      else if (state === "pouring") tickPour(dt);
+      else if (state === "cool") tickCool(dt);
+      else if (state === "wait") tickWait(dt);
+      if (resultOpen) tickResult(ts);
+      if (!shell.hidden) {
+        syncHud();
+        draw(ts / 1000);
+      }
+      requestAnimationFrame(frame);
+    }
+
+    function tickCount(dt) {
+      countLeft -= dt;
+      if (countLeft > 0) return;
+      if (countN > 1) {
+        countN -= 1;
+        countLeft = 0.8;
+        countEl.textContent = String(countN);
+        live(String(countN));
+        blip(620 + (3 - countN) * 80, 0.08);
+      } else {
+        countEl.hidden = true;
+        startBanner();
+      }
+    }
+
+    function tickBanner(dt) {
+      bannerLeft -= dt;
+      if (bannerLeft > 0) return;
+      bannerEl.hidden = true;
+      state = "ready";
+      downArmed = holdCount === 0;
+      setMood(penPlay, "idle");
+      say("緑の帯ではなして");
+      live(plan[layerIndex].banner);
+    }
+
+    function tickPour(dt) {
+      var L = plan[layerIndex];
+      poured += L.speed * dt;
+      wobbleT += dt;
+      if (base + poured >= 100) {
+        poured = 100 - base;
+        overflowed = true;
+        stopPourSound();
+        setMood(penPlay, "shock");
+        say("あふれた！");
+        showCallout("あふれた！", "ふちをこえた。その場で失敗");
+        playThud();
+        armWait(0.8, function () {
+          openFail("overflow", "あふれた！", "ろうがふち（100%）をこえた。その場で失敗。");
+        });
+        return;
+      }
+      var level = base + poured;
+      var mood = "nervous";
+      var line = "ねらいの線を見て";
+      if (level >= 90) {
+        mood = "shock";
+        line = "ふちだよ！";
+      } else if (poured > L.target + L.tol) {
+        mood = "shock";
+        line = "はなして！";
+      } else if (Math.abs(poured - L.target) <= L.tol) {
+        mood = "happy";
+        line = "そのへんだよ";
+      }
+      if (penPlay.dataset.mood !== mood) setMood(penPlay, mood);
+      say(line);
+    }
+
+    function tickCool(dt) {
+      coolLeft -= dt;
+      if (coolLeft > 0) return;
+      coolLeft = 0;
+      coolBox.hidden = true;
+      playTink();
+      setMood(penPlay, "happy");
+      say("固まった！");
+      if (layerIndex >= 3) {
+        armWait(0.7, openWin);
+      } else {
+        armWait(0.65, function () {
+          layerIndex += 1;
+          poured = 0;
+          startBanner();
+        });
+      }
+    }
+
+    function tickWait(dt) {
+      waitLeft -= dt;
+      if (waitLeft > 0) return;
+      var fn = waitNext;
+      waitNext = null;
+      if (fn) fn();
+    }
+
+    function armWait(sec, fn) {
+      state = "wait";
+      waitLeft = sec;
+      waitNext = fn;
+    }
+
+    function startBanner() {
+      var L = plan[layerIndex];
+      state = "banner";
+      bannerLeft = L.bannerSec;
+      bannerEl.hidden = false;
+      bannerTitle.textContent = L.banner;
+      bannerDetail.textContent = layerDetail(L);
+      hideCallout();
+      setMood(penPlay, "nervous");
+      say(L.banner);
+      live(L.banner + "。" + layerDetail(L));
+      renderWax();
+      popSpeed();
+    }
+
+    function startCool() {
+      var L = plan[layerIndex];
+      state = "cool";
+      coolMax = L.cool;
+      coolLeft = L.cool;
+      coolBox.hidden = false;
+      downArmed = holdCount === 0;
+      setMood(penPlay, "idle");
+      say("固まるまで待って");
+      renderWax();
+    }
+
+    function pressStart() {
+      if (state === "title" || state === "result") return;
+      holdCount += 1;
+      if (holdCount > 1) return;
+      if (!downArmed) return;
+      if (state === "ready") beginPour();
+      else if (state === "cool") doCrack();
+      else downArmed = false;
+    }
+
+    function pressEnd() {
+      if (holdCount <= 0) return;
+      holdCount -= 1;
+      if (holdCount > 0) return;
+      if (state === "pouring") releasePour();
+      downArmed = true;
+    }
+
+    function beginPour() {
+      state = "pouring";
+      poured = 0;
+      overflowed = false;
+      startPourSound();
+      setMood(penPlay, "nervous");
+      say("ねらいの線を見て");
+    }
+
+    function releasePour() {
+      if (state !== "pouring") return;
+      stopPourSound();
+      var L = plan[layerIndex];
+      var diff = poured - L.target;
+      if (Math.abs(diff) <= L.tol + 0.05) {
+        L.poured = poured;
+        L.rel = (poured - L.target) / L.target;
+        done.push(L);
+        base += poured;
+        poured = 0;
+        var close = Math.abs(diff) <= L.tol * 0.28;
+        setMood(penPlay, "happy");
+        say(close ? "ぴったり！" : "いい線！");
+        renderWax();
+        armWait(0.42, startCool);
+        return;
+      }
+      var text = missText(layerIndex, poured, L.target);
+      var why = "ねらい " + L.target.toFixed(1) + "% に対して " + poured.toFixed(1) + "% 注いだ。";
+      poured = 0;
+      hearts -= 1;
+      renderHearts(true);
+      setMood(penPlay, "shock");
+      say(text);
+      playThud();
+      if (hearts <= 0) {
+        showCallout(text, "ハートがなくなった");
+        armWait(0.9, function () {
+          openFail("miss", text, why + "ハートがなくなった。");
+        });
+      } else {
+        showCallout(text, "ハート あと" + hearts);
+        armWait(1.05, function () {
+          hideCallout();
+          state = "ready";
+          downArmed = holdCount === 0;
+          setMood(penPlay, "nervous");
+          say("ハート あと" + hearts + "。もういちどこの層");
+          renderWax();
+        });
+      }
+    }
+
+    function doCrack() {
+      if (state !== "cool") return;
+      hearts -= 1;
+      cracks += 1;
+      addCrack();
+      renderHearts(true);
+      setMood(penPlay, "shock");
+      say("まだ固まってない！ひび割れ");
+      playThud();
+      coolBox.hidden = true;
+      if (hearts <= 0) {
+        showCallout("まだ固まってない！ひび割れ", "ハートがなくなった");
+        armWait(0.9, function () {
+          openFail("crack", "まだ固まってない！ひび割れ", "冷却が終わる前に注いだ。層がまざってひび割れた。ハートがなくなった。");
+        });
+      } else {
+        showCallout("まだ固まってない！ひび割れ", "ハート あと" + hearts);
+        armWait(0.85, function () {
+          hideCallout();
+          startCool();
+          say("ハート あと" + hearts + "。固まるまで待って");
+        });
+      }
+    }
+
+    function addCrack() {
+      crackLines.push({
+        x1: 0.15 + Math.random() * 0.25,
+        y1: 0.08 + Math.random() * 0.2,
+        x2: 0.55 + Math.random() * 0.3,
+        y2: 0.28 + Math.random() * 0.35
+      });
+    }
+
+    function missText(index, amount, target) {
+      var rel = Math.round(Math.abs(amount - target) / target * 100);
+      if (rel < 1) rel = 1;
+      var dir = amount > target ? "多すぎ" : "少なすぎ";
+      return (index + 1) + "層目が " + rel + "% " + dir;
+    }
+
+    function themeOf(colors) {
+      var tally = {};
+      var i;
+      for (i = 0; i < colors.length; i++) {
+        var g = colors[i].group;
+        tally[g] = (tally[g] || 0) + 1;
+      }
+      var best = "rainbow";
+      var n = 0;
+      for (var k in tally) {
+        if (!tally.hasOwnProperty(k)) continue;
+        if (tally[k] > n) {
+          n = tally[k];
+          best = k;
+        }
+      }
+      if (n < 2) return "rainbow";
+      return best;
+    }
+
+    function candleName(colors, grade) {
+      var theme = THEME_WORD[themeOf(colors)] || "しましま";
+      if (grade === "S") return "極上の" + theme + "しましまキャンドル";
+      if (grade === "A") return theme + "しましまキャンドル";
+      if (grade === "B") return theme + "のしまキャンドル";
+      return "むらのある" + theme + "キャンドル";
+    }
+
+    function rateRun(layers, heartsLeft) {
+      var sum = 0;
+      var i;
+      for (i = 0; i < layers.length; i++) {
+        var tol = layers[i].tol || 1;
+        var closeness = 1 - Math.min(1, Math.abs(layers[i].poured - layers[i].target) / tol);
+        layers[i].closeness = closeness;
+        sum += closeness;
+      }
+      var avg = sum / layers.length;
+      var lost = 2 - heartsLeft;
+      var score = Math.round(400 + avg * 600 - lost * 280);
+      if (score < 0) score = 0;
+      if (score > 1000) score = 1000;
+      var grade = "C";
+      if (heartsLeft === 2 && score >= 820) grade = "S";
+      else if (heartsLeft === 2 && score >= 640) grade = "A";
+      else if (heartsLeft === 2 || score >= 500) grade = "B";
+      return { avg: avg, score: score, grade: grade };
+    }
+
+    function openWin() {
+      var rated = rateRun(done, hearts);
+      var name = candleName(done.map(function (L) { return L.color; }), rated.grade);
+      var fresh = bestScore < 0 || rated.score > bestScore;
+      if (fresh) {
+        bestScore = rated.score;
+        bestGrade = rated.grade;
+        saveStore();
+      }
+      winInfo = { name: name, grade: rated.grade, score: rated.score, avg: rated.avg, win: true };
+      resultKind = "win";
+      resName.textContent = name;
+      resGrade.hidden = false;
+      resGrade.textContent = rated.grade;
+      resGrade.className = "grade " + rated.grade;
+      resScore.hidden = false;
+      resScore.textContent = "スコア " + rated.score;
+      resWhy.className = "why win";
+      resWhy.textContent = "4層ぜんぶ、ねらいの帯におさまった";
+      resDetail.textContent = "ねらいの近さ " + Math.round(rated.avg * 100) + "%　失ったハート " + (2 - hearts) + "。この2つで評価が決まる。";
+      fillLayerList();
+      resRecord.hidden = !fresh;
+      paintBest();
+      var share = "かさねキャンドル（Day 24）\n" + name + "\n評価 " + rated.grade + "　スコア " + rated.score + "\n" + PLAY_URL;
+      openResult(share, "どうかな…", "しましま、できた！", "happy");
+      playWin();
+    }
+
+    function openFail(type, title, why) {
+      winInfo = { name: title, grade: "", score: 0, avg: 0, win: false, type: type };
+      resultKind = type;
+      resName.textContent = title;
+      resGrade.hidden = true;
+      resGrade.textContent = "";
+      resScore.hidden = true;
+      resScore.textContent = "";
+      resWhy.className = "why " + type;
+      resWhy.textContent = why;
+      resDetail.textContent = type === "overflow"
+        ? "ふちは 100%。こえたらハートが残っていても失敗。"
+        : "ハートは2つ。両方失うと失敗。";
+      fillLayerList();
+      resRecord.hidden = true;
+      paintBest();
+      var share = "かさねキャンドル（Day 24）\n" + title + "\n" + PLAY_URL;
+      openResult(share, "……", "つぎはうまくいくよ", "shock");
+    }
+
+    function fillLayerList() {
+      resLayers.innerHTML = "";
+      var i;
+      for (i = 0; i < done.length; i++) {
+        var L = done[i];
+        var li = document.createElement("li");
+        var rel = Math.round(L.rel * 100);
+        var signed = (rel > 0 ? "+" : "") + rel + "%";
+        li.textContent = (i + 1) + "層目 " + L.color.name + "　注いだ " + L.poured.toFixed(1) + "%　ねらい " + L.target.toFixed(1) + "%（" + signed + "）";
+        resLayers.appendChild(li);
+      }
+    }
+
+    function openResult(share, firstLine, laterLine, laterMood) {
+      stopPourSound();
+      state = "result";
+      resultOpen = true;
+      slowDone = false;
+      slowAt = performance.now() + 800;
+      lockUntil = performance.now() + LOCK_MS;
+      resultEl.hidden = false;
+      resultCard.style.pointerEvents = "none";
+      btnRetry.disabled = true;
+      btnPng.disabled = true;
+      btnCopy.disabled = true;
+      shareText.value = share;
+      setMood(penResult, "idle");
+      resultSay.textContent = firstLine;
+      resultSay.dataset.later = laterLine;
+      resultSay.dataset.mood = laterMood;
+      live(resName.textContent);
+      drawPreview(0);
+    }
+
+    function tickResult(now) {
+      if (!slowDone && now >= slowAt) {
+        slowDone = true;
+        setMood(penResult, resultSay.dataset.mood || "idle");
+        resultSay.textContent = resultSay.dataset.later || resultSay.textContent;
+      }
+      if (now >= lockUntil) {
+        resultCard.style.pointerEvents = "";
+        btnRetry.disabled = false;
+        btnPng.disabled = false;
+        btnCopy.disabled = false;
+      }
+      if (resultKind === "win") drawPreview(now / 1000);
+    }
+
+    function showCallout(title, sub) {
+      callout.hidden = false;
+      calloutTitle.textContent = title;
+      calloutSub.textContent = sub || "";
+      live(title + (sub ? "。" + sub : ""));
+    }
+
+    function hideCallout() {
+      callout.hidden = true;
+    }
+
+    function say(text) {
+      if (said === text) return;
+      said = text;
+      sayEl.textContent = text;
+    }
+
+    function live(text) {
+      if (liveEl.textContent === text) return;
+      liveEl.textContent = text;
+    }
+
+    function setMood(el, mood) {
+      el.dataset.mood = mood;
+      el.classList.remove("is-pop");
+      if (mood === "happy" || mood === "shock") {
+        void el.offsetWidth;
+        el.classList.add("is-pop");
+      }
+    }
+
+    function renderHearts(broken) {
+      var nodes = heartsEl.querySelectorAll(".heart");
+      var i;
+      for (i = 0; i < nodes.length; i++) {
+        var on = i < hearts;
+        nodes[i].classList.toggle("is-on", on);
+        nodes[i].classList.remove("is-break");
+        if (broken && i === hearts) nodes[i].classList.add("is-break");
+      }
+      heartsEl.setAttribute("aria-label", "ハート 残り" + hearts);
+    }
+
+    function renderWax() {
+      waxOrder.innerHTML = "";
+      var i;
+      for (i = 0; i < plan.length; i++) {
+        var li = document.createElement("li");
+        if (i < layerIndex) li.className = "done";
+        else if (i === layerIndex) li.className = "now";
+        var swatch = document.createElement("i");
+        swatch.style.background = plan[i].color.hex;
+        var name = document.createElement("b");
+        name.textContent = (i + 1) + " " + plan[i].color.name;
+        li.appendChild(swatch);
+        li.appendChild(name);
+        waxOrder.appendChild(li);
+      }
+    }
+
+    function popSpeed() {
+      cellSpeed.classList.remove("pop");
+      void cellSpeed.offsetWidth;
+      cellSpeed.classList.add("pop");
+    }
+
+    function syncHud() {
+      var L = plan[layerIndex] || LAYERS[0];
+      var target = L.target || 0;
+      var tol = L.tol;
+      var speed = L.speed;
+      var speedName = L.speedName || "";
+      var level = Math.min(100, base + (state === "pouring" || overflowed ? poured : 0));
+      var shownPour = 0;
+      if (state === "pouring" || overflowed) shownPour = poured;
+      else if (done.length && done[done.length - 1] === L) shownPour = L.poured;
+      layerNum.textContent = Math.min(4, layerIndex + 1) + " / 4";
+      mNow.textContent = shownPour.toFixed(1) + "%";
+      mAim.textContent = Number(target).toFixed(1) + "%";
+      mTol.textContent = "±" + tol + "%";
+      mSpeed.textContent = speedName;
+      mRate.textContent = speed + "%/秒";
+      mRim.textContent = Math.max(0, 100 - level).toFixed(1) + "%";
+      var zone = "low";
+      if (state === "pouring") {
+        if (level >= 90) zone = "danger";
+        else if (shownPour > target + tol) zone = "hot";
+        else if (Math.abs(shownPour - target) <= tol) zone = "good";
+      }
+      meters.dataset.zone = zone;
+      if (state === "cool") {
+        coolBox.hidden = false;
+        coolSec.textContent = Math.max(0, coolLeft).toFixed(1);
+        coolFill.style.width = Math.max(0, Math.min(1, coolLeft / coolMax)) * 100 + "%";
+      }
+      var label = "ちょっと待って";
+      var sub = "見ててね";
+      var mode = "is-off";
+      if (state === "ready") {
+        label = "おして注ぐ";
+        sub = "はなすと止まる";
+        mode = "is-go";
+      } else if (state === "pouring") {
+        label = "注いでる…";
+        sub = "ねらいではなす";
+        mode = "is-go";
+      } else if (state === "cool") {
+        label = "まだ注がないで";
+        sub = "固まるまで待つ";
+        mode = "is-wait";
+      }
+      if (pourLabel.textContent !== label) pourLabel.textContent = label;
+      if (pourSub.textContent !== sub) pourSub.textContent = sub;
+      pourBtn.classList.remove("is-off", "is-go", "is-wait");
+      pourBtn.classList.add(mode);
+      if (mode === "is-go" && L.color) {
+        pourBtn.style.background = L.color.hex;
+        pourBtn.style.color = inkFor(L.color.hex);
+      } else {
+        pourBtn.style.background = "";
+        pourBtn.style.color = "";
+      }
+      var livePour = (state === "ready" || state === "cool" || state === "pouring");
+      pourBtn.setAttribute("aria-disabled", livePour ? "false" : "true");
+      shell.dataset.state = state;
+      shell.dataset.layer = String(layerIndex + 1);
+      shell.dataset.hearts = String(hearts);
+      shell.dataset.target = String(target);
+      shell.dataset.tol = String(tol);
+      shell.dataset.speed = String(speed);
+    }
+
+    function inkFor(hex) {
+      var r = parseInt(hex.slice(1, 3), 16);
+      var g = parseInt(hex.slice(3, 5), 16);
+      var b = parseInt(hex.slice(5, 7), 16);
+      var y = (r * 299 + g * 587 + b * 114) / 1000;
+      return y > 165 ? "#3a2416" : "#fffaf2";
+    }
+
+    function fitCanvas() {
+      var rect = canvas.getBoundingClientRect();
+      var dpr = Math.min(2, window.devicePixelRatio || 1);
+      viewW = Math.max(2, rect.width);
+      viewH = Math.max(2, rect.height);
+      var w = Math.round(viewW * dpr);
+      var h = Math.round(viewH * dpr);
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+      }
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function yAt(pct, top, innerH) {
+      return top + innerH * (1 - pct / 100);
+    }
+
+    function roundRect(c, x, y, w, h, r) {
+      var rr = Math.min(r, w / 2, h / 2);
+      c.beginPath();
+      c.moveTo(x + rr, y);
+      c.arcTo(x + w, y, x + w, y + h, rr);
+      c.arcTo(x + w, y + h, x, y + h, rr);
+      c.arcTo(x, y + h, x, y, rr);
+      c.arcTo(x, y, x + w, y, rr);
+      c.closePath();
+    }
+
+    function draw(t) {
+      if (viewW < 4 || viewH < 4) fitCanvas();
+      var w = viewW;
+      var h = viewH;
+      ctx.clearRect(0, 0, w, h);
+      if (!plan.length) return;
+      var L = plan[layerIndex];
+      var benchY = h * 0.86;
+      ctx.fillStyle = "#9a6236";
+      ctx.fillRect(0, benchY, w, h - benchY);
+      ctx.fillStyle = "#c4844e";
+      ctx.fillRect(0, benchY, w, 7);
+      ctx.strokeStyle = "rgba(90,48,20,.25)";
+      ctx.lineWidth = 2;
+      var gxLine;
+      for (gxLine = 12; gxLine < w; gxLine += 16) {
+        ctx.beginPath();
+        ctx.moveTo(gxLine, benchY + 10);
+        ctx.lineTo(gxLine - 8, h);
+        ctx.stroke();
+      }
+
+      var gh = Math.max(80, benchY - 52);
+      var gw = Math.min(w * 0.4, gh * 0.46);
+      var gx = Math.max(8, (w - gw - 46) / 2);
+      var gy = 46;
+      var innerTop = gy + 16;
+      var innerH = gh - 30;
+      var showPour = state === "pouring" || overflowed;
+      var level = Math.min(100, base + (showPour ? poured : 0));
+
+      drawPitcher(ctx, gx + gw / 2, gy - 4, state === "pouring", L.color.hex);
+
+      roundRect(ctx, gx, gy, gw, gh, gw * 0.12);
+      ctx.fillStyle = "rgba(255,255,255,.2)";
+      ctx.fill();
+
+      var yHi = yAt(Math.min(100, base + L.target + L.tol), innerTop, innerH);
+      var yLo = yAt(Math.max(0, base + L.target - L.tol), innerTop, innerH);
+      var yAim = yAt(base + L.target, innerTop, innerH);
+      var yRim = yAt(100, innerTop, innerH);
+      ctx.save();
+      roundRect(ctx, gx + 8, gy + 8, gw - 16, gh - 16, gw * 0.08);
+      ctx.clip();
+      ctx.fillStyle = "rgba(47, 158, 68, .5)";
+      ctx.fillRect(gx, yHi, gw, Math.max(0, yLo - yHi));
+      var acc = 0;
+      var i;
+      for (i = 0; i < done.length; i++) {
+        var y1 = yAt(acc + done[i].poured, innerTop, innerH);
+        var y0 = yAt(acc, innerTop, innerH);
+        ctx.fillStyle = done[i].color.hex;
+        ctx.fillRect(gx + 8, y1, gw - 16, y0 - y1 + 0.5);
+        ctx.fillStyle = done[i].color.deep;
+        ctx.fillRect(gx + 8, y0 - 2, gw - 16, 2);
+        ctx.fillStyle = "rgba(255,255,255,.18)";
+        ctx.fillRect(gx + 12, y1, 8, y0 - y1);
+        acc += done[i].poured;
+      }
+      if (showPour && poured > 0.02) {
+        var yP = yAt(base + poured, innerTop, innerH);
+        var yB = yAt(base, innerTop, innerH);
+        ctx.fillStyle = L.color.hex;
+        ctx.fillRect(gx + 8, yP, gw - 16, yB - yP + 0.5);
+        ctx.fillStyle = "rgba(255,255,255,.18)";
+        ctx.fillRect(gx + 12, yP, 8, yB - yP);
+      }
+      if (level > 0.3) {
+        var surf = yAt(level, innerTop, innerH);
+        ctx.fillStyle = "rgba(255,255,255,.4)";
+        ctx.beginPath();
+        ctx.ellipse(gx + gw / 2, surf, (gw - 20) / 2, 5.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      if (crackLines.length && base > 0) {
+        var waxTop = yAt(base, innerTop, innerH);
+        var waxBot = yAt(0, innerTop, innerH);
+        ctx.strokeStyle = "rgba(255,255,255,.9)";
+        ctx.lineWidth = 2;
+        for (i = 0; i < crackLines.length; i++) {
+          var c = crackLines[i];
+          ctx.beginPath();
+          ctx.moveTo(gx + 10 + c.x1 * (gw - 24), waxTop + c.y1 * (waxBot - waxTop));
+          ctx.lineTo(gx + 10 + c.x2 * (gw - 24), waxTop + c.y2 * (waxBot - waxTop));
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+
+      ctx.save();
+      ctx.strokeStyle = "rgba(15, 107, 44, .95)";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 4]);
+      ctx.beginPath();
+      ctx.moveTo(gx + 8, yHi);
+      ctx.lineTo(gx + gw - 8, yHi);
+      ctx.moveTo(gx + 8, yLo);
+      ctx.lineTo(gx + gw - 8, yLo);
+      ctx.stroke();
+      ctx.restore();
+      ctx.strokeStyle = "#0f6b2c";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(gx + 6, yAim);
+      ctx.lineTo(gx + gw - 6, yAim);
+      ctx.stroke();
+      ctx.strokeStyle = "#d11f3a";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(gx + 2, yRim);
+      ctx.lineTo(gx + gw - 2, yRim);
+      ctx.stroke();
+
+      roundRect(ctx, gx, gy, gw, gh, gw * 0.12);
+      ctx.strokeStyle = "rgba(255,255,255,.92)";
+      ctx.lineWidth = 4;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(gx + 9, gy + 18);
+      ctx.lineTo(gx + 9, gy + gh - 18);
+      ctx.strokeStyle = "rgba(255,255,255,.7)";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      ctx.font = "800 12px " + JP;
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#9f1239";
+      ctx.fillText("ふち", gx + gw + 6, yRim);
+      ctx.fillStyle = "#0f6b2c";
+      ctx.fillText("ねらい", gx + gw + 6, yAim);
+
+      if (state === "pouring") {
+        var spout = pitcherSpout(gx + gw / 2, gy - 4, true);
+        var dest = yAt(level, innerTop, innerH);
+        drawStream(ctx, spout.x, spout.y, dest, L.color.hex, L.speed);
+      }
+
+      if (state === "cool") {
+        ctx.fillStyle = "rgba(30, 79, 134, .92)";
+        roundRect(ctx, gx + 8, gy + gh / 2 - 32, gw - 16, 64, 12);
+        ctx.fill();
+        ctx.fillStyle = "#fff";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.font = "900 26px " + JP;
+        ctx.fillText(Math.max(0, coolLeft).toFixed(1) + "秒", gx + gw / 2, gy + gh / 2 - 8);
+        ctx.font = "800 13px " + JP;
+        ctx.fillText("冷却中", gx + gw / 2, gy + gh / 2 + 16);
+      }
+
+      if (overflowed) {
+        ctx.fillStyle = L.color.hex;
+        ctx.beginPath();
+        ctx.ellipse(gx + gw * 0.72, gy + gh - 2, 16, 7, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(gx + gw * 0.3, benchY + 6, 22, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function drawPitcher(c, cx, bottom, pouring, color) {
+      c.save();
+      c.translate(cx, bottom);
+      c.rotate(pouring ? -0.55 : -0.08);
+      c.fillStyle = color || "#f6e4c8";
+      roundRect(c, -22, -34, 44, 30, 8);
+      c.fill();
+      c.fillStyle = "rgba(255,255,255,.28)";
+      c.fillRect(-16, -30, 8, 22);
+      c.fillStyle = "#6b3a22";
+      c.fillRect(-4, -40, 8, 8);
+      c.beginPath();
+      c.moveTo(20, -22);
+      c.lineTo(34, -8);
+      c.lineTo(20, -12);
+      c.fillStyle = color || "#f6e4c8";
+      c.fill();
+      c.restore();
+    }
+
+    function pitcherSpout(cx, bottom, pouring) {
+      var ang = pouring ? -0.55 : -0.08;
+      var lx = 30;
+      var ly = -12;
+      return {
+        x: cx + lx * Math.cos(ang) - ly * Math.sin(ang),
+        y: bottom + lx * Math.sin(ang) + ly * Math.cos(ang)
+      };
+    }
+
+    function drawStream(c, x0, y0, y1, color, speed) {
+      if (y1 <= y0 + 4) return;
+      var amp = 8 + speed * 0.16;
+      c.strokeStyle = color;
+      c.lineWidth = 5 + speed * 0.12;
+      c.lineCap = "round";
+      c.lineJoin = "round";
+      c.beginPath();
+      c.moveTo(x0, y0);
+      var steps = 12;
+      var i;
+      for (i = 1; i <= steps; i++) {
+        var t = i / steps;
+        var y = y0 + (y1 - y0) * t;
+        var x = x0
+          + Math.sin(wobbleT * 4.6 + t * 6.2 + wobbleSeed) * amp * (0.45 + 0.55 * t)
+          + Math.sin(wobbleT * 2.1 + wobbleSeed * 1.7 + t * 2.4) * amp * 0.55;
+        c.lineTo(x, y);
+      }
+      c.stroke();
+    }
+
+    function drawPreview(t) {
+      var w = preview.width;
+      var h = preview.height;
+      paintCard(pctx, w, h, false, t);
+    }
+
+    function paintCard(c, w, h, withText, t) {
+      var g = c.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0, "#f8e2bc");
+      g.addColorStop(1, "#e0a15c");
+      c.fillStyle = g;
+      c.fillRect(0, 0, w, h);
+      var layers = [];
+      var i;
+      for (i = 0; i < done.length; i++) {
+        layers.push({ color: done[i].color.hex, amount: done[i].poured });
+      }
+      if (overflowed && plan[layerIndex]) {
+        layers.push({ color: plan[layerIndex].color.hex, amount: Math.max(4, poured) });
+      }
+      var candleTop = withText ? h * 0.16 : h * 0.08;
+      var candleH = withText ? h * 0.46 : h * 0.78;
+      paintCandle(c, w / 2, candleTop, Math.min(w * 0.34, 180), candleH, layers, {
+        lit: resultKind === "win",
+        overflow: overflowed,
+        cracks: crackLines,
+        t: t || 0
+      });
+      if (!withText) return;
+      c.fillStyle = "#3a2416";
+      c.textAlign = "center";
+      c.textBaseline = "middle";
+      c.font = "800 28px " + JP;
+      c.fillText("かさねキャンドル", w / 2, h * 0.07);
+      c.font = "800 22px " + JP;
+      var title = winInfo ? winInfo.name : "";
+      wrapText(c, title, w / 2, h * 0.66, w - 64, 30);
+      if (resultKind === "win" && winInfo) {
+        c.font = "900 64px " + JP;
+        c.fillStyle = "#b45309";
+        c.fillText(winInfo.grade, w / 2, h * 0.8);
+        c.fillStyle = "#3a2416";
+        c.font = "800 28px " + JP;
+        c.fillText("スコア " + winInfo.score, w / 2, h * 0.88);
+      } else {
+        c.font = "800 22px " + JP;
+        c.fillStyle = "#9f1239";
+        wrapText(c, resWhy.textContent, w / 2, h * 0.82, w - 72, 28);
+      }
+      c.fillStyle = "#7a5340";
+      c.font = "700 16px " + JP;
+      c.fillText("Day 24 · 2026-10-19", w / 2, h * 0.945);
+    }
+
+    function wrapText(c, text, x, y, maxW, lineH) {
+      if (!text) return;
+      var line = "";
+      var yy = y;
+      var i;
+      for (i = 0; i < text.length; i++) {
+        var test = line + text.charAt(i);
+        if (c.measureText(test).width > maxW && line) {
+          c.fillText(line, x, yy);
+          line = text.charAt(i);
+          yy += lineH;
+        } else line = test;
+      }
+      c.fillText(line, x, yy);
+    }
+
+    function paintCandle(c, cx, top, width, height, layers, opts) {
+      var total = 0;
+      var i;
+      for (i = 0; i < layers.length; i++) total += layers[i].amount;
+      if (total < 1) total = 1;
+      var bodyH = height * 0.72;
+      var bottom = top + height * 0.9;
+      var bodyTop = bottom - bodyH;
+      c.fillStyle = "rgba(90,48,20,.2)";
+      c.beginPath();
+      c.ellipse(cx, bottom + 6, width * 0.7, 10, 0, 0, Math.PI * 2);
+      c.fill();
+      c.save();
+      roundRect(c, cx - width / 2, bodyTop, width, bodyH, width * 0.18);
+      c.clip();
+      var cursor = bottom;
+      for (i = 0; i < layers.length; i++) {
+        var lh = bodyH * (layers[i].amount / total);
+        cursor -= lh;
+        c.fillStyle = layers[i].color;
+        c.fillRect(cx - width / 2, cursor, width, lh + 0.6);
+        c.fillStyle = "rgba(58,36,22,.28)";
+        c.fillRect(cx - width / 2, cursor, width, Math.max(2, height * 0.008));
+      }
+      c.fillStyle = "rgba(255,255,255,.22)";
+      c.fillRect(cx - width / 2 + width * 0.08, bodyTop, width * 0.08, bodyH);
+      if (opts.cracks && opts.cracks.length) {
+        c.strokeStyle = "rgba(255,255,255,.85)";
+        c.lineWidth = 2;
+        for (i = 0; i < opts.cracks.length; i++) {
+          var cr = opts.cracks[i];
+          c.beginPath();
+          c.moveTo(cx - width / 2 + cr.x1 * width, bodyTop + cr.y1 * bodyH);
+          c.lineTo(cx - width / 2 + cr.x2 * width, bodyTop + cr.y2 * bodyH);
+          c.stroke();
+        }
+      }
+      c.restore();
+      c.strokeStyle = "rgba(58,36,22,.25)";
+      c.lineWidth = 2;
+      roundRect(c, cx - width / 2, bodyTop, width, bodyH, width * 0.18);
+      c.stroke();
+      if (opts.overflow) {
+        c.fillStyle = layers.length ? layers[layers.length - 1].color : "#f08c28";
+        c.beginPath();
+        c.ellipse(cx + width * 0.45, bottom, width * 0.28, 8, 0, 0, Math.PI * 2);
+        c.fill();
+      }
+      if (opts.lit) {
+        c.strokeStyle = "#3a2416";
+        c.lineWidth = 2;
+        c.beginPath();
+        c.moveTo(cx, bodyTop);
+        c.lineTo(cx, bodyTop - height * 0.06);
+        c.stroke();
+        var flick = 0.92 + Math.sin((opts.t || 0) * 16) * 0.08;
+        var fh = Math.max(36, height * 0.16);
+        c.save();
+        c.translate(cx, bodyTop - fh * 0.15);
+        c.scale(flick, 1);
+        c.beginPath();
+        c.moveTo(0, fh * 0.2);
+        c.quadraticCurveTo(fh * 0.42, 0, 0, -fh * 0.72);
+        c.quadraticCurveTo(-fh * 0.42, 0, 0, fh * 0.2);
+        c.fillStyle = "#ff9f1c";
+        c.fill();
+        c.beginPath();
+        c.moveTo(0, fh * 0.12);
+        c.quadraticCurveTo(fh * 0.2, 0, 0, -fh * 0.38);
+        c.quadraticCurveTo(-fh * 0.2, 0, 0, fh * 0.12);
+        c.fillStyle = "#fff1b8";
+        c.fill();
+        c.restore();
+      }
+    }
+
+    function savePng() {
+      try {
+        var out = document.createElement("canvas");
+        out.width = 720;
+        out.height = 960;
+        var octx = out.getContext("2d");
+        paintCard(octx, 720, 960, true, 1);
+        var a = document.createElement("a");
+        a.href = out.toDataURL("image/png");
+        a.download = "kasane-candle.png";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } catch (err) {
+        live("画像を保存できませんでした");
+      }
+    }
+
+    function copyShare() {
+      var text = shareText.value;
+      function ok() {
+        btnCopy.textContent = "コピーした";
+        window.clearTimeout(copyTimer);
+        copyTimer = window.setTimeout(function () { btnCopy.textContent = "結果をコピー"; }, 1400);
+      }
+      function fallback() {
+        shareText.focus();
+        shareText.select();
+        try {
+          if (document.execCommand("copy")) ok();
+          else btnCopy.textContent = "下の文をコピーしてね";
+        } catch (err) {
+          btnCopy.textContent = "下の文をコピーしてね";
+        }
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(ok, fallback);
+      } else fallback();
+    }
+
+    function paintBest() {
+      var text = bestScore < 0 ? "ベスト なし" : "ベスト " + bestScore + "（" + bestGrade + "）";
+      titleBest.textContent = text;
+      hudBest.textContent = text;
+      resBest.textContent = text;
+    }
+
+    function loadStore() {
+      try {
+        var raw = localStorage.getItem(STORE);
+        if (raw) {
+          var data = JSON.parse(raw);
+          if (data && typeof data.best === "number" && isFinite(data.best)) bestScore = data.best;
+          if (data && typeof data.grade === "string") bestGrade = data.grade;
+          if (data && data.mute) muted = true;
+        }
+      } catch (err) { /* ignore */ }
+      storeReady = true;
+      applyMute();
+    }
+
+    function saveStore() {
+      if (!storeReady) return;
+      try {
+        localStorage.setItem(STORE, JSON.stringify({ best: bestScore, grade: bestGrade, mute: muted }));
+      } catch (err) { /* ignore */ }
+    }
+
+    function setMuted(next) {
+      muted = next;
+      applyMute();
+      if (muted) stopPourSound();
+      else if (state === "pouring") startPourSound();
+      saveStore();
+    }
+
+    function applyMute() {
+      muteBtn.classList.toggle("is-muted", muted);
+      muteBtn.setAttribute("aria-pressed", muted ? "true" : "false");
+      muteBtn.setAttribute("aria-label", muted ? "音を出す" : "音を消す");
+    }
+
+    function audio() {
+      if (muted) return null;
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      try {
+        if (!ac) {
+          ac = new AC();
+          master = ac.createGain();
+          master.gain.value = 0.8;
+          master.connect(ac.destination);
+        }
+        if (ac.state === "suspended") ac.resume();
+        return ac;
+      } catch (err) {
+        return null;
+      }
+    }
+
+    function noiseBuffer(ctx) {
+      if (noiseBuf) return noiseBuf;
+      var len = ctx.sampleRate;
+      var buf = ctx.createBuffer(1, len, ctx.sampleRate);
+      var data = buf.getChannelData(0);
+      var b0 = 0;
+      var i;
+      for (i = 0; i < len; i++) {
+        var white = Math.random() * 2 - 1;
+        b0 = 0.98 * b0 + 0.02 * white;
+        data[i] = b0 * 3.2;
+      }
+      noiseBuf = buf;
+      return buf;
+    }
+
+    function startPourSound() {
+      var ctx = audio();
+      if (!ctx || pourNodes) return;
+      try {
+        var src = ctx.createBufferSource();
+        src.buffer = noiseBuffer(ctx);
+        src.loop = true;
+        var filter = ctx.createBiquadFilter();
+        filter.type = "bandpass";
+        filter.frequency.value = 380;
+        filter.Q.value = 0.7;
+        var gain = ctx.createGain();
+        gain.gain.value = 0.16;
+        var lfo = ctx.createOscillator();
+        lfo.frequency.value = 7.5;
+        var lfoGain = ctx.createGain();
+        lfoGain.gain.value = 0.07;
+        lfo.connect(lfoGain);
+        lfoGain.connect(gain.gain);
+        src.connect(filter);
+        filter.connect(gain);
+        gain.connect(master);
+        var osc = ctx.createOscillator();
+        osc.type = "sine";
+        osc.frequency.value = 128;
+        var og = ctx.createGain();
+        og.gain.value = 0.05;
+        osc.connect(og);
+        og.connect(master);
+        src.start();
+        lfo.start();
+        osc.start();
+        pourNodes = { src: src, lfo: lfo, osc: osc, gain: gain, og: og };
+      } catch (err) {
+        pourNodes = null;
+      }
+    }
+
+    function stopPourSound() {
+      if (!pourNodes) return;
+      try {
+        pourNodes.src.stop();
+        pourNodes.lfo.stop();
+        pourNodes.osc.stop();
+      } catch (err) { /* already stopped */ }
+      pourNodes = null;
+    }
+
+    function tone(freq, dur, type, vol) {
+      var ctx = audio();
+      if (!ctx) return;
+      var t = ctx.currentTime;
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = type || "sine";
+      osc.frequency.setValueAtTime(freq, t);
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(vol || 0.12, t + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      osc.connect(gain);
+      gain.connect(master);
+      osc.start(t);
+      osc.stop(t + dur + 0.02);
+    }
+
+    function blip(freq, dur) {
+      tone(freq, dur || 0.09, "sine", 0.08);
+    }
+
+    function playTink() {
+      tone(1480, 0.16, "sine", 0.14);
+      var ctx = audio();
+      if (!ctx) return;
+      var t = ctx.currentTime + 0.05;
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(1980, t);
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.08, t + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+      osc.connect(gain);
+      gain.connect(master);
+      osc.start(t);
+      osc.stop(t + 0.2);
+    }
+
+    function playThud() {
+      var ctx = audio();
+      if (!ctx) return;
+      var t = ctx.currentTime;
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(140, t);
+      osc.frequency.exponentialRampToValueAtTime(55, t + 0.22);
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.28, t + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.28);
+      osc.connect(gain);
+      gain.connect(master);
+      osc.start(t);
+      osc.stop(t + 0.3);
+      try {
+        var src = ctx.createBufferSource();
+        src.buffer = noiseBuffer(ctx);
+        var filter = ctx.createBiquadFilter();
+        filter.type = "lowpass";
+        filter.frequency.value = 220;
+        var ng = ctx.createGain();
+        ng.gain.setValueAtTime(0.22, t);
+        ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+        src.connect(filter);
+        filter.connect(ng);
+        ng.connect(master);
+        src.start(t);
+        src.stop(t + 0.2);
+      } catch (err) { /* ignore */ }
+    }
+
+    function playWin() {
+      var notes = [523.25, 659.25, 783.99, 1046.5];
+      var i;
+      for (i = 0; i < notes.length; i++) {
+        (function (freq, delay) {
+          window.setTimeout(function () { tone(freq, 0.28, "sine", 0.12); }, delay);
+        })(notes[i], i * 140);
+      }
+    }
+
+    var holdPointer = 0;
+    function bindHold(el) {
+      el.addEventListener("pointerdown", function (e) {
+        if (e.button !== undefined && e.button !== 0) return;
+        holdPointer = e.pointerId;
+        if (el.setPointerCapture) {
+          try { el.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+        }
+        e.preventDefault();
+        pressStart();
+      }, { passive: false });
+      function endPointer(e) {
+        if (e.pointerId !== holdPointer) return;
+        holdPointer = 0;
+        pressEnd();
+      }
+      el.addEventListener("pointerup", endPointer);
+      el.addEventListener("pointercancel", endPointer);
+      el.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+    }
+  })();
+  </script>
+</body>
+</html>
