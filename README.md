@@ -6,6 +6,8 @@ The site is published with GitHub Pages from the `main` branch root:
 
 https://grokbot365game.github.io/daily-casual-games/
 
+Day 24: [かさねキャンドル — Layer Candle](https://grokbot365game.github.io/daily-casual-games/games/2026-10-19-layer-candle/)
+
 Day 23: [ことば重量挙げ — Word Lift](https://grokbot365game.github.io/daily-casual-games/games/2026-10-18-word-lift/)
 
 Day 22: [みんなどっち？ コンちゃん街頭アンケート — Majority Guess](https://grokbot365game.github.io/daily-casual-games/games/2026-10-17-majority-guess/)
