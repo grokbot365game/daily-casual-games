@@ -1346,32 +1346,31 @@
     }
     function buildPeel(ox, oy) {
       var origin = peelOrigin(ox, oy);
-      var room = Math.max(36, lane.y - origin.y - 6);
-      var hang = Math.min(room * 0.58, 16 + cm * 2.1);
-      var curlLen = Math.min(22 + cm * 3.6, Math.max(24, room * 0.9));
-      var total = hang + curlLen;
-      var turns = Math.min(0.55 + cm * 0.095, 4.6);
-      var n = 42;
-      var cx = origin.x + 8;
-      var cy = origin.y + hang;
-      var radMax = Math.max(8, Math.min(18 + cm * 0.22, room - hang - 2));
+      var room = Math.max(40, lane.y - origin.y - 8);
+      var turns = Math.min(0.65 + cm * 0.045, 2.35);
+      var rad0 = Math.min(12 + cm * 0.18, 20);
+      var hang = Math.min(room - rad0 - 8, 20 + cm * 3.4);
+      if (hang < 12) hang = 12;
+      var sway = 6 + Math.min(cm, 24) * 0.35;
+      var n = 48;
+      var endX = origin.x + Math.sin(2.5) * sway;
+      var endY = origin.y + hang;
       var pts = [];
       var i;
       for (i = 0; i <= n; i++) {
         var s = i / n;
-        var d = s * total;
         var x;
         var y;
-        if (d <= hang || curlLen < 1) {
-          var u = hang <= 0 ? 0 : d / hang;
-          x = origin.x + Math.sin(u * 2.2 + spin) * (3 + u * 9);
-          y = origin.y + Math.min(d, hang);
+        if (s < 0.7) {
+          var u = s / 0.7;
+          x = origin.x + Math.sin(u * 2.5) * sway * u;
+          y = origin.y + u * hang;
         } else {
-          var c = (d - hang) / curlLen;
-          var ang = -0.9 + c * turns * Math.PI * 2;
-          var rad = 3 + c * radMax;
-          x = cx + Math.cos(ang) * rad;
-          y = cy + Math.sin(ang) * rad * 0.9;
+          var c = (s - 0.7) / 0.3;
+          var ang = Math.PI * 0.5 + c * turns * Math.PI * 2;
+          var rad = rad0 * (1 - c * 0.78) + 2.5;
+          x = endX + Math.cos(ang) * rad;
+          y = endY + Math.sin(ang) * rad;
         }
         pts.push({ x: x, y: y, s: s });
       }
@@ -1395,20 +1394,39 @@
     }
     function strokeStrip(pts, i0, i1) {
       if (i1 - i0 < 1) return;
-      ctx.beginPath();
-      ctx.moveTo(pts[i0].x, pts[i0].y);
+      var halfW = 8;
+      var leftX = [];
+      var leftY = [];
+      var rightX = [];
+      var rightY = [];
       var i;
-      for (i = i0 + 1; i <= i1; i++) ctx.lineTo(pts[i].x, pts[i].y);
+      for (i = i0; i <= i1; i++) {
+        var a = pts[Math.max(i0, i - 1)];
+        var b = pts[Math.min(i1, i + 1)];
+        var dx = b.x - a.x;
+        var dy = b.y - a.y;
+        var mag = Math.sqrt(dx * dx + dy * dy) || 1;
+        var nx = -dy / mag;
+        var ny = dx / mag;
+        leftX.push(pts[i].x + nx * halfW);
+        leftY.push(pts[i].y + ny * halfW);
+        rightX.push(pts[i].x - nx * halfW * 0.45);
+        rightY.push(pts[i].y - ny * halfW * 0.45);
+      }
+      ctx.beginPath();
+      ctx.moveTo(leftX[0], leftY[0]);
+      for (i = 1; i < leftX.length; i++) ctx.lineTo(leftX[i], leftY[i]);
+      for (i = rightX.length - 1; i >= 0; i--) ctx.lineTo(rightX[i], rightY[i]);
+      ctx.closePath();
+      ctx.fillStyle = "#f6d48a";
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(leftX[0], leftY[0]);
+      for (i = 1; i < leftX.length; i++) ctx.lineTo(leftX[i], leftY[i]);
+      ctx.strokeStyle = "#c81e28";
+      ctx.lineWidth = 5;
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
-      ctx.strokeStyle = "#f3d28a";
-      ctx.lineWidth = 15;
-      ctx.stroke();
-      ctx.strokeStyle = "#d62828";
-      ctx.lineWidth = 6.5;
-      ctx.stroke();
-      ctx.strokeStyle = "rgba(255,255,255,.4)";
-      ctx.lineWidth = 2;
       ctx.stroke();
     }
     function drawPeel(pts) {
@@ -1456,34 +1474,30 @@
       if (pointerDown && phase === "play") {
         edge = Math.abs(pointerY - guideYAt(pointerX)) / Math.max(half, 1);
       }
-      var outer = half * 2;
       ctx.beginPath();
-      var x = lane.x + 4;
+      var x = lane.x + 8;
       var first = true;
-      while (x <= lane.x + lane.w - 4) {
+      while (x <= lane.x + lane.w - 8) {
         var y = guideYAt(x);
         if (first) {
           ctx.moveTo(x, y);
           first = false;
         } else ctx.lineTo(x, y);
-        x += 6;
+        x += 5;
       }
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
-      ctx.strokeStyle = edge > 1 ? "rgba(225,29,72,.28)" : (edge > 0.72 ? "rgba(240,140,40,.28)" : "rgba(226,59,59,.2)");
-      ctx.lineWidth = outer + 10;
+      if (edge > 1) ctx.strokeStyle = "rgba(225, 29, 72, .42)";
+      else if (edge > 0.72) ctx.strokeStyle = "rgba(240, 140, 40, .40)";
+      else ctx.strokeStyle = "rgba(226, 70, 62, .28)";
+      ctx.lineWidth = Math.max(28, half * 2);
       ctx.stroke();
-      ctx.strokeStyle = edge > 1 ? "#ff8ea0" : "#ff5a52";
-      ctx.lineWidth = Math.max(18, half * 1.15);
+      ctx.strokeStyle = "#d4232c";
+      ctx.lineWidth = 8;
       ctx.stroke();
-      ctx.strokeStyle = "#fffaf2";
-      ctx.lineWidth = 4;
+      ctx.strokeStyle = "#fff8ee";
+      ctx.lineWidth = 2.6;
       ctx.stroke();
-      ctx.setLineDash([2, 8]);
-      ctx.strokeStyle = "rgba(226,59,59,.85)";
-      ctx.lineWidth = 2.4;
-      ctx.stroke();
-      ctx.setLineDash([]);
       ctx.restore();
     }
     function drawFinger() {
