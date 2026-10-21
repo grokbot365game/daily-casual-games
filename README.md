@@ -6,6 +6,8 @@ The site is published with GitHub Pages from the `main` branch root:
 
 https://grokbot365game.github.io/daily-casual-games/
 
+Day 26: [つめてジャック — Stuff Jack](https://grokbot365game.github.io/daily-casual-games/games/2026-10-21-stuff-jack/)
+
 Day 25: [くるりん皮むき — Apple Peel](https://grokbot365game.github.io/daily-casual-games/games/2026-10-20-apple-peel/)
 
 Day 24: [かさねキャンドル — Layer Candle](https://grokbot365game.github.io/daily-casual-games/games/2026-10-19-layer-candle/)
