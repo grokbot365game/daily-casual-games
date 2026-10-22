@@ -1,0 +1,2546 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#e39a45">
+  <meta name="description" content="ぎゅうぎゅう弁当。ゆび・マウス・キーでおかずを左右に動かして落とし、時間内に目標のつめ率まで詰めてフタを閉める。こぼれ・はみだし・時間ぎれに注意。">
+  <meta property="og:title" content="ぎゅうぎゅう弁当 — Squeeze Bento">
+  <meta property="og:description" content="お弁当をぎゅうぎゅうに詰めてフタを閉めよう。こぼれ・はみだし・0秒は失敗。">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://grokbot365game.github.io/daily-casual-games/games/2026-10-22-squeeze-bento/">
+  <title>ぎゅうぎゅう弁当</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23e39a45'/%3E%3Crect x='3' y='4.5' width='10' height='8' rx='1.4' fill='%23fff6e4' stroke='%23a8642c' stroke-width='1'/%3E%3Ccircle cx='8' cy='8.2' r='1.5' fill='%23ef3b3b'/%3E%3Crect x='5' y='6.2' width='2.4' height='1.6' rx='.3' fill='%23ffd15c'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      --ink: #4a2618;
+      --muted: #8a5a40;
+      --paper: #fffaf3;
+      --line: rgba(74, 38, 24, .14);
+      --accent: #e25a12;
+      --gold: #f0b429;
+      --good: #2f8a3a;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+    body {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      color: var(--ink);
+      background:
+        radial-gradient(80% 40% at 50% -10%, #fff6df 0%, transparent 60%),
+        linear-gradient(180deg, #ffe7c4 0%, #f3c07a 48%, #e7a45a 100%);
+      font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Yu Gothic", "WenQuanYi Micro Hei", "Droid Sans Fallback", "Meiryo", sans-serif;
+      font-size: 16px;
+      line-height: 1.4;
+      -webkit-text-size-adjust: 100%;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: none;
+    }
+    [hidden] { display: none !important; }
+    button, a { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+    button:focus-visible, a:focus-visible {
+      outline: 3px solid var(--gold);
+      outline-offset: 2px;
+    }
+    .back, .mute {
+      position: fixed;
+      z-index: 70;
+      top: max(10px, env(safe-area-inset-top));
+      border: 0;
+      border-radius: 999px;
+      color: var(--ink);
+      background: rgba(255, 250, 243, .94);
+      box-shadow: inset 0 0 0 1px var(--line);
+      font-weight: 800;
+      text-decoration: none;
+    }
+    .back {
+      left: max(12px, env(safe-area-inset-left));
+      padding: 8px 14px;
+      min-height: 44px;
+      display: grid;
+      place-items: center;
+      font-size: .78rem;
+      letter-spacing: .04em;
+    }
+    .mute {
+      right: max(12px, env(safe-area-inset-right));
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+    }
+    .mute svg { width: 22px; height: 22px; display: block; }
+    .mute .slash { display: none; }
+    .mute.is-muted .slash { display: block; }
+    body.is-locked .back,
+    body.is-locked .mute,
+    body.is-locked .overlay a,
+    body.is-locked .overlay button { pointer-events: none; }
+    .shell {
+      height: 100%;
+      max-width: 520px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding:
+        calc(max(8px, env(safe-area-inset-top)) + 48px)
+        max(10px, env(safe-area-inset-right))
+        max(8px, env(safe-area-inset-bottom))
+        max(10px, env(safe-area-inset-left));
+      min-height: 0;
+    }
+    .hud {
+      flex: none;
+      border-radius: 16px;
+      padding: 6px 8px 7px;
+      background: rgba(255, 250, 243, .96);
+      box-shadow: inset 0 0 0 1px var(--line), 0 8px 18px rgba(74, 38, 24, .08);
+    }
+    .hud-row { display: flex; gap: 8px; align-items: center; }
+    .hud-main { flex: 1; min-width: 0; }
+    .hud-top, .hud-stats {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .hud-top b { font-size: .98rem; letter-spacing: .04em; }
+    #timer {
+      font-size: 1.35rem;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+    #timer.danger { color: #c42323; animation: blink .6s step-end infinite; }
+    @keyframes blink { 50% { opacity: .45; } }
+    .say {
+      margin: 1px 0 2px;
+      min-height: 2.5em;
+      font-size: .86rem;
+      font-weight: 900;
+      line-height: 1.25;
+    }
+    .say .who { color: var(--accent); margin-right: 4px; letter-spacing: .06em; font-size: .75rem; }
+    .hud-stats { font-size: .75rem; font-weight: 800; color: var(--muted); }
+    .hud-stats strong { color: var(--ink); font-variant-numeric: tabular-nums; }
+    .hearts { letter-spacing: .08em; }
+    .hearts i { font-style: normal; color: #e23b4a; }
+    .hearts i.off { color: #e7cfc4; }
+    .bar {
+      margin-top: 4px;
+      height: 7px;
+      border-radius: 99px;
+      background: #f0e0d2;
+      overflow: hidden;
+    }
+    .bar span {
+      display: block;
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #f0b429, #e25a12);
+    }
+    .bar.met span { background: linear-gradient(90deg, #7dce63, #2f8a3a); }
+    .stage-view {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      border-radius: 22px;
+      overflow: hidden;
+      background: #f6d7a4;
+      touch-action: none;
+    }
+    .stage-view.shake { animation: sh .42s ease; }
+    @keyframes sh {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-6px); }
+      50% { transform: translateX(5px); }
+      75% { transform: translateX(-3px); }
+    }
+    canvas#game {
+      width: 100%;
+      height: 100%;
+      display: block;
+      touch-action: none;
+    }
+    .callout, .why-banner {
+      position: absolute;
+      z-index: 4;
+      left: 50%;
+      transform: translateX(-50%);
+      max-width: calc(100% - 20px);
+      margin: 0;
+      font-weight: 900;
+      text-align: center;
+      pointer-events: none;
+    }
+    .callout {
+      top: 18%;
+      padding: 6px 14px;
+      border-radius: 16px;
+      background: #fff6d8;
+      color: #a16207;
+      font-size: 1.7rem;
+      letter-spacing: .06em;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, .16);
+    }
+    .callout[data-kind="perfect"] {
+      font-size: 2rem;
+      color: #8a4b08;
+      background: #ffe08a;
+    }
+    .callout.pop { animation: popin .45s cubic-bezier(.2, 1.4, .4, 1); }
+    @keyframes popin {
+      0% { transform: translateX(-50%) scale(.45); }
+      100% { transform: translateX(-50%) scale(1); }
+    }
+    .why-banner {
+      top: 8px;
+      padding: 7px 10px;
+      border-radius: 12px;
+      background: rgba(255, 250, 243, .96);
+      color: var(--ink);
+      font-size: .82rem;
+      line-height: 1.35;
+      box-shadow: 0 8px 18px rgba(74, 38, 24, .16);
+    }
+    .controls { flex: none; }
+    .hint {
+      margin: 0 0 4px;
+      min-height: 1.2em;
+      text-align: center;
+      font-size: .78rem;
+      font-weight: 900;
+      color: var(--ink);
+    }
+    .hint.pulse { animation: hintpulse 1.1s ease-in-out infinite; }
+    @keyframes hintpulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .55; }
+    }
+    .pad { display: grid; grid-template-columns: 1fr 1.15fr 1fr; gap: 8px; }
+    .pad button {
+      min-height: 46px;
+      border: 0;
+      border-radius: 14px;
+      background: #fffaf3;
+      box-shadow: inset 0 0 0 1px var(--line), 0 4px 0 #e6c8a4;
+      font-weight: 900;
+    }
+    .pad button:active { transform: translateY(2px); box-shadow: inset 0 0 0 1px var(--line); }
+    .pad button:disabled { opacity: .45; }
+    #btn-drop { background: var(--accent); color: white; box-shadow: 0 4px 0 #a33c0c; }
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding:
+        max(12px, env(safe-area-inset-top))
+        12px
+        max(12px, env(safe-area-inset-bottom));
+      background: rgba(48, 24, 12, .62);
+      overflow: hidden;
+    }
+    .card {
+      width: min(100%, 420px);
+      max-height: calc(100dvh - 24px);
+      overflow: auto;
+      margin: 0 auto;
+      padding: 14px 14px 12px;
+      border-radius: 22px;
+      background: var(--paper);
+      box-shadow: 0 18px 48px rgba(48, 24, 12, .32);
+      text-align: center;
+    }
+    .card h1 {
+      margin: 0;
+      font-size: 1.65rem;
+      letter-spacing: .04em;
+      line-height: 1.15;
+    }
+    .en, .fine, .best {
+      margin: 3px 0;
+      color: var(--muted);
+      font-size: .75rem;
+      font-weight: 800;
+    }
+    .rules {
+      margin: 8px 0;
+      padding: 8px 10px 8px 30px;
+      border-radius: 14px;
+      background: #fff1df;
+      text-align: left;
+      font-weight: 900;
+      font-size: .92rem;
+    }
+    .rules li { margin: 3px 0; }
+    .note {
+      margin: 0 0 8px;
+      font-size: .78rem;
+      font-weight: 800;
+      color: var(--muted);
+    }
+    .go, .retry, .ghost {
+      display: block;
+      width: 100%;
+      min-height: 46px;
+      margin-top: 8px;
+      border: 0;
+      border-radius: 14px;
+      font-weight: 900;
+      text-decoration: none;
+    }
+    .go, .retry { background: var(--accent); color: white; }
+    .ghost { background: #fff; box-shadow: inset 0 0 0 1px var(--line); }
+    .go:disabled, .retry:disabled, .ghost:disabled { opacity: .45; }
+    .fine a { color: var(--muted); font-weight: 900; }
+    .mascot { width: 72px; margin: 0 auto; }
+    .hud .mascot { width: 62px; flex: none; }
+    .mascot svg { width: 100%; height: auto; display: block; overflow: visible; }
+    .mascot .face { display: none; }
+    .mascot[data-mood="idle"] .face.idle,
+    .mascot[data-mood="focus"] .face.focus,
+    .mascot[data-mood="cheer"] .face.cheer,
+    .mascot[data-mood="gasp"] .face.gasp,
+    .mascot[data-mood="yay"] .face.yay { display: block; }
+    .mascot[data-mood="idle"] { animation: bob 2.4s ease-in-out infinite; }
+    .mascot.is-pop[data-mood="cheer"],
+    .mascot.is-pop[data-mood="yay"] { animation: hop .48s ease; }
+    .mascot.is-pop[data-mood="gasp"] { animation: shake .4s ease; }
+    @keyframes bob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+    @keyframes hop {
+      0% { transform: translateY(0); }
+      40% { transform: translateY(-10px); }
+      100% { transform: translateY(0); }
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      30% { transform: translateX(-4px) rotate(-3deg); }
+      70% { transform: translateX(4px) rotate(3deg); }
+    }
+    #menu-shot {
+      width: 100%;
+      height: auto;
+      max-height: 148px;
+      object-fit: contain;
+      border-radius: 16px;
+      background: #f6d7a4;
+      box-shadow: inset 0 0 0 1px var(--line);
+    }
+    .menu-name {
+      margin: 8px 0 0;
+      font-size: 1.15rem;
+      font-weight: 900;
+      letter-spacing: .02em;
+    }
+    .menu-price {
+      margin: 0;
+      font-size: 1.55rem;
+      font-weight: 900;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+    .res-score { margin: 4px 0; font-weight: 900; font-size: .95rem; }
+    .why {
+      margin: 6px 0;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: #fde8e4;
+      color: #8f1d1d;
+      font-weight: 900;
+      font-size: .86rem;
+      line-height: 1.35;
+      text-align: left;
+    }
+    .why.win { background: #e7f6df; color: #1f6b32; }
+    .comment {
+      margin: 6px 0;
+      font-weight: 900;
+      font-size: .92rem;
+    }
+    .shareline {
+      margin: 6px 0 0;
+      padding: 6px 8px;
+      border-radius: 10px;
+      background: #fff6ea;
+      color: var(--muted);
+      font-size: .68rem;
+      font-weight: 800;
+      line-height: 1.35;
+      word-break: break-all;
+      text-align: left;
+    }
+    .live {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+    }
+    @media (max-height: 700px) {
+      .card { padding: 10px 12px; }
+      .card h1 { font-size: 1.35rem; }
+      .rules { font-size: .82rem; margin: 6px 0; }
+      .mascot { width: 56px; }
+      .hud .mascot { width: 48px; }
+      .say { font-size: .78rem; min-height: 2.3em; }
+      #timer { font-size: 1.15rem; }
+      .pad button { min-height: 42px; }
+      .callout { font-size: 1.35rem; }
+      .menu-price { font-size: 1.3rem; }
+      #menu-shot { max-height: 92px; }
+      .res-mascot, #res-mascot .mascot { width: 48px; }
+      .shareline { max-height: 2.7em; overflow: hidden; }
+      .why { margin: 4px 0; padding: 6px 8px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .mascot, .hint, #timer, .callout, .stage-view { animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <a class="back" href="../../index.html">ギャラリー</a>
+  <button type="button" class="mute" id="mute" aria-pressed="false" aria-label="音を消す">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="M4 9h4l5-4v14l-5-4H4z"/>
+      <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 9.5a4 4 0 0 1 0 5"/>
+      <path class="slash" fill="none" stroke="#e11d48" stroke-width="2.4" stroke-linecap="round" d="M6 5l13 14"/>
+    </svg>
+  </button>
+  <p class="live" id="live" aria-live="polite"></p>
+  <div class="shell">
+    <header class="hud">
+      <div class="hud-row">
+        <div id="hud-mascot"></div>
+        <div class="hud-main">
+          <div class="hud-top">
+            <b>ぎゅうぎゅう弁当</b>
+            <span id="timer">42秒</span>
+          </div>
+          <p class="say" id="say"><span class="who">ミケ</span><span id="say-text">おかずをぎゅうぎゅうに詰めよう</span></p>
+          <div class="hud-stats">
+            <span class="hearts" id="hearts">ハート 2</span>
+            <strong id="fill">つめ率 0% / 目標 54%</strong>
+          </div>
+          <div class="hud-stats">
+            <span id="stage-label">ステージ 1 / 4</span>
+            <span id="hud-best">ベスト なし</span>
+          </div>
+          <div class="bar" id="bar" aria-hidden="true"><span id="bar-fill"></span></div>
+        </div>
+      </div>
+    </header>
+    <div class="stage-view" id="stage">
+      <canvas id="game" width="360" height="540" aria-label="ぎゅうぎゅう弁当。おかずを左右に動かして落とす"></canvas>
+      <p class="callout" id="callout" hidden>ぎゅうぎゅう！</p>
+      <p class="why-banner" id="why-banner" hidden></p>
+    </div>
+    <div class="controls" id="controls" hidden>
+      <p class="hint pulse" id="hint">ゆび・マウス：ドラッグで横　タップでおとす　キー：← → ↓</p>
+      <div class="pad">
+        <button type="button" id="btn-left">← 左</button>
+        <button type="button" id="btn-drop">↓ おとす</button>
+        <button type="button" id="btn-right">右 →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="title">
+    <div class="card">
+      <div id="title-mascot"></div>
+      <h1>ぎゅうぎゅう弁当</h1>
+      <p class="en">Squeeze Bento · Day 27</p>
+      <ol class="rules">
+        <li>ゆび・マウスはドラッグで横、タップかクリックでおとす。キーは ← → と ↓。</li>
+        <li>目標のつめ率まで詰めて、時間内にフタを閉める。</li>
+        <li>失敗はこぼれ・はみだし・0秒。ハートは2。ステージ1の最初のこぼれとはみだしは練習で減らない。</li>
+      </ol>
+      <p class="note" id="title-best">ベスト なし</p>
+      <button type="button" class="go" id="btn-start">つめはじめる</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="lesson" hidden>
+    <div class="card">
+      <p class="why" id="lesson-why"></p>
+      <p class="note" id="lesson-note"></p>
+      <button type="button" class="go" id="lesson-ok" disabled>つづける</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="between" hidden>
+    <div class="card">
+      <p class="en" id="between-kicker">ステージクリア</p>
+      <h1 id="between-title">ステージ 1 クリア</h1>
+      <p class="res-score" id="between-score"></p>
+      <p class="why win" id="between-warn"></p>
+      <button type="button" class="go" id="btn-next" disabled>つぎの弁当へ</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="result" hidden>
+    <div class="card" id="res-card">
+      <div id="res-mascot"></div>
+      <canvas id="menu-shot" width="640" height="280"></canvas>
+      <p class="menu-name" id="menu-name">からっぽ弁当</p>
+      <p class="menu-price" id="menu-price">¥420</p>
+      <p class="res-score" id="res-score"></p>
+      <p class="why" id="res-why"></p>
+      <p class="comment" id="res-comment"></p>
+      <p class="best" id="res-best"></p>
+      <p class="shareline" id="shareline"></p>
+      <button type="button" class="retry" id="btn-retry" disabled>もういちど</button>
+      <button type="button" class="ghost" id="btn-copy" disabled>コピー</button>
+      <p class="fine"><a href="../../index.html" id="btn-gallery">ギャラリーへ</a></p>
+    </div>
+  </div>
+
+  <template id="mascot-tpl">
+    <div class="mascot" data-mood="idle">
+      <svg viewBox="0 0 140 156" aria-hidden="true">
+        <ellipse cx="70" cy="148" rx="34" ry="6" fill="rgba(80,40,20,.18)"/>
+        <path d="M38 96h64l10 46H30z" fill="#f25c54"/>
+        <path d="M48 108h44v10H48z" fill="#fff6ea"/>
+        <path d="M36 102c-18 10-22 30-8 34 12-8 16-20 18-30z" fill="#f4a259"/>
+        <path d="M104 102c18 10 22 30 8 34-12-8-16-20-18-30z" fill="#fff1dc"/>
+        <ellipse cx="34" cy="132" rx="7" ry="5" fill="#ffd0b0"/>
+        <ellipse cx="108" cy="132" rx="7" ry="5" fill="#ffd0b0"/>
+        <path d="M42 64L30 28l28 24z" fill="#f4a259"/>
+        <path d="M98 64l12-36-28 24z" fill="#6b3e2e"/>
+        <path d="M44 58L36 34l16 16z" fill="#ffb4c6"/>
+        <path d="M96 58l8-22-16 16z" fill="#ffb4c6"/>
+        <ellipse cx="70" cy="78" rx="36" ry="32" fill="#f4a259"/>
+        <path d="M48 60c6-14 18-16 24-6 2 8-8 14-16 14-6 0-8-4-8-8z" fill="#6b3e2e"/>
+        <path d="M54 46c2-16 10-26 16-26s14 10 16 26c-8 4-14 6-16 6s-12-2-16-6z" fill="#fff"/>
+        <ellipse cx="70" cy="46" rx="20" ry="7" fill="#fff"/>
+        <ellipse cx="70" cy="90" rx="16" ry="12" fill="#fff6ea"/>
+        <path d="M48 86h-10M46 92h-8M92 86h10M94 92h8" stroke="#6b3e2e" stroke-width="1.6" stroke-linecap="round"/>
+        <g class="face idle">
+          <ellipse cx="56" cy="76" rx="5" ry="6" fill="#fff"/>
+          <ellipse cx="84" cy="76" rx="5" ry="6" fill="#fff"/>
+          <ellipse cx="57" cy="77" rx="2.4" ry="3" fill="#3a2418"/>
+          <ellipse cx="85" cy="77" rx="2.4" ry="3" fill="#3a2418"/>
+          <path d="M70 84l-3 4h6z" fill="#e07a6a"/>
+          <path d="M62 96c5 5 12 5 16 0" fill="none" stroke="#6b3e2e" stroke-width="2" stroke-linecap="round"/>
+        </g>
+        <g class="face focus">
+          <path d="M50 76h12M78 76h12" stroke="#3a2418" stroke-width="3" stroke-linecap="round"/>
+          <path d="M70 86l-3 3h6z" fill="#e07a6a"/>
+          <path d="M64 96h12" stroke="#6b3e2e" stroke-width="2" stroke-linecap="round"/>
+        </g>
+        <g class="face cheer">
+          <path d="M50 78c4-6 10-6 12 0M78 78c4-6 10-6 12 0" fill="none" stroke="#3a2418" stroke-width="2.6" stroke-linecap="round"/>
+          <path d="M70 86l-3 3h6z" fill="#e07a6a"/>
+          <path d="M60 94c6 8 16 8 22 0" fill="#6b3e2e"/>
+          <ellipse cx="48" cy="88" rx="5" ry="3" fill="#ffb3c4" opacity=".8"/>
+          <ellipse cx="92" cy="88" rx="5" ry="3" fill="#ffb3c4" opacity=".8"/>
+        </g>
+        <g class="face gasp">
+          <ellipse cx="56" cy="76" rx="6.5" ry="7.5" fill="#fff"/>
+          <ellipse cx="84" cy="76" rx="6.5" ry="7.5" fill="#fff"/>
+          <circle cx="56" cy="77" r="3" fill="#3a2418"/>
+          <circle cx="84" cy="77" r="3" fill="#3a2418"/>
+          <path d="M70 84l-3 4h6z" fill="#e07a6a"/>
+          <ellipse cx="70" cy="98" rx="5" ry="6" fill="#6b3e2e"/>
+        </g>
+        <g class="face yay">
+          <path d="M50 78c4-8 12-8 14 0M78 78c4-8 12-8 14 0" fill="none" stroke="#3a2418" stroke-width="2.8" stroke-linecap="round"/>
+          <path d="M70 84l-3 4h6z" fill="#e07a6a"/>
+          <path d="M58 92c8 12 20 12 26 0" fill="#fff" stroke="#6b3e2e" stroke-width="2"/>
+          <ellipse cx="48" cy="88" rx="6" ry="3.4" fill="#ff8fab"/>
+          <ellipse cx="92" cy="88" rx="6" ry="3.4" fill="#ff8fab"/>
+          <path d="M112 40l1.4 3.6 3.8.3-2.9 2.4.9 3.6-3.2-1.9-3.2 1.9.9-3.6-2.9-2.4 3.8-.3z" fill="#ffd56a"/>
+        </g>
+      </svg>
+    </div>
+  </template>
+
+  <script>
+  (function () {
+    "use strict";
+
+    var PLAY_URL = "https://grokbot365game.github.io/daily-casual-games/games/2026-10-22-squeeze-bento/";
+    var STORE = "squeeze-bento-2026-10-22";
+    var LW = 360;
+    var LH = 540;
+    var GRAV = 2450;
+    var OVER_TOL = 7;
+    var SLOP = 0.75;
+    var LOCK_MS = 800;
+    var HINTS = [
+      "ゆび・マウス：ドラッグで横にうごかす",
+      "キーは ← → 。↓ かスペースでおとす",
+      "まんなかタップか「おとす」でも落ちる",
+      "はこから横にはずれると こぼれ",
+      "フタの線より上は はみだし。0秒でも失敗"
+    ];
+    var FOODS = {
+      tomato: { name: "トマト", shape: "circle", r: 22, fric: 0.52, rest: 0.05, ang: 0 },
+      broccoli: { name: "ブロッコリー", shape: "circle", r: 25, fric: 0.7, rest: 0.03, ang: 0 },
+      onigiri: { name: "おにぎり", shape: "poly", verts: [[0, -34], [32, 20], [-32, 20]], fric: 0.74, rest: 0.03, ang: 0 },
+      egg: { name: "たまごやき", shape: "poly", verts: [[-44, -16], [44, -16], [44, 16], [-44, 16]], fric: 0.64, rest: 0.02, ang: 0 },
+      eggLong: { name: "たまごやき", shape: "poly", verts: [[-60, -14], [60, -14], [60, 14], [-60, 14]], fric: 0.6, rest: 0.02, ang: 0 },
+      tako: { name: "たこさん", shape: "poly", verts: [[-32, -14], [32, -14], [32, 15], [-32, 15]], fric: 0.56, rest: 0.04, ang: 0 },
+      karaage: { name: "からあげ", shape: "poly", verts: [[-2, -26], [24, -8], [18, 18], [-4, 26], [-24, 6], [-22, -12]], fric: 0.3, rest: 0.16, ang: 0.5 }
+    };
+    var STAGES = [
+      { w: 170, h: 152, target: 0.54, time: 42, sz: 1.14, note: "", queue: ["eggLong", "tomato", "onigiri", "broccoli", "tako", "onigiri"] },
+      { w: 164, h: 146, target: 0.53, time: 38, sz: 1.12, note: "つぎはからあげがころがるよ。", queue: ["egg", "karaage", "onigiri", "tomato", "broccoli", "tako"] },
+      { w: 158, h: 142, target: 0.58, time: 34, sz: 1.1, note: "つぎははこがさらにせまく、ながい卵が倒れやすい。", queue: ["eggLong", "karaage", "tomato", "broccoli", "tako", "onigiri"] },
+      { w: 154, h: 138, target: 0.60, time: 30, sz: 1.08, note: "さいご。いちばんせまいよ。", queue: ["eggLong", "karaage", "onigiri", "tako", "broccoli", "tomato"] }
+    ];
+    var MENUS = {
+      karaage: ["ぎゅうぎゅう唐揚げ弁当", "ざくざく唐揚げ弁当", "からあげ山盛り弁当"],
+      onigiri: ["つめつめおにぎり弁当", "むすびぎゅうぎゅう弁当", "おにぎり三段弁当"],
+      egg: ["とろり卵弁当", "だし巻きぎゅう弁当", "たまごやき特盛弁当"],
+      eggLong: ["とろり卵弁当", "なが〜い卵弁当", "たまごやき特盛弁当"],
+      broccoli: ["もりもり緑弁当", "ブロッコリー畑弁当", "みどりぎゅう弁当"],
+      tomato: ["あかトマト弁当", "トマトきらり弁当", "ぷちトマト弁当"],
+      tako: ["たこさんウインナー弁当", "たこさんマーチ弁当", "ウインナーぎゅう弁当"]
+    };
+    var WIN_COMMENTS = [
+      "フタがうなるほど、ぎゅうぎゅう。",
+      "ねこシェフがしっぽをピンと立てた。",
+      "このつめ方、きょうのイチオシ。",
+      "ごはんの白が、いい仕事してる。",
+      "あしたもこのかたちでお願い。"
+    ];
+    var FAIL_COMMENTS = [
+      "こぼれても、香りはのこってる。",
+      "フタはしまらなかった。つぎは下からねかせて。",
+      "ハートが先に尽きた。位置は悪くない。",
+      "時間だけが、おなかより早かった。"
+    ];
+
+    var canvas = document.getElementById("game");
+    var ctx = canvas.getContext("2d");
+    var menuCanvas = document.getElementById("menu-shot");
+    var menuCtx = menuCanvas.getContext("2d");
+    var stageEl = document.getElementById("stage");
+    var titleEl = document.getElementById("title");
+    var lessonEl = document.getElementById("lesson");
+    var betweenEl = document.getElementById("between");
+    var resultEl = document.getElementById("result");
+    var controlsEl = document.getElementById("controls");
+    var sayText = document.getElementById("say-text");
+    var timerEl = document.getElementById("timer");
+    var heartsEl = document.getElementById("hearts");
+    var fillEl = document.getElementById("fill");
+    var stageLabel = document.getElementById("stage-label");
+    var hudBest = document.getElementById("hud-best");
+    var barEl = document.getElementById("bar");
+    var barFill = document.getElementById("bar-fill");
+    var hintEl = document.getElementById("hint");
+    var calloutEl = document.getElementById("callout");
+    var whyBanner = document.getElementById("why-banner");
+    var liveEl = document.getElementById("live");
+    var titleBest = document.getElementById("title-best");
+    var lessonWhy = document.getElementById("lesson-why");
+    var lessonNote = document.getElementById("lesson-note");
+    var lessonOk = document.getElementById("lesson-ok");
+    var betweenKicker = document.getElementById("between-kicker");
+    var betweenTitle = document.getElementById("between-title");
+    var betweenScore = document.getElementById("between-score");
+    var betweenWarn = document.getElementById("between-warn");
+    var btnNext = document.getElementById("btn-next");
+    var menuNameEl = document.getElementById("menu-name");
+    var menuPriceEl = document.getElementById("menu-price");
+    var resScore = document.getElementById("res-score");
+    var resWhy = document.getElementById("res-why");
+    var resComment = document.getElementById("res-comment");
+    var resBest = document.getElementById("res-best");
+    var shareLineEl = document.getElementById("shareline");
+    var btnStart = document.getElementById("btn-start");
+    var btnRetry = document.getElementById("btn-retry");
+    var btnCopy = document.getElementById("btn-copy");
+    var btnLeft = document.getElementById("btn-left");
+    var btnRight = document.getElementById("btn-right");
+    var btnDrop = document.getElementById("btn-drop");
+    var muteBtn = document.getElementById("mute");
+    var hudMascot = document.getElementById("hud-mascot");
+    var titleMascot = document.getElementById("title-mascot");
+    var resMascot = document.getElementById("res-mascot");
+    var mascot = document.getElementById("mascot-tpl").content.firstElementChild;
+    titleMascot.appendChild(mascot);
+
+    var phase = "title";
+    var stageIndex = 0;
+    var hearts = 2;
+    var timeLeft = 42;
+    var queue = [];
+    var bodies = [];
+    var held = null;
+    var particles = [];
+    var box = { cx: 180, floor: 500, w: 196, h: 132, wall: 12, left: 0, right: 0, rim: 0 };
+    var forgiven = { spill: false, over: false };
+    var goodDrops = 0;
+    var clearedStages = 0;
+    var awaitingSettle = false;
+    var settleWait = 0;
+    var warn8 = false;
+    var warn5 = false;
+    var lidT = 0;
+    var lidHold = 0;
+    var clearFill = 0;
+    var clearTime = 0;
+    var stagePerfect = false;
+    var anyPerfect = false;
+    var lastClearPerfect = false;
+    var stageIntro = "";
+    var hintTick = 0;
+    var hintIndex = 0;
+    var calloutTimer = 0;
+    var bannerTimer = 0;
+    var lessonAfter = null;
+    var lessonLock = 0;
+    var betweenLock = 0;
+    var lockUntil = 0;
+    var failTimer = 0;
+    var pendingWhy = "";
+    var pendingWin = false;
+    var photo = null;
+    var shareText = "";
+    var copyTimer = 0;
+    var keys = {};
+    var nudgeHold = 0;
+    var nudgeDir = 0;
+    var view = { s: 1, ox: 0, oy: 0, dpr: 1 };
+    var lastTs = 0;
+    var anim = 0;
+    var ac = null;
+    var master = null;
+    var noiseBuf = null;
+    var muted = false;
+    var riceDots = [];
+    var pendingMistake = null;
+    var manual = false;
+    var endFillPct = 0;
+
+    function stageDef() { return STAGES[stageIndex]; }
+
+    function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+    function hypot(x, y) { return Math.sqrt(x * x + y * y); }
+
+    function analyzePoly(raw) {
+      var a = 0, cx = 0, cy = 0, i, j, cross;
+      var n = raw.length;
+      for (i = 0; i < n; i++) {
+        j = (i + 1) % n;
+        cross = raw[i][0] * raw[j][1] - raw[j][0] * raw[i][1];
+        a += cross;
+        cx += (raw[i][0] + raw[j][0]) * cross;
+        cy += (raw[i][1] + raw[j][1]) * cross;
+      }
+      a *= 0.5;
+      var area = Math.abs(a) || 1;
+      var div = 6 * (a || 1);
+      cx /= div;
+      cy /= div;
+      var verts = [];
+      var r = 1;
+      for (i = 0; i < n; i++) {
+        var x = raw[i][0] - cx;
+        var y = raw[i][1] - cy;
+        verts.push({ x: x, y: y });
+        r = Math.max(r, hypot(x, y));
+      }
+      return { verts: verts, area: area, r: r };
+    }
+
+    function makeBody(kind, x, y, ang) {
+      var f = FOODS[kind];
+      var sz = stageDef().sz;
+      var b = {
+        kind: kind,
+        name: f.name,
+        shape: f.shape,
+        x: x,
+        y: y,
+        ang: ang == null ? f.ang : ang,
+        vx: 0,
+        vy: 0,
+        w: 0,
+        fric: f.fric,
+        rest: f.rest,
+        asleep: false,
+        sleepT: 0,
+        spilling: false,
+        failSent: false
+      };
+      if (f.shape === "circle") {
+        b.r = f.r * sz;
+        b.area = Math.PI * b.r * b.r;
+        b.verts = null;
+        b.minX = -b.r;
+        b.maxX = b.r;
+        b.minY = -b.r;
+        b.maxY = b.r;
+      } else {
+        var scaled = f.verts.map(function (v) { return [v[0] * sz, v[1] * sz]; });
+        var info = analyzePoly(scaled);
+        b.verts = info.verts;
+        b.area = info.area;
+        b.r = info.r;
+        b.minX = b.maxX = b.verts[0].x;
+        b.minY = b.maxY = b.verts[0].y;
+        var vi;
+        for (vi = 1; vi < b.verts.length; vi++) {
+          b.minX = Math.min(b.minX, b.verts[vi].x);
+          b.maxX = Math.max(b.maxX, b.verts[vi].x);
+          b.minY = Math.min(b.minY, b.verts[vi].y);
+          b.maxY = Math.max(b.maxY, b.verts[vi].y);
+        }
+      }
+      var m = Math.max(0.4, b.area / 250);
+      b.invM = 1 / m;
+      var I = b.shape === "circle" ? 0.5 * m * b.r * b.r : m * b.r * b.r * 0.42;
+      b.invI = I > 0.0001 ? 1 / I : 0;
+      return b;
+    }
+
+    function exportBody(b) {
+      return {
+        kind: b.kind, x: b.x, y: b.y, ang: b.ang, vx: b.vx, vy: b.vy, w: b.w,
+        asleep: b.asleep, sleepT: b.sleepT, spilling: b.spilling, failSent: b.failSent
+      };
+    }
+
+    function importBody(o) {
+      var b = makeBody(o.kind, o.x, o.y, o.ang);
+      b.vx = o.vx;
+      b.vy = o.vy;
+      b.w = o.w;
+      b.asleep = o.asleep;
+      b.sleepT = o.sleepT;
+      b.spilling = o.spilling;
+      b.failSent = o.failSent;
+      return b;
+    }
+
+    function applyBox() {
+      var st = stageDef();
+      box.w = st.w;
+      box.h = st.h;
+      box.cx = LW / 2;
+      box.floor = 498;
+      box.wall = 12;
+      box.left = box.cx - box.w / 2;
+      box.right = box.cx + box.w / 2;
+      box.rim = box.floor - box.h;
+      buildRice();
+    }
+
+    function buildRice() {
+      riceDots = [];
+      var seed = 11;
+      var i;
+      for (i = 0; i < 70; i++) {
+        seed = (seed * 9301 + 49297) % 233280;
+        var rx = (seed % 1000) / 1000;
+        seed = (seed * 9301 + 49297) % 233280;
+        var ry = (seed % 1000) / 1000;
+        riceDots.push({ x: rx, y: ry, w: 1.6 + (seed % 5) * 0.25 });
+      }
+    }
+
+    function worldVerts(b) {
+      var c = Math.cos(b.ang), s = Math.sin(b.ang);
+      var out = [];
+      var i;
+      for (i = 0; i < b.verts.length; i++) {
+        var v = b.verts[i];
+        out.push({ x: b.x + v.x * c - v.y * s, y: b.y + v.x * s + v.y * c });
+      }
+      return out;
+    }
+
+    function pointInPoly(verts, x, y) {
+      var inside = false;
+      var i, j;
+      for (i = 0, j = verts.length - 1; i < verts.length; j = i++) {
+        var xi = verts[i].x, yi = verts[i].y;
+        var xj = verts[j].x, yj = verts[j].y;
+        var intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / ((yj - yi) || 1e-9) + xi);
+        if (intersect) inside = !inside;
+      }
+      return inside;
+    }
+
+    function covers(b, x, y) {
+      var dx = x - b.x, dy = y - b.y;
+      if (b.shape === "circle") return dx * dx + dy * dy <= b.r * b.r;
+      var c = Math.cos(b.ang), s = Math.sin(b.ang);
+      var lx = dx * c + dy * s;
+      var ly = -dx * s + dy * c;
+      return pointInPoly(b.verts, lx, ly);
+    }
+
+    function topOf(b) {
+      if (b.shape === "circle") return b.y - b.r;
+      var verts = worldVerts(b);
+      var m = verts[0].y;
+      var i;
+      for (i = 1; i < verts.length; i++) if (verts[i].y < m) m = verts[i].y;
+      return m;
+    }
+
+    function overPx(b) {
+      if (b.x < box.left - 2 || b.x > box.right + 2) return 0;
+      return box.rim - topOf(b);
+    }
+
+    function closestSeg(px, py, ax, ay, bx, by) {
+      var abx = bx - ax, aby = by - ay;
+      var den = abx * abx + aby * aby || 1;
+      var t = ((px - ax) * abx + (py - ay) * aby) / den;
+      if (t < 0) t = 0;
+      if (t > 1) t = 1;
+      return { x: ax + abx * t, y: ay + aby * t };
+    }
+
+    function separate(a, b, nx, ny, pen, px, py) {
+      if (!isFinite(pen) || pen <= 0) return;
+      var bothSleep = a.asleep && (!b || b.asleep);
+      if (bothSleep && pen < 1.4) return;
+      var inv = a.invM + (b ? b.invM : 0);
+      if (inv <= 0) return;
+      var percent = pen > 14 ? 0.9 : 0.62;
+      var corr = Math.max(pen - SLOP, 0) * percent / inv;
+      a.x -= nx * corr * a.invM;
+      a.y -= ny * corr * a.invM;
+      if (b) {
+        b.x += nx * corr * b.invM;
+        b.y += ny * corr * b.invM;
+      }
+      var rax = px - a.x, ray = py - a.y;
+      var vax = a.vx - a.w * ray;
+      var vay = a.vy + a.w * rax;
+      var vbx = 0, vby = 0, rbx = 0, rby = 0;
+      if (b) {
+        rbx = px - b.x;
+        rby = py - b.y;
+        vbx = b.vx - b.w * rby;
+        vby = b.vy + b.w * rbx;
+      }
+      var rvx = vbx - vax;
+      var rvy = vby - vay;
+      var velN = rvx * nx + rvy * ny;
+      if (velN > 0) {
+        if (pen > 2) wakePair(a, b);
+        return;
+      }
+      var raN = rax * ny - ray * nx;
+      var rbN = b ? rbx * ny - rby * nx : 0;
+      var denom = inv + a.invI * raN * raN + (b ? b.invI * rbN * rbN : 0);
+      if (denom <= 0) return;
+      var e = Math.abs(velN) < 48 ? 0 : (b ? Math.min(a.rest, b.rest) : a.rest);
+      var j = -(1 + e) * velN / denom;
+      if (!isFinite(j)) return;
+      a.vx -= nx * j * a.invM;
+      a.vy -= ny * j * a.invM;
+      a.w -= raN * j * a.invI;
+      if (b) {
+        b.vx += nx * j * b.invM;
+        b.vy += ny * j * b.invM;
+        b.w += rbN * j * b.invI;
+      }
+      var tx = -ny, ty = nx;
+      var velT = rvx * tx + rvy * ty;
+      var raT = rax * ty - ray * tx;
+      var rbT = b ? rbx * ty - rby * tx : 0;
+      var denomT = inv + a.invI * raT * raT + (b ? b.invI * rbT * rbT : 0);
+      if (denomT > 0) {
+        var jt = -velT / denomT;
+        var mu = b ? Math.sqrt(a.fric * b.fric) : a.fric * 0.92;
+        var lim = mu * j;
+        if (jt > lim) jt = lim;
+        if (jt < -lim) jt = -lim;
+        a.vx -= tx * jt * a.invM;
+        a.vy -= ty * jt * a.invM;
+        a.w -= raT * jt * a.invI;
+        if (b) {
+          b.vx += tx * jt * b.invM;
+          b.vy += ty * jt * b.invM;
+          b.w += rbT * jt * b.invI;
+        }
+      }
+      wakePair(a, b);
+      clampSpin(a);
+      if (b) clampSpin(b);
+    }
+
+    function wakePair(a, b) {
+      a.asleep = false;
+      a.sleepT = 0;
+      if (b) { b.asleep = false; b.sleepT = 0; }
+    }
+
+    function clampSpin(b) {
+      if (b.w > 11) b.w = 11;
+      if (b.w < -11) b.w = -11;
+      var sp = hypot(b.vx, b.vy);
+      if (sp > 860) {
+        b.vx = b.vx / sp * 860;
+        b.vy = b.vy / sp * 860;
+      }
+    }
+
+    function collideCircles(a, b) {
+      var dx = b.x - a.x, dy = b.y - a.y;
+      var min = a.r + b.r;
+      var d2 = dx * dx + dy * dy;
+      if (d2 >= min * min || d2 < 1e-8) {
+        if (d2 < 1e-8) separate(a, b, 0, -1, min, a.x, a.y);
+        return;
+      }
+      var d = Math.sqrt(d2);
+      var nx = dx / d, ny = dy / d;
+      separate(a, b, nx, ny, min - d, a.x + nx * a.r, a.y + ny * a.r);
+    }
+
+    function outwardNormal(p, v1, v2) {
+      var ex = v2.x - v1.x, ey = v2.y - v1.y;
+      var el = hypot(ex, ey) || 1;
+      var nx = -ey / el, ny = ex / el;
+      var mx = (v1.x + v2.x) / 2, my = (v1.y + v2.y) / 2;
+      if ((mx - p.x) * nx + (my - p.y) * ny < 0) { nx = -nx; ny = -ny; }
+      return { x: nx, y: ny };
+    }
+
+    function collideCirclePoly(c, p) {
+      var verts = worldVerts(p);
+      var inside = pointInPoly(verts, c.x, c.y);
+      var bestD = Infinity, bx = 0, by = 0, onx = 0, ony = 1;
+      var i;
+      for (i = 0; i < verts.length; i++) {
+        var j = (i + 1) % verts.length;
+        var cp = closestSeg(c.x, c.y, verts[i].x, verts[i].y, verts[j].x, verts[j].y);
+        var d = hypot(c.x - cp.x, c.y - cp.y);
+        if (d < bestD) {
+          bestD = d;
+          bx = cp.x;
+          by = cp.y;
+          var n = outwardNormal(p, verts[i], verts[j]);
+          onx = n.x;
+          ony = n.y;
+        }
+      }
+      if (inside) {
+        separate(c, p, -onx, -ony, c.r + bestD, bx, by);
+      } else if (bestD < c.r) {
+        var dx = bx - c.x, dy = by - c.y;
+        var d2 = hypot(dx, dy) || 1;
+        separate(c, p, dx / d2, dy / d2, c.r - bestD, bx, by);
+      }
+    }
+
+    function project(verts, ax, ay) {
+      var min = Infinity, max = -Infinity;
+      var i;
+      for (i = 0; i < verts.length; i++) {
+        var p = verts[i].x * ax + verts[i].y * ay;
+        if (p < min) min = p;
+        if (p > max) max = p;
+      }
+      return { min: min, max: max };
+    }
+
+    function addAxes(verts, axes) {
+      var i;
+      for (i = 0; i < verts.length; i++) {
+        var j = (i + 1) % verts.length;
+        var ex = verts[j].x - verts[i].x;
+        var ey = verts[j].y - verts[i].y;
+        var el = hypot(ex, ey);
+        if (el < 0.001) continue;
+        axes.push({ x: -ey / el, y: ex / el });
+      }
+    }
+
+    function sat(av, bv) {
+      var axes = [];
+      addAxes(av, axes);
+      addAxes(bv, axes);
+      var best = null;
+      var i;
+      for (i = 0; i < axes.length; i++) {
+        var ax = axes[i].x, ay = axes[i].y;
+        var pa = project(av, ax, ay);
+        var pb = project(bv, ax, ay);
+        var overlap = Math.min(pa.max, pb.max) - Math.max(pa.min, pb.min);
+        if (overlap <= 0) return null;
+        if (!best || overlap < best.pen) {
+          var dir = (pa.min + pa.max) < (pb.min + pb.max) ? 1 : -1;
+          best = { pen: overlap, nx: ax * dir, ny: ay * dir };
+        }
+      }
+      return best;
+    }
+
+    function contactAvg(av, bv, a, b) {
+      var pts = [];
+      var i;
+      for (i = 0; i < av.length; i++) if (pointInPoly(bv, av[i].x, av[i].y)) pts.push(av[i]);
+      for (i = 0; i < bv.length; i++) if (pointInPoly(av, bv[i].x, bv[i].y)) pts.push(bv[i]);
+      if (!pts.length) return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      var x = 0, y = 0;
+      for (i = 0; i < pts.length; i++) { x += pts[i].x; y += pts[i].y; }
+      return { x: x / pts.length, y: y / pts.length };
+    }
+
+    function collidePolys(a, b) {
+      var av = worldVerts(a), bv = worldVerts(b);
+      var hit = sat(av, bv);
+      if (!hit) return;
+      var cp = contactAvg(av, bv, a, b);
+      separate(a, b, hit.nx, hit.ny, hit.pen, cp.x, cp.y);
+    }
+
+    function collidePair(a, b) {
+      if (a.asleep && b.asleep) {
+        var dx = a.x - b.x, dy = a.y - b.y;
+        var reach = a.r + b.r + 1;
+        if (dx * dx + dy * dy > reach * reach) return;
+      }
+      if (a.shape === "circle" && b.shape === "circle") collideCircles(a, b);
+      else if (a.shape === "circle") collideCirclePoly(a, b);
+      else if (b.shape === "circle") collideCirclePoly(b, a);
+      else collidePolys(a, b);
+    }
+
+    function collideWalls(b) {
+      if (b.spilling) return;
+      var inside = b.x >= box.left && b.x <= box.right;
+      if (!inside) return;
+      if (b.shape === "circle") {
+        if (b.y + b.r > box.floor) separate(b, null, 0, 1, b.y + b.r - box.floor, b.x, box.floor);
+        if (b.y > box.rim && b.y < box.floor) {
+          if (b.x - b.r < box.left) separate(b, null, -1, 0, box.left - (b.x - b.r), box.left, b.y);
+          if (b.x + b.r > box.right) separate(b, null, 1, 0, b.x + b.r - box.right, box.right, b.y);
+        }
+        return;
+      }
+      var verts = worldVerts(b);
+      var i, best = null, bestL = null, bestR = null;
+      for (i = 0; i < verts.length; i++) {
+        var v = verts[i];
+        if (v.x >= box.left && v.x <= box.right && v.y > box.floor) {
+          var pen = v.y - box.floor;
+          if (!best || pen > best.pen) best = { pen: pen, x: v.x, y: v.y };
+        }
+        if (v.y > box.rim && v.y <= box.floor + 1) {
+          if (v.x < box.left) {
+            var penL = box.left - v.x;
+            if (!bestL || penL > bestL.pen) bestL = { pen: penL, y: v.y };
+          }
+          if (v.x > box.right) {
+            var penR = v.x - box.right;
+            if (!bestR || penR > bestR.pen) bestR = { pen: penR, y: v.y };
+          }
+        }
+      }
+      if (best) separate(b, null, 0, 1, best.pen, best.x, box.floor);
+      if (bestL) separate(b, null, -1, 0, bestL.pen, box.left, bestL.y);
+      if (bestR) separate(b, null, 1, 0, bestR.pen, box.right, bestR.y);
+    }
+
+    function physics(dt) {
+      var sub = 8;
+      var h = dt / sub;
+      var s, i, k;
+      for (s = 0; s < sub; s++) {
+        for (i = 0; i < bodies.length; i++) {
+          var b = bodies[i];
+          if (b.asleep) continue;
+          b.vy += GRAV * h;
+          b.vx *= Math.exp(-0.12 * h);
+          b.w *= Math.exp(-0.9 * h);
+          b.x += b.vx * h;
+          b.y += b.vy * h;
+          b.ang += b.w * h;
+          if (!isFinite(b.x) || !isFinite(b.y)) {
+            b.x = box.cx;
+            b.y = box.rim - 20;
+            b.vx = b.vy = b.w = 0;
+          }
+        }
+        for (k = 0; k < 4; k++) {
+          for (i = 0; i < bodies.length; i++) collideWalls(bodies[i]);
+          for (i = 0; i < bodies.length; i++) {
+            for (var j = i + 1; j < bodies.length; j++) collidePair(bodies[i], bodies[j]);
+          }
+        }
+      }
+      for (i = 0; i < bodies.length; i++) {
+        var body = bodies[i];
+        if (body.asleep || body.failSent) continue;
+        var sp = hypot(body.vx, body.vy);
+        if (sp < 20 && Math.abs(body.w) < 0.45 && body.y > box.rim - body.r) body.sleepT += dt;
+        else body.sleepT = 0;
+        if (body.sleepT > 0.22 && !body.spilling) {
+          body.asleep = true;
+          body.vx = 0;
+          body.vy = 0;
+          body.w = 0;
+        }
+        if (!body.spilling && (body.x < box.left || body.x > box.right) && body.y > box.rim - 6) {
+          body.spilling = true;
+          body.asleep = false;
+        }
+        if (body.spilling && !body.failSent && body.y > box.floor + 18) queueSpill(body);
+        if (body.y > LH + 80 && !body.failSent) queueSpill(body);
+      }
+    }
+
+    function fillRatio() {
+      var cols = Math.max(8, Math.round(box.w / 4));
+      var rows = Math.max(8, Math.round(box.h / 4));
+      var grid = new Uint8Array(cols * rows);
+      var covered = 0;
+      var x, y, i, c, r;
+      for (i = 0; i < bodies.length; i++) {
+        var b = bodies[i];
+        if (!countable(b)) continue;
+        var minX = clamp(Math.floor((b.x - b.r - box.left) / box.w * cols), 0, cols - 1);
+        var maxX = clamp(Math.ceil((b.x + b.r - box.left) / box.w * cols), 0, cols - 1);
+        var minY = clamp(Math.floor((b.y - b.r - box.rim) / box.h * rows), 0, rows - 1);
+        var maxY = clamp(Math.ceil((b.y + b.r - box.rim) / box.h * rows), 0, rows - 1);
+        for (r = minY; r <= maxY; r++) {
+          for (c = minX; c <= maxX; c++) {
+            var idx = r * cols + c;
+            if (grid[idx]) continue;
+            x = box.left + (c + 0.5) / cols * box.w;
+            y = box.rim + (r + 0.5) / rows * box.h;
+            if (covers(b, x, y)) {
+              grid[idx] = 1;
+              covered++;
+            }
+          }
+        }
+      }
+      return covered / (cols * rows);
+    }
+
+    function countable(b) {
+      if (b.spilling || b.failSent) return false;
+      if (b.x < box.left || b.x > box.right) return false;
+      if (b.y < box.rim - 4) return false;
+      if (overPx(b) > OVER_TOL) return false;
+      return true;
+    }
+
+    function worstOverBody() {
+      var best = null;
+      var bestPx = OVER_TOL;
+      var i;
+      for (i = 0; i < bodies.length; i++) {
+        var b = bodies[i];
+        if (b.spilling || b.failSent) continue;
+        if (b.x < box.left || b.x > box.right) continue;
+        var px = overPx(b);
+        if (px > bestPx) { bestPx = px; best = b; }
+      }
+      return best ? { body: best, px: bestPx } : null;
+    }
+
+    function removeBody(b) {
+      var i = bodies.indexOf(b);
+      if (i >= 0) bodies.splice(i, 1);
+      var k;
+      for (k = 0; k < bodies.length; k++) {
+        bodies[k].asleep = false;
+        bodies[k].sleepT = 0;
+      }
+    }
+
+    function queueSpill(b) {
+      if (b.failSent || pendingMistake || phase !== "play") return;
+      b.failSent = true;
+      b.spilling = true;
+      var side = b.x < box.cx ? "左" : "右";
+      pendingMistake = { type: "spill", detail: b.name + "が" + side + "にこぼれた", body: b };
+    }
+
+    function flushMistake() {
+      if (!pendingMistake || phase !== "play") return;
+      var m = pendingMistake;
+      pendingMistake = null;
+      onMistake(m.type, m.detail, m.body);
+    }
+
+    function onMistake(type, detail, body) {
+      if (phase !== "play") return;
+      awaitingSettle = false;
+      var practice = stageIndex === 0 && (type === "spill" || type === "over") && !forgiven[type];
+      if (practice) {
+        forgiven[type] = true;
+        var why = detail + "｜練習なのでハート " + hearts + "/2 のまま｜つめ率 " + Math.round(fillRatio() * 100) + "% / 目標 " + Math.round(stageDef().target * 100) + "%｜ステージ 1｜のこり " + Math.max(0, Math.ceil(timeLeft)) + "秒";
+        setMood("gasp");
+        sfxBad();
+        shake();
+        showLesson(why, type === "spill"
+          ? "こぼれは次からハート−1。はこより内側に落としてね。"
+          : "はみだしは次からハート−1。フタの線より下に収めてね。", function () {
+          if (body) {
+            queue.unshift(body.kind);
+            removeBody(body);
+          }
+          spawnHeld();
+        });
+        return;
+      }
+      if (type === "spill" || type === "over") {
+        hearts -= 1;
+        var why2 = detail + "｜ハート " + Math.max(0, hearts) + "/2｜つめ率 " + Math.round(fillRatio() * 100) + "% / 目標 " + Math.round(stageDef().target * 100) + "%｜ステージ " + (stageIndex + 1) + "｜のこり " + Math.max(0, Math.ceil(timeLeft)) + "秒";
+        setMood("gasp");
+        sfxBad();
+        shake();
+        if (hearts <= 0) {
+          if (body) removeBody(body);
+          endRun(false, why2);
+          return;
+        }
+        showLesson(why2, "ハートが減った。あと " + hearts + "。", function () {
+          if (body) {
+            queue.unshift(body.kind);
+            removeBody(body);
+          }
+          spawnHeld();
+        });
+        updateHud();
+        return;
+      }
+      endRun(false, detail);
+    }
+
+    function onSettled() {
+      if (phase !== "play") return;
+      var over = worstOverBody();
+      if (over) {
+        onMistake("over", over.body.name + "が上に " + Math.round(over.px) + "px はみだした", over.body);
+        return;
+      }
+      var fill = fillRatio();
+      updateHud();
+      if (fill + 1e-6 >= stageDef().target) {
+        beginClear(fill);
+        return;
+      }
+      if (!queue.length) {
+        var why = "おかずがたりない｜つめ率 " + Math.round(fill * 100) + "% / 目標 " + Math.round(stageDef().target * 100) + "%｜ステージ " + (stageIndex + 1) + "｜のこり " + Math.max(0, Math.ceil(timeLeft)) + "秒";
+        endRun(false, why);
+        return;
+      }
+      goodDrops += 1;
+      spawnHeld();
+      if (goodDrops >= 3) {
+        var says = ["いいね！", "おちついた！", "ぎゅっ！", "そこ、いいよ"];
+        setSay(says[goodDrops % says.length]);
+        setMood("cheer");
+      }
+      sfxSettle();
+      popCallout(goodDrops < 3 ? "いいね！" : "ぽん", "good", 520);
+    }
+
+    function beginClear(fill) {
+      phase = "lid";
+      lidT = 0;
+      lidHold = 0;
+      clearFill = fill;
+      clearTime = Math.max(0, timeLeft);
+      stagePerfect = hearts === 2 && fill >= stageDef().target + 0.035;
+      if (stagePerfect) anyPerfect = true;
+      lastClearPerfect = stagePerfect;
+      awaitingSettle = false;
+      held = null;
+      syncControls();
+      if (stagePerfect) {
+        setMood("yay");
+        popCallout("ぎゅうぎゅう！", "perfect", 1200);
+        burst(true);
+        sfxPerfect();
+        shake();
+      } else {
+        setMood("cheer");
+        popCallout("フタ、しまった！", "good", 800);
+        burst(false);
+        sfxClear();
+      }
+      announce("ステージ " + (stageIndex + 1) + " クリア。つめ率 " + Math.round(fill * 100) + "%");
+    }
+
+    function afterLid() {
+      clearedStages = stageIndex + 1;
+      if (stageIndex >= STAGES.length - 1) {
+        var why = "4ステージクリア｜つめ率 " + Math.round(clearFill * 100) + "% / 目標 " + Math.round(stageDef().target * 100) + "%｜のこり " + Math.ceil(clearTime) + "秒";
+        showResult(true, why);
+      } else showBetween();
+    }
+
+    function showBetween() {
+      phase = "between";
+      syncControls();
+      var next = STAGES[stageIndex + 1];
+      var cur = stageDef();
+      betweenKicker.textContent = "ステージ " + (stageIndex + 1) + " クリア";
+      betweenTitle.textContent = "つめ率 " + Math.round(clearFill * 100) + "%";
+      betweenScore.textContent = "目標 " + Math.round(cur.target * 100) + "%｜のこり " + Math.ceil(clearTime) + "秒｜ハート " + hearts + "/2";
+      betweenWarn.textContent = next.note + " はこ " + cur.w + "→" + next.w + "px。目標 " + Math.round(next.target * 100) + "%。" + next.time + "秒。";
+      betweenEl.hidden = false;
+      betweenLock = performance.now() + 450;
+      btnNext.disabled = true;
+      setTimeout(function () { if (phase === "between") btnNext.disabled = false; }, 450);
+      setMood("cheer");
+      setSay(next.note);
+    }
+
+    function startStage(i) {
+      stageIndex = i;
+      hearts = 2;
+      timeLeft = STAGES[i].time;
+      queue = STAGES[i].queue.slice();
+      bodies = [];
+      held = null;
+      particles = [];
+      lidT = 0;
+      awaitingSettle = false;
+      settleWait = 0;
+      warn8 = false;
+      warn5 = false;
+      stageIntro = STAGES[i].note;
+      applyBox();
+      phase = "play";
+      spawnHeld();
+      syncControls();
+      updateHud();
+      if (goodDrops < 3) setSay(HINTS[0]);
+      else if (stageIntro) setSay(stageIntro);
+      else setSay(held ? held.name + "を落として" : "つめよう");
+      setMood(i === 0 ? "focus" : "cheer");
+      announce("ステージ " + (i + 1) + "。目標 " + Math.round(STAGES[i].target * 100) + "%。" + STAGES[i].time + "秒。");
+    }
+
+    function startRun() {
+      forgiven = { spill: false, over: false };
+      clearedStages = 0;
+      goodDrops = 0;
+      anyPerfect = false;
+      lastClearPerfect = false;
+      hintIndex = 0;
+      hintTick = 0;
+      titleEl.hidden = true;
+      resultEl.hidden = true;
+      lessonEl.hidden = true;
+      betweenEl.hidden = true;
+      moveMascot(hudMascot);
+      audioGesture();
+      startStage(0);
+    }
+
+    function endRun(win, why) {
+      if (phase !== "play") return;
+      endFillPct = Math.round(fillRatio() * 100);
+      photo = capturePhoto(false);
+      phase = "failanim";
+      pendingWin = win;
+      pendingWhy = why;
+      failTimer = 0.45;
+      held = null;
+      awaitingSettle = false;
+      syncControls();
+      setMood("gasp");
+      sfxFail();
+      shake();
+      showBanner(why);
+      announce(why);
+    }
+
+    function showLesson(why, note, after) {
+      phase = "lesson";
+      lessonAfter = after;
+      lessonWhy.textContent = why;
+      lessonNote.textContent = note;
+      lessonEl.hidden = false;
+      lessonOk.disabled = true;
+      lessonLock = performance.now() + 420;
+      syncControls();
+      showBanner(why);
+      announce(why);
+      setTimeout(function () { if (phase === "lesson") lessonOk.disabled = false; }, 420);
+    }
+
+    function capturePhoto(lidClosed) {
+      var pcs = [];
+      var i;
+      for (i = 0; i < bodies.length; i++) {
+        var b = bodies[i];
+        if (b.spilling && b.x + b.r < box.left - 8) continue;
+        if (b.spilling && b.x - b.r > box.right + 8) continue;
+        if (b.y > LH) continue;
+        pcs.push({ kind: b.kind, ang: b.ang, x: b.x - box.left, y: b.y - box.rim });
+      }
+      return {
+        w: box.w,
+        h: box.h,
+        sz: stageDef().sz,
+        pcs: pcs,
+        lid: !!lidClosed,
+        perfect: lastClearPerfect
+      };
+    }
+
+    function showResult(win, why) {
+      phase = "result";
+      if (!photo) photo = capturePhoto(win);
+      else photo.lid = win;
+      photo.perfect = !!(win && lastClearPerfect);
+      var rolled = rollMenu(photo, win);
+      paintMenu(photo, rolled);
+      menuNameEl.textContent = rolled.name;
+      menuPriceEl.textContent = "¥" + rolled.price;
+      resScore.textContent = win
+        ? "ステージ " + clearedStages + " / 4 クリア｜つめ率 " + Math.round(clearFill * 100) + "%"
+        : "ステージ " + (stageIndex + 1) + " / 4｜クリア " + clearedStages + "｜つめ率 " + endFillPct + "%";
+      resWhy.textContent = why;
+      resWhy.className = win ? "why win" : "why";
+      var comments = win ? WIN_COMMENTS : FAIL_COMMENTS;
+      var comment = (win && lastClearPerfect) ? "かんぺきぎゅうぎゅう。店長も二度見。" : comments[Math.floor(Math.random() * comments.length)];
+      resComment.textContent = comment;
+      var fillPct = win ? Math.round(clearFill * 100) : endFillPct;
+      var best = considerBest({
+        cleared: clearedStages,
+        fill: fillPct,
+        menu: rolled.name,
+        price: rolled.price
+      });
+      resBest.textContent = formatBest(loadBest()) + (best ? "（更新）" : "");
+      shareText = "ぎゅうぎゅう弁当 Day27 " + (win ? "クリア" : "ここまで") + " ステージ" + clearedStages + "/4 つめ率" + fillPct + "% 「" + rolled.name + " ¥" + rolled.price + "」 " + PLAY_URL;
+      shareLineEl.textContent = shareText;
+      btnCopy.textContent = "コピー";
+      resultEl.hidden = false;
+      lessonEl.hidden = true;
+      betweenEl.hidden = true;
+      titleEl.hidden = true;
+      moveMascot(resMascot);
+      setMood(win ? "yay" : "gasp");
+      syncControls();
+      updateHud();
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+      lockUntil = performance.now() + LOCK_MS;
+      document.body.classList.add("is-locked");
+      btnRetry.disabled = true;
+      btnCopy.disabled = true;
+      setTimeout(function () {
+        if (phase !== "result") return;
+        document.body.classList.remove("is-locked");
+        btnRetry.disabled = false;
+        btnCopy.disabled = false;
+      }, LOCK_MS);
+      announce(why);
+    }
+
+    function rollMenu(shot, win) {
+      var areas = {};
+      var i;
+      for (i = 0; i < shot.pcs.length; i++) {
+        var k = shot.pcs[i].kind;
+        areas[k] = (areas[k] || 0) + 1;
+      }
+      var bestK = "";
+      var bestN = 0;
+      for (var key in areas) {
+        if (areas[key] > bestN) { bestN = areas[key]; bestK = key; }
+      }
+      var name = "からっぽ弁当";
+      if (bestK && MENUS[bestK]) {
+        var list = MENUS[bestK];
+        name = list[Math.floor(Math.random() * list.length)];
+      }
+      if (!win && shot.pcs.length && Math.random() < 0.34 && name.indexOf("こぼれかけ") !== 0 && clearedStages === 0) {
+        name = "こぼれかけ" + name;
+      }
+      var fillPct = win ? clearFill * 100 : fillRatio() * 100;
+      var price = 380 + clearedStages * 80 + Math.round(fillPct * 3.4);
+      if (win) price += 70;
+      if (shot.perfect) price += 60;
+      price = Math.round(price / 10) * 10;
+      price = clamp(price, 420, 980);
+      return { name: name, price: price };
+    }
+
+    function spawnHeld() {
+      if (!queue.length) { held = null; return; }
+      var kind = queue.shift();
+      var f = FOODS[kind];
+      held = makeBody(kind, box.cx, heldY(), f.ang);
+    }
+
+    function heldY() { return Math.max(96, box.rim - 108); }
+
+    function clampHeldX(x) {
+      if (!held) return x;
+      return clamp(x, 8 + held.r, LW - 8 - held.r);
+    }
+
+    function dropHeld() {
+      if (phase !== "play" || !held) return;
+      held.y = heldY();
+      held.vy = 36;
+      held.vx = 0;
+      held.w = 0;
+      held.asleep = false;
+      bodies.push(held);
+      held = null;
+      awaitingSettle = true;
+      settleWait = 0;
+      stageIntro = "";
+      sfxDrop();
+      syncControls();
+    }
+
+    function nudge(dx) {
+      if (phase !== "play" || !held) return;
+      held.x = clampHeldX(held.x + dx);
+    }
+
+    function allAsleep() {
+      if (!bodies.length) return false;
+      var i;
+      for (i = 0; i < bodies.length; i++) {
+        if (!bodies[i].asleep && !bodies[i].failSent) return false;
+      }
+      return true;
+    }
+
+    function updateHud() {
+      var fill = (phase === "title") ? 0 : fillRatio();
+      var tgt = stageDef().target;
+      var sec = Math.max(0, Math.ceil(timeLeft));
+      timerEl.textContent = sec + "秒";
+      timerEl.className = sec <= 5 && phase === "play" ? "danger" : "";
+      var heartsHtml = "ハート " + hearts + "/2 ";
+      heartsHtml += '<i class="' + (hearts >= 1 ? "" : "off") + '">♥</i>';
+      heartsHtml += '<i class="' + (hearts >= 2 ? "" : "off") + '">♥</i>';
+      heartsEl.innerHTML = heartsHtml;
+      var pct = Math.round(fill * 100);
+      var tp = Math.round(tgt * 100);
+      fillEl.textContent = "つめ率 " + pct + "% / 目標 " + tp + "%";
+      stageLabel.textContent = "ステージ " + (stageIndex + 1) + " / 4";
+      var best = loadBest();
+      hudBest.textContent = formatBest(best);
+      titleBest.textContent = formatBest(best);
+      var ratio = tgt > 0 ? Math.min(1, fill / tgt) : 0;
+      barFill.style.width = Math.round(ratio * 100) + "%";
+      barEl.className = fill + 1e-6 >= tgt ? "bar met" : "bar";
+      var showHint = goodDrops < 3 && (phase === "play" || phase === "title");
+      hintEl.hidden = !showHint;
+      hintEl.className = showHint ? "hint pulse" : "hint";
+    }
+
+    function syncControls() {
+      var on = phase === "play" || phase === "lid" || phase === "failanim";
+      controlsEl.hidden = !on;
+      var can = phase === "play" && !!held;
+      btnLeft.disabled = !can;
+      btnRight.disabled = !can;
+      btnDrop.disabled = !can;
+    }
+
+    function setSay(text) { sayText.textContent = text; }
+    function announce(text) { liveEl.textContent = text; }
+
+    function setMood(m) {
+      mascot.setAttribute("data-mood", m);
+      mascot.classList.remove("is-pop");
+      if (m === "cheer" || m === "yay" || m === "gasp") {
+        void mascot.offsetWidth;
+        mascot.classList.add("is-pop");
+      }
+    }
+
+    function moveMascot(host) {
+      if (mascot.parentNode !== host) host.appendChild(mascot);
+    }
+
+    function popCallout(text, kind, ms) {
+      calloutEl.hidden = false;
+      calloutEl.textContent = text;
+      calloutEl.setAttribute("data-kind", kind || "good");
+      calloutEl.classList.remove("pop");
+      void calloutEl.offsetWidth;
+      calloutEl.classList.add("pop");
+      calloutTimer = ms / 1000;
+    }
+
+    function showBanner(text) {
+      whyBanner.hidden = false;
+      whyBanner.textContent = text;
+      bannerTimer = 2.4;
+    }
+
+    function shake() {
+      stageEl.classList.remove("shake");
+      void stageEl.offsetWidth;
+      stageEl.classList.add("shake");
+    }
+
+    function burst(gold) {
+      var i;
+      for (i = 0; i < (gold ? 36 : 18); i++) {
+        particles.push({
+          x: box.cx + (Math.random() - 0.5) * box.w,
+          y: box.rim + 10,
+          vx: (Math.random() - 0.5) * 320,
+          vy: -120 - Math.random() * 260,
+          life: 0.7 + Math.random() * 0.45,
+          age: 0,
+          color: gold ? (Math.random() < 0.5 ? "#ffd15c" : "#fffaf0") : "#ff8a3d",
+          s: 3 + Math.random() * 4
+        });
+      }
+    }
+
+    function formatBest(best) {
+      if (!best) return "ベスト なし";
+      if (best.cleared > 0) return "ベスト ステージ " + best.cleared + "クリア｜つめ率 " + best.fill + "%";
+      return "ベスト ステージ 1｜つめ率 " + best.fill + "%";
+    }
+
+    function loadBest() {
+      try {
+        var raw = localStorage.getItem(STORE);
+        if (!raw) return null;
+        var data = JSON.parse(raw);
+        if (!data || typeof data.fill !== "number") return null;
+        return data;
+      } catch (err) { return null; }
+    }
+
+    function considerBest(cur) {
+      var best = loadBest();
+      var better = !best || cur.cleared > best.cleared || (cur.cleared === best.cleared && cur.fill > best.fill);
+      if (!better) return false;
+      try {
+        localStorage.setItem(STORE, JSON.stringify({
+          cleared: cur.cleared,
+          fill: cur.fill,
+          menu: cur.menu,
+          price: cur.price,
+          day: "2026-10-22"
+        }));
+      } catch (err) { /* ignore */ }
+      return true;
+    }
+
+    function audioGesture() {
+      if (muted) return;
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      try {
+        if (!ac) {
+          ac = new AC();
+          master = ac.createGain();
+          master.gain.value = 0.22;
+          master.connect(ac.destination);
+        }
+        if (ac.state === "suspended") ac.resume();
+      } catch (err) { /* ignore */ }
+    }
+
+    function tone(freq, dur, type, vol, delay) {
+      if (!ac || muted || !master) return;
+      try {
+        var t = ac.currentTime + (delay || 0);
+        var osc = ac.createOscillator();
+        var gain = ac.createGain();
+        osc.type = type || "sine";
+        osc.frequency.setValueAtTime(freq, t);
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, vol || 0.08), t + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        osc.connect(gain);
+        gain.connect(master);
+        osc.start(t);
+        osc.stop(t + dur + 0.02);
+      } catch (err) { /* ignore */ }
+    }
+
+    function sfxDrop() { tone(210, 0.07, "triangle", 0.12); }
+    function sfxSettle() { tone(420, 0.06, "sine", 0.08); tone(640, 0.05, "sine", 0.04, 0.03); }
+    function sfxBad() { tone(180, 0.14, "sawtooth", 0.06); tone(110, 0.18, "triangle", 0.05, 0.05); }
+    function sfxFail() { tone(160, 0.2, "triangle", 0.08); tone(96, 0.28, "sine", 0.07, 0.08); }
+    function sfxClear() {
+      tone(523, 0.1, "sine", 0.08);
+      tone(659, 0.1, "sine", 0.08, 0.08);
+      tone(784, 0.16, "sine", 0.09, 0.16);
+    }
+    function sfxPerfect() {
+      [523, 659, 784, 1046].forEach(function (f, i) { tone(f, 0.14, "triangle", 0.09, i * 0.07); });
+    }
+    function sfxTick() { tone(880, 0.07, "square", 0.04); }
+
+    function pathRound(c, x, y, w, h, r) {
+      var rr = Math.min(r, w / 2, h / 2);
+      c.beginPath();
+      c.moveTo(x + rr, y);
+      c.arcTo(x + w, y, x + w, y + h, rr);
+      c.arcTo(x + w, y + h, x, y + h, rr);
+      c.arcTo(x, y + h, x, y, rr);
+      c.arcTo(x, y, x + w, y, rr);
+      c.closePath();
+    }
+
+    function fillVerts(c, verts, color, stroke) {
+      c.beginPath();
+      c.moveTo(verts[0].x, verts[0].y);
+      var i;
+      for (i = 1; i < verts.length; i++) c.lineTo(verts[i].x, verts[i].y);
+      c.closePath();
+      c.fillStyle = color;
+      c.fill();
+      c.lineWidth = 2;
+      c.strokeStyle = stroke || "rgba(80,40,20,.4)";
+      c.stroke();
+    }
+
+    function drawTomato(c, r) {
+      c.beginPath();
+      c.arc(0, 0, r, 0, Math.PI * 2);
+      c.fillStyle = "#ef3b3b";
+      c.fill();
+      c.lineWidth = 2;
+      c.strokeStyle = "#b42323";
+      c.stroke();
+      c.beginPath();
+      c.ellipse(-r * 0.28, -r * 0.3, r * 0.26, r * 0.16, -0.5, 0, Math.PI * 2);
+      c.fillStyle = "rgba(255,255,255,.5)";
+      c.fill();
+      c.fillStyle = "#3c8f38";
+      c.beginPath();
+      c.ellipse(0, -r * 0.62, r * 0.16, r * 0.22, 0, 0, Math.PI * 2);
+      c.ellipse(-r * 0.22, -r * 0.5, r * 0.14, r * 0.2, -0.8, 0, Math.PI * 2);
+      c.ellipse(r * 0.22, -r * 0.5, r * 0.14, r * 0.2, 0.8, 0, Math.PI * 2);
+      c.fill();
+    }
+
+    function drawBroccoli(c, r) {
+      c.fillStyle = "#2f8f3c";
+      var bumps = [[0, -0.12], [-0.36, 0.08], [0.38, 0.06], [-0.16, 0.32], [0.2, 0.3], [0.02, 0.05]];
+      var i;
+      for (i = 0; i < bumps.length; i++) {
+        c.beginPath();
+        c.arc(bumps[i][0] * r, bumps[i][1] * r, r * 0.4, 0, Math.PI * 2);
+        c.fill();
+      }
+      c.fillStyle = "#67c56a";
+      c.beginPath();
+      c.arc(-0.12 * r, -0.16 * r, r * 0.2, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = "#7cb342";
+      pathRound(c, -r * 0.1, r * 0.28, r * 0.2, r * 0.48, 3);
+      c.fill();
+    }
+
+    function drawOnigiri(c, b) {
+      fillVerts(c, b.verts, "#fbf7ef", "#d9c4a4");
+      c.save();
+      c.beginPath();
+      c.moveTo(b.verts[0].x, b.verts[0].y);
+      var i;
+      for (i = 1; i < b.verts.length; i++) c.lineTo(b.verts[i].x, b.verts[i].y);
+      c.closePath();
+      c.clip();
+      c.fillStyle = "#2c241c";
+      c.fillRect(-b.r, 2, b.r * 2, b.r * 0.38);
+      c.fillStyle = "#e6d3a1";
+      c.fillRect(-8, -6, 3, 2);
+      c.fillRect(6, -10, 2.4, 2);
+      c.fillRect(-2, -16, 2, 2);
+      c.restore();
+    }
+
+    function drawEgg(c, b) {
+      fillVerts(c, b.verts, "#ffd15c", "#e09a2e");
+      c.save();
+      c.beginPath();
+      c.moveTo(b.verts[0].x, b.verts[0].y);
+      var i;
+      for (i = 1; i < b.verts.length; i++) c.lineTo(b.verts[i].x, b.verts[i].y);
+      c.closePath();
+      c.clip();
+      c.strokeStyle = "rgba(196, 122, 32, .7)";
+      c.lineWidth = 2;
+      c.beginPath();
+      c.moveTo(-b.r, -4);
+      c.lineTo(b.r, -4);
+      c.moveTo(-b.r, 5);
+      c.lineTo(b.r, 5);
+      c.stroke();
+      c.restore();
+    }
+
+    function drawTako(c, b) {
+      fillVerts(c, b.verts, "#ff8fab", "#e36a86");
+      c.save();
+      c.beginPath();
+      var i;
+      c.moveTo(b.verts[0].x, b.verts[0].y);
+      for (i = 1; i < b.verts.length; i++) c.lineTo(b.verts[i].x, b.verts[i].y);
+      c.closePath();
+      c.clip();
+      c.fillStyle = "#ff6d90";
+      var legs = [-18, -6, 6, 18];
+      for (i = 0; i < legs.length; i++) {
+        c.beginPath();
+        c.moveTo(legs[i] - 5, 6);
+        c.lineTo(legs[i], 15);
+        c.lineTo(legs[i] + 5, 6);
+        c.fill();
+      }
+      c.fillStyle = "#2c241c";
+      c.beginPath();
+      c.arc(-8, -2, 2.3, 0, Math.PI * 2);
+      c.arc(8, -2, 2.3, 0, Math.PI * 2);
+      c.fill();
+      c.strokeStyle = "#c44766";
+      c.lineWidth = 1.4;
+      c.beginPath();
+      c.arc(0, 4, 4, 0.15, Math.PI - 0.15);
+      c.stroke();
+      c.restore();
+    }
+
+    function drawKaraage(c, b) {
+      fillVerts(c, b.verts, "#e39a32", "#b56a16");
+      c.fillStyle = "#c47a20";
+      c.beginPath();
+      c.arc(-6, -4, 5, 0, Math.PI * 2);
+      c.arc(8, 6, 4, 0, Math.PI * 2);
+      c.arc(2, -8, 3, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = "rgba(255,236,190,.7)";
+      c.beginPath();
+      c.ellipse(-4, -10, 7, 4, -0.4, 0, Math.PI * 2);
+      c.fill();
+    }
+
+    function drawFoodLocal(c, b) {
+      if (b.kind === "tomato") drawTomato(c, b.r);
+      else if (b.kind === "broccoli") drawBroccoli(c, b.r);
+      else if (b.kind === "onigiri") drawOnigiri(c, b);
+      else if (b.kind === "egg" || b.kind === "eggLong") drawEgg(c, b);
+      else if (b.kind === "tako") drawTako(c, b);
+      else if (b.kind === "karaage") drawKaraage(c, b);
+    }
+
+    function drawFood(c, b, bob) {
+      c.save();
+      c.translate(b.x, b.y + (bob || 0));
+      c.rotate(b.ang);
+      c.fillStyle = "rgba(90, 50, 20, .13)";
+      c.beginPath();
+      c.ellipse(2, 6, b.r * 0.72, b.r * 0.28, 0, 0, Math.PI * 2);
+      c.fill();
+      drawFoodLocal(c, b);
+      c.restore();
+    }
+
+    function drawBox(c, lidAmount) {
+      var x = box.left - box.wall;
+      var y = box.rim - 16;
+      var w = box.w + box.wall * 2;
+      var h = box.h + box.wall + 28;
+      c.fillStyle = "rgba(90, 50, 20, .18)";
+      pathRound(c, x + 4, y + 8, w, h, 18);
+      c.fill();
+      var g = c.createLinearGradient(x, y, x, y + h);
+      g.addColorStop(0, "#f0b56a");
+      g.addColorStop(1, "#c47a3a");
+      c.fillStyle = g;
+      pathRound(c, x, y, w, h, 16);
+      c.fill();
+      c.fillStyle = "#fff8ea";
+      pathRound(c, box.left, box.rim, box.w, box.h, 8);
+      c.fill();
+      c.save();
+      pathRound(c, box.left, box.rim, box.w, box.h, 8);
+      c.clip();
+      c.fillStyle = "rgba(226, 196, 140, .55)";
+      var i;
+      for (i = 0; i < riceDots.length; i++) {
+        var d = riceDots[i];
+        c.fillRect(box.left + d.x * box.w, box.rim + d.y * box.h, d.w, 1.5);
+      }
+      c.restore();
+      c.strokeStyle = "rgba(120, 70, 30, .25)";
+      c.lineWidth = 3;
+      pathRound(c, box.left + 1.5, box.rim + 1.5, box.w - 3, box.h - 3, 7);
+      c.stroke();
+      c.setLineDash([7, 6]);
+      c.strokeStyle = "#e23b4a";
+      c.lineWidth = 2.5;
+      c.beginPath();
+      c.moveTo(box.left - 2, box.rim);
+      c.lineTo(box.right + 2, box.rim);
+      c.stroke();
+      c.setLineDash([]);
+      c.fillStyle = "#fffaf3";
+      c.font = "700 12px sans-serif";
+      c.textAlign = "left";
+      c.fillText("フタ", box.right + 6, box.rim + 4);
+      c.fillStyle = "#a8642c";
+      pathRound(c, box.cx - 10, box.floor + 8, 20, 8, 3);
+      c.fill();
+      if (lidAmount > 0.02) {
+        c.save();
+        c.globalAlpha = 0.96;
+        var gh = c.createLinearGradient(0, box.rim, 0, box.rim + box.h * lidAmount);
+        gh.addColorStop(0, "#e7a85a");
+        gh.addColorStop(1, "#c4843c");
+        c.fillStyle = gh;
+        pathRound(c, box.left - 4, box.rim, box.w + 8, Math.max(8, box.h * lidAmount), 10);
+        c.fill();
+        c.fillStyle = "#fff3d4";
+        c.beginPath();
+        c.arc(box.cx, box.rim + box.h * lidAmount * 0.45, 7, 0, Math.PI * 2);
+        c.fill();
+        c.restore();
+      } else {
+        c.fillStyle = "#e0a15a";
+        pathRound(c, box.left + 16, box.rim - 14, box.w - 32, 12, 4);
+        c.fill();
+      }
+    }
+
+    function drawDecorTomato() {
+      var ghost = makeBody("tomato", box.cx, heldY(), 0);
+      drawFood(ctx, ghost, Math.sin(anim / 220) * 4);
+    }
+
+    function drawGuide() {
+      if (!held || phase !== "play") return;
+      ctx.save();
+      ctx.strokeStyle = "rgba(226, 90, 18, .45)";
+      ctx.setLineDash([4, 5]);
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(held.x, held.y);
+      ctx.lineTo(held.x, box.rim);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+
+    function drawZones() {
+      if (goodDrops >= 3 || phase !== "play") return;
+      ctx.save();
+      ctx.fillStyle = "rgba(255, 250, 243, .28)";
+      ctx.fillRect(0, 0, LW * 0.3, LH);
+      ctx.fillRect(LW * 0.7, 0, LW * 0.3, LH);
+      ctx.fillStyle = "#6a3b28";
+      ctx.font = "800 14px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("左", LW * 0.15, LH - 18);
+      ctx.fillText("右", LW * 0.85, LH - 18);
+      ctx.fillText("タップでおとす", LW / 2, 28);
+      if (stageIndex === 0) {
+        ctx.fillStyle = "#a33c0c";
+        ctx.font = "800 13px sans-serif";
+        ctx.fillText("こぼれ", box.left * 0.5, box.floor - 8);
+        ctx.fillText("こぼれ", (box.right + LW) / 2, box.floor - 8);
+      }
+      ctx.restore();
+    }
+
+    function drawPreview() {
+      if (!queue.length || phase === "title") return;
+      var ghost = makeBody(queue[0], 0, 0, FOODS[queue[0]].ang);
+      ctx.save();
+      ctx.translate(LW - 48, 46);
+      ctx.scale(0.46, 0.46);
+      drawFood(ctx, ghost, 0);
+      ctx.restore();
+      ctx.fillStyle = "#6a3b28";
+      ctx.font = "800 11px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("つぎ", LW - 48, 86);
+      ctx.fillText(FOODS[queue[0]].name, LW - 48, 100);
+    }
+
+    function drawParticles() {
+      var i;
+      for (i = 0; i < particles.length; i++) {
+        var p = particles[i];
+        ctx.globalAlpha = Math.max(0, 1 - p.age / p.life);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, p.s, p.s);
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function draw() {
+      var dpr = view.dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.setTransform(dpr * view.s, 0, 0, dpr * view.s, dpr * view.ox, dpr * view.oy);
+      var g = ctx.createLinearGradient(0, 0, 0, LH);
+      g.addColorStop(0, "#fff3df");
+      g.addColorStop(0.55, "#f6d7a6");
+      g.addColorStop(1, "#e7b56d");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, LW, LH);
+      ctx.fillStyle = "rgba(255,255,255,.18)";
+      var s;
+      for (s = 0; s < 8; s++) ctx.fillRect(0, 40 + s * 28, LW, 2);
+      drawBox(ctx, phase === "lid" || phase === "between" || (phase === "result" && pendingWin) ? lidT : 0);
+      drawGuide();
+      var bob = Math.sin(anim / 200) * 3.5;
+      var i;
+      for (i = 0; i < bodies.length; i++) drawFood(ctx, bodies[i], 0);
+      if (held && phase === "play") drawFood(ctx, held, bob);
+      if (phase === "title") drawDecorTomato();
+      drawPreview();
+      drawZones();
+      drawParticles();
+      if (phase === "play" && held) {
+        ctx.fillStyle = "#4a2618";
+        ctx.font = "800 15px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(held.name, held.x, held.y - held.r - 10);
+      }
+    }
+
+    function paintMenu(shot, rolled) {
+      var c = menuCtx;
+      var W = menuCanvas.width, H = menuCanvas.height;
+      c.setTransform(1, 0, 0, 1, 0, 0);
+      c.clearRect(0, 0, W, H);
+      var bg = c.createLinearGradient(0, 0, 0, H);
+      bg.addColorStop(0, "#fff6e8");
+      bg.addColorStop(1, "#f0c48a");
+      c.fillStyle = bg;
+      c.fillRect(0, 0, W, H);
+      var scale = Math.min((W - 90) / shot.w, (H - 70) / shot.h);
+      var bw = shot.w * scale;
+      var bh = shot.h * scale;
+      var ox = (W - bw) / 2;
+      var oy = 24;
+      c.fillStyle = "rgba(90,50,20,.15)";
+      pathRound(c, ox - 16, oy - 10, bw + 32, bh + 36, 18);
+      c.fill();
+      c.fillStyle = "#d8924a";
+      pathRound(c, ox - 18, oy - 18, bw + 36, bh + 40, 16);
+      c.fill();
+      c.fillStyle = "#fff8ea";
+      pathRound(c, ox, oy, bw, bh, 10);
+      c.fill();
+      var saved = stageIndex;
+      var i;
+      for (i = 0; i < shot.pcs.length; i++) {
+        var p = shot.pcs[i];
+        var b = makeBody(p.kind, 0, 0, p.ang);
+        c.save();
+        c.translate(ox + p.x * scale, oy + p.y * scale);
+        c.rotate(p.ang);
+        c.scale(scale, scale);
+        drawFoodLocal(c, b);
+        c.restore();
+      }
+      stageIndex = saved;
+      if (shot.lid) {
+        c.fillStyle = "rgba(196, 122, 48, .92)";
+        pathRound(c, ox - 6, oy - 8, bw + 12, 16, 6);
+        c.fill();
+      }
+      if (shot.perfect) {
+        c.fillStyle = "#ffd56a";
+        c.font = "900 28px sans-serif";
+        c.textAlign = "right";
+        c.fillText("ぎゅうぎゅう", W - 16, 36);
+      }
+      c.fillStyle = "#fffaf3";
+      pathRound(c, 16, H - 52, 150, 34, 10);
+      c.fill();
+      c.fillStyle = "#e25a12";
+      c.font = "900 20px sans-serif";
+      c.textAlign = "left";
+      c.fillText("¥" + rolled.price, 28, H - 28);
+    }
+
+    function resize() {
+      var rect = stageEl.getBoundingClientRect();
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      var w = Math.max(10, rect.width);
+      var h = Math.max(10, rect.height);
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      view.dpr = dpr;
+      view.s = Math.min(w / LW, h / LH);
+      view.ox = (w - LW * view.s) / 2;
+      view.oy = (h - LH * view.s) / 2;
+    }
+
+    function toLogic(e) {
+      var r = canvas.getBoundingClientRect();
+      return {
+        x: (e.clientX - r.left - view.ox) / view.s,
+        y: (e.clientY - r.top - view.oy) / view.s
+      };
+    }
+
+    function frame(dt) {
+      anim += dt * 1000;
+      if (phase === "play") {
+        timeLeft -= dt;
+        if (timeLeft < 0) timeLeft = 0;
+        if (held && (keys.ArrowLeft || keys.KeyA)) held.x = clampHeldX(held.x - 280 * dt);
+        if (held && (keys.ArrowRight || keys.KeyD)) held.x = clampHeldX(held.x + 280 * dt);
+        if (nudgeDir && held) {
+          nudgeHold += dt;
+          if (nudgeHold > 0.12) {
+            nudge(nudgeDir * 16);
+            nudgeHold = 0;
+          }
+        }
+        physics(dt);
+        flushMistake();
+        if (phase !== "play") {
+          draw();
+          return;
+        }
+        if (timeLeft <= 8 && !warn8) {
+          warn8 = true;
+          showBanner("のこり 8秒｜つめ率 " + Math.round(fillRatio() * 100) + "% / 目標 " + Math.round(stageDef().target * 100) + "%");
+          setSay("のこり 8秒！");
+          setMood("focus");
+        }
+        if (timeLeft <= 5 && !warn5) {
+          warn5 = true;
+          showBanner("のこり 5秒｜0秒で失敗｜つめ率 " + Math.round(fillRatio() * 100) + "% / 目標 " + Math.round(stageDef().target * 100) + "%");
+          setSay("のこり 5秒！");
+          sfxTick();
+        }
+        if (timeLeft <= 0) {
+          timeLeft = 0;
+          var whyT = "時間ぎれ｜0秒｜つめ率 " + Math.round(fillRatio() * 100) + "% / 目標 " + Math.round(stageDef().target * 100) + "%｜ステージ " + (stageIndex + 1);
+          endRun(false, whyT);
+        } else if (awaitingSettle) {
+          settleWait += dt;
+          if (allAsleep() || settleWait > 3.1) {
+            var bi;
+            for (bi = 0; bi < bodies.length; bi++) {
+              if (!bodies[bi].spilling) {
+                bodies[bi].asleep = true;
+                bodies[bi].vx = bodies[bi].vy = bodies[bi].w = 0;
+              }
+            }
+            if (allAsleep() || settleWait > 3.1) {
+              awaitingSettle = false;
+              onSettled();
+            }
+          }
+        }
+        if (goodDrops < 3) {
+          hintTick += dt;
+          if (hintTick > 2.1) {
+            hintTick = 0;
+            hintIndex = (hintIndex + 1) % HINTS.length;
+            hintEl.textContent = HINTS[hintIndex];
+            if (!stageIntro) setSay(HINTS[hintIndex]);
+          }
+        }
+      } else if (phase === "lid") {
+        lidT = Math.min(1, lidT + dt / 0.55);
+        if (lidT >= 1) {
+          lidHold += dt;
+          if (lidHold > 0.42) afterLid();
+        }
+      } else if (phase === "failanim") {
+        failTimer -= dt;
+        if (failTimer <= 0) showResult(pendingWin, pendingWhy);
+      }
+      var pi;
+      for (pi = particles.length - 1; pi >= 0; pi--) {
+        var p = particles[pi];
+        p.age += dt;
+        p.vy += 700 * dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        if (p.age > p.life) particles.splice(pi, 1);
+      }
+      if (calloutTimer > 0) {
+        calloutTimer -= dt;
+        if (calloutTimer <= 0) calloutEl.hidden = true;
+      }
+      if (bannerTimer > 0) {
+        bannerTimer -= dt;
+        if (bannerTimer <= 0) whyBanner.hidden = true;
+      }
+      if (phase === "play" || phase === "lid" || phase === "failanim" || phase === "title") updateHud();
+      draw();
+    }
+
+    function loop(ts) {
+      if (!lastTs) lastTs = ts;
+      var dt = clamp((ts - lastTs) / 1000, 0, 0.033);
+      lastTs = ts;
+      if (!manual) frame(dt);
+      requestAnimationFrame(loop);
+    }
+
+    var drag = null;
+    canvas.addEventListener("pointerdown", function (e) {
+      audioGesture();
+      if (phase !== "play" || !held) return;
+      var p = toLogic(e);
+      drag = { x: p.x, y: p.y, hx: held.x, moved: false, id: e.pointerId };
+      try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+    });
+    canvas.addEventListener("pointermove", function (e) {
+      if (!drag || !held || phase !== "play") return;
+      var p = toLogic(e);
+      var dx = p.x - drag.x;
+      if (Math.abs(dx) > 5) drag.moved = true;
+      if (drag.moved) held.x = clampHeldX(drag.hx + dx);
+    });
+    canvas.addEventListener("pointerup", function (e) {
+      if (!drag) return;
+      var p = toLogic(e);
+      var dx = p.x - drag.x;
+      var dy = p.y - drag.y;
+      var moved = drag.moved;
+      drag = null;
+      if (phase !== "play" || !held) return;
+      if (!moved && Math.abs(dx) < 14 && Math.abs(dy) < 14) {
+        if (p.x < LW * 0.3) nudge(-22);
+        else if (p.x > LW * 0.7) nudge(22);
+        else dropHeld();
+      } else if (dy > 34 && dy > Math.abs(dx)) dropHeld();
+    });
+    canvas.addEventListener("pointercancel", function () { drag = null; });
+
+    function bindNudge(btn, dir) {
+      btn.addEventListener("pointerdown", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        audioGesture();
+        if (phase !== "play" || !held) return;
+        nudge(dir * 20);
+        nudgeDir = dir;
+        nudgeHold = 0;
+      });
+      btn.addEventListener("pointerup", function () { nudgeDir = 0; });
+      btn.addEventListener("pointerleave", function () { nudgeDir = 0; });
+      btn.addEventListener("pointercancel", function () { nudgeDir = 0; });
+    }
+    bindNudge(btnLeft, -1);
+    bindNudge(btnRight, 1);
+    btnDrop.addEventListener("click", function (e) {
+      e.stopPropagation();
+      audioGesture();
+      dropHeld();
+    });
+
+    window.addEventListener("keydown", function (e) {
+      if (e.code === "ArrowLeft" || e.code === "ArrowRight" || e.code === "ArrowDown" || e.code === "Space") e.preventDefault();
+      if (phase === "result") return;
+      if (phase === "lesson" || phase === "between" || phase === "title") {
+        if (e.code === "Space" || e.code === "Enter") e.preventDefault();
+        return;
+      }
+      keys[e.code] = true;
+      if (phase === "play" && !e.repeat && (e.code === "ArrowDown" || e.code === "Space")) dropHeld();
+    });
+    window.addEventListener("keyup", function (e) { keys[e.code] = false; });
+
+    btnStart.addEventListener("click", function () { startRun(); });
+    lessonOk.addEventListener("click", function () {
+      if (performance.now() < lessonLock || phase !== "lesson") return;
+      lessonEl.hidden = true;
+      phase = "play";
+      var fn = lessonAfter;
+      lessonAfter = null;
+      syncControls();
+      if (fn) fn();
+      setMood("focus");
+    });
+    btnNext.addEventListener("click", function () {
+      if (performance.now() < betweenLock || phase !== "between") return;
+      betweenEl.hidden = false;
+      betweenEl.hidden = true;
+      audioGesture();
+      startStage(stageIndex + 1);
+    });
+    btnRetry.addEventListener("click", function () {
+      if (phase !== "result" || btnRetry.disabled || performance.now() < lockUntil) return;
+      document.body.classList.remove("is-locked");
+      resultEl.hidden = true;
+      photo = null;
+      startRun();
+    });
+    btnCopy.addEventListener("click", function () {
+      if (phase !== "result" || btnCopy.disabled || performance.now() < lockUntil) return;
+      function done(ok) {
+        btnCopy.textContent = ok ? "コピーした！" : "コピーできませんでした";
+        clearTimeout(copyTimer);
+        copyTimer = setTimeout(function () {
+          if (phase === "result") btnCopy.textContent = "コピー";
+        }, 1200);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(shareText).then(function () { done(true); }, function () { done(false); });
+      } else done(false);
+    });
+    muteBtn.addEventListener("click", function () {
+      muted = !muted;
+      muteBtn.classList.toggle("is-muted", muted);
+      muteBtn.setAttribute("aria-pressed", muted ? "true" : "false");
+      muteBtn.setAttribute("aria-label", muted ? "音を出す" : "音を消す");
+      if (!muted) audioGesture();
+    });
+
+    window.addEventListener("resize", resize);
+    applyBox();
+    resize();
+    updateHud();
+    setSay("おかずをぎゅうぎゅうに詰めよう");
+    requestAnimationFrame(loop);
+
+    if (location.search.indexOf("debug=1") >= 0) {
+      window.__gyu = {
+        tick: function (n) {
+          manual = true;
+          var i;
+          for (i = 0; i < n; i++) frame(1 / 60);
+        },
+        play: function () { manual = false; lastTs = 0; },
+        start: function () { startRun(); },
+        drop: function () { dropHeld(); },
+        setX: function (x) { if (held) held.x = clampHeldX(x); },
+        nudge: function (dx) { nudge(dx); },
+        continue: function () {
+          if (phase === "lesson") {
+            lessonEl.hidden = true;
+            phase = "play";
+            var fn = lessonAfter;
+            lessonAfter = null;
+            syncControls();
+            if (fn) fn();
+          } else if (phase === "between") {
+            betweenEl.hidden = true;
+            startStage(stageIndex + 1);
+          }
+        },
+        snap: function () {
+          return {
+            phase: phase,
+            stageIndex: stageIndex,
+            hearts: hearts,
+            timeLeft: timeLeft,
+            queue: queue.slice(),
+            goodDrops: goodDrops,
+            clearedStages: clearedStages,
+            awaitingSettle: awaitingSettle,
+            settleWait: settleWait,
+            forgiven: { spill: forgiven.spill, over: forgiven.over },
+            warn8: warn8,
+            warn5: warn5,
+            clearFill: clearFill,
+            clearTime: clearTime,
+            lastClearPerfect: lastClearPerfect,
+            anyPerfect: anyPerfect,
+            stagePerfect: stagePerfect,
+            lidT: lidT,
+            lidHold: lidHold,
+            bodies: bodies.map(exportBody),
+            held: held ? exportBody(held) : null
+          };
+        },
+        restore: function (s) {
+          phase = s.phase;
+          stageIndex = s.stageIndex;
+          hearts = s.hearts;
+          timeLeft = s.timeLeft;
+          queue = s.queue.slice();
+          goodDrops = s.goodDrops;
+          clearedStages = s.clearedStages;
+          awaitingSettle = s.awaitingSettle;
+          settleWait = s.settleWait;
+          forgiven = { spill: s.forgiven.spill, over: s.forgiven.over };
+          warn8 = s.warn8;
+          warn5 = s.warn5;
+          clearFill = s.clearFill;
+          clearTime = s.clearTime;
+          lastClearPerfect = s.lastClearPerfect;
+          anyPerfect = s.anyPerfect;
+          stagePerfect = s.stagePerfect;
+          lidT = s.lidT || 0;
+          lidHold = s.lidHold || 0;
+          pendingMistake = null;
+          applyBox();
+          bodies = s.bodies.map(importBody);
+          held = s.held ? importBody(s.held) : null;
+          lessonEl.hidden = true;
+          betweenEl.hidden = true;
+          resultEl.hidden = true;
+          syncControls();
+        },
+        state: function () {
+          var speeds = bodies.map(function (b) {
+            return { kind: b.kind, x: Math.round(b.x), y: Math.round(b.y), ang: Math.round(b.ang * 100) / 100, sp: Math.round(hypot(b.vx, b.vy)), asleep: b.asleep, spill: b.spilling, over: Math.round(overPx(b)) };
+          });
+          var budget = 0;
+          var bi;
+          for (bi = 0; bi < bodies.length; bi++) budget += bodies[bi].area;
+          if (held) budget += held.area;
+          for (bi = 0; bi < queue.length; bi++) {
+            var ghost = makeBody(queue[bi], 0, 0, 0);
+            budget += ghost.area;
+          }
+          return {
+            phase: phase,
+            stage: stageIndex + 1,
+            hearts: hearts,
+            time: Math.round(timeLeft * 10) / 10,
+            fill: Math.round(fillRatio() * 1000) / 10,
+            target: Math.round(stageDef().target * 100),
+            box: { w: box.w, h: box.h, left: box.left, right: box.right, rim: box.rim, floor: box.floor },
+            budget: Math.round(budget / (box.w * box.h) * 1000) / 10,
+            goodDrops: goodDrops,
+            cleared: clearedStages,
+            queue: queue.slice(),
+            held: held ? { kind: held.kind, x: Math.round(held.x), r: Math.round(held.r) } : null,
+            bodies: speeds,
+            why: whyBanner.textContent || "",
+            lesson: lessonEl.hidden ? "" : lessonWhy.textContent,
+            share: shareText,
+            intro: stageIntro
+          };
+        }
+      };
+    }
+  })();
+  </script>
+</body>
+</html>
