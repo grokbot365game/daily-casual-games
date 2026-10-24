@@ -1,0 +1,2372 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#e07a4c">
+  <meta name="description" content="こわして帰宅前。こねこのモカがお留守番。ものをおしたままこわして被害額をかせぐ。見てるあいだに動くとバレた、時間切れも失敗。">
+  <meta property="og:title" content="こわして帰宅前 — Mischief Home">
+  <meta property="og:description" content="飼い主が帰るまでの30秒。部屋をこわして被害額をかせげ。足音バーが0になったら止まれ。バレた・時間切れは失敗。">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://grokbot365game.github.io/daily-casual-games/games/2026-10-24-mischief-home/">
+  <title>こわして帰宅前</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23e07a4c'/%3E%3Ccircle cx='8' cy='9' r='3.2' fill='%23ffe6c4'/%3E%3Cpath d='M4.2 6.2L3 2.8l3.2 2.2zM11.8 6.2L13 2.8l-3.2 2.2z' fill='%23ffe6c4'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      --ink: #3a241c;
+      --muted: #8a5c50;
+      --paper: #fffaf6;
+      --line: rgba(58, 36, 28, .14);
+      --accent: #e23b4a;
+      --gold: #f0b429;
+      --good: #1f8a4c;
+      --teal: #1f7a84;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+    body {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      color: var(--ink);
+      background:
+        radial-gradient(80% 42% at 50% -10%, #fff1df 0%, transparent 58%),
+        linear-gradient(180deg, #f7c9a4 0%, #f0a878 48%, #e08a62 100%);
+      font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Yu Gothic", "WenQuanYi Micro Hei", "Droid Sans Fallback", "Meiryo", sans-serif;
+      font-size: 16px;
+      line-height: 1.4;
+      -webkit-text-size-adjust: 100%;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: none;
+    }
+    [hidden] { display: none !important; }
+    button, a { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+    button:focus-visible, a:focus-visible {
+      outline: 3px solid var(--gold);
+      outline-offset: 2px;
+    }
+    .back, .mute {
+      position: fixed;
+      z-index: 70;
+      top: max(10px, env(safe-area-inset-top));
+      border: 0;
+      border-radius: 999px;
+      color: var(--ink);
+      background: rgba(255, 250, 246, .94);
+      box-shadow: inset 0 0 0 1px var(--line);
+      font-weight: 800;
+      text-decoration: none;
+    }
+    .back {
+      left: max(12px, env(safe-area-inset-left));
+      padding: 8px 14px;
+      min-height: 44px;
+      display: grid;
+      place-items: center;
+      font-size: .78rem;
+      letter-spacing: .04em;
+    }
+    .mute {
+      right: max(12px, env(safe-area-inset-right));
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+    }
+    .mute svg { width: 22px; height: 22px; display: block; }
+    .mute .slash { display: none; }
+    .mute.is-muted .slash { display: block; }
+    .shell {
+      height: 100%;
+      max-width: 520px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding:
+        calc(max(8px, env(safe-area-inset-top)) + 48px)
+        max(10px, env(safe-area-inset-right))
+        max(8px, env(safe-area-inset-bottom))
+        max(10px, env(safe-area-inset-left));
+      min-height: 0;
+    }
+    .hud {
+      flex: none;
+      border-radius: 16px;
+      padding: 6px 8px 7px;
+      background: rgba(255, 250, 246, .96);
+      box-shadow: inset 0 0 0 1px var(--line), 0 8px 18px rgba(58, 36, 28, .08);
+    }
+    .hud-row { display: flex; gap: 8px; align-items: center; }
+    .hud-main { flex: 1; min-width: 0; }
+    .hud-top, .hud-stats {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .hud-top b { font-size: .92rem; letter-spacing: .03em; }
+    .say {
+      margin: 1px 0 2px;
+      min-height: 1.25em;
+      font-size: .86rem;
+      font-weight: 900;
+      line-height: 1.25;
+    }
+    .say .who { color: var(--accent); margin-right: 4px; letter-spacing: .06em; font-size: .75rem; }
+    .hud-stats { font-size: .78rem; font-weight: 800; color: var(--muted); }
+    .hud-stats strong { color: var(--ink); font-variant-numeric: tabular-nums; }
+    .hearts { letter-spacing: .08em; font-size: .95rem; }
+    .hearts i { font-style: normal; color: #e23b4a; }
+    .hearts i.off { color: #e7cfc4; }
+    .hearts i.pop { display: inline-block; animation: heartpop .35s ease; }
+    @keyframes heartpop {
+      0% { transform: scale(1.4); }
+      100% { transform: scale(1); }
+    }
+    .bar {
+      margin-top: 3px;
+      height: 10px;
+      border-radius: 99px;
+      background: #f3e0d6;
+      overflow: hidden;
+      box-shadow: inset 0 0 0 1px rgba(58, 36, 28, .06);
+    }
+    .bar span {
+      display: block;
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #2a9d8f, #e9c46a 72%, #e23b4a);
+    }
+    .bar.hot { animation: barhot .45s ease-in-out infinite; }
+    .bar.hot span { background: #e23b4a; }
+    @keyframes barhot {
+      50% { box-shadow: 0 0 0 2px rgba(226, 59, 50, .35); }
+    }
+    .stage-view {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      border-radius: 22px;
+      overflow: hidden;
+      background: #f6d7c4;
+      touch-action: none;
+      box-shadow: inset 0 0 0 1px rgba(58, 36, 28, .08);
+    }
+    canvas#game {
+      width: 100%;
+      height: 100%;
+      display: block;
+      touch-action: none;
+      cursor: pointer;
+    }
+    .alert, .banner {
+      position: absolute;
+      z-index: 4;
+      left: 50%;
+      transform: translateX(-50%);
+      max-width: calc(100% - 16px);
+      margin: 0;
+      font-weight: 900;
+      text-align: center;
+      pointer-events: none;
+    }
+    .alert {
+      top: 8px;
+      width: min(420px, calc(100% - 16px));
+      padding: 7px 10px 8px;
+      border-radius: 14px;
+      background: #fff6ea;
+      color: #7a3412;
+      box-shadow: 0 10px 22px rgba(58, 36, 28, .18);
+    }
+    .alert-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: .92rem;
+      letter-spacing: .04em;
+    }
+    .alert-ico { font-size: .78rem; letter-spacing: .08em; }
+    #alert-num { font-variant-numeric: tabular-nums; font-size: 1.15rem; }
+    .alert-bar {
+      margin-top: 4px;
+      height: 14px;
+      border-radius: 99px;
+      background: #f3d3c4;
+      overflow: hidden;
+      box-shadow: inset 0 0 0 1px rgba(58, 36, 28, .08);
+    }
+    .alert-bar span {
+      display: block;
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #f0b429, #e07a3c 70%, #e23b4a);
+    }
+    .alert.is-hot {
+      background: #ffe1d6;
+      animation: barhot .35s ease-in-out infinite;
+    }
+    .alert.is-hot .alert-bar span { background: #e23b4a; }
+    .alert.is-look {
+      background: #3a1020;
+      color: #fff;
+    }
+    .alert.is-look .alert-bar { background: rgba(255, 255, 255, .2); }
+    .alert.is-look .alert-bar span { background: #ffd166; }
+    .alert.is-rewind { background: #e7f7ec; color: #166534; }
+    .alert.is-rewind .alert-bar span { background: #22a35a; }
+    .banner {
+      top: 38%;
+      padding: 10px 14px 8px;
+      border-radius: 16px;
+      background: #fff6f4;
+      color: #9f1239;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, .18);
+    }
+    .banner b {
+      display: block;
+      font-size: 1.7rem;
+      letter-spacing: .04em;
+      line-height: 1.2;
+    }
+    .banner span {
+      display: block;
+      margin-top: 2px;
+      color: #7a4a40;
+      font-size: .82rem;
+    }
+    .banner.pop { animation: popin .35s cubic-bezier(.2, 1.4, .4, 1); }
+    @keyframes popin {
+      0% { transform: translateX(-50%) scale(.5); }
+      100% { transform: translateX(-50%) scale(1); }
+    }
+    .hint {
+      flex: none;
+      margin: 0;
+      min-height: 1.35em;
+      text-align: center;
+      font-size: .84rem;
+      font-weight: 900;
+      color: var(--ink);
+    }
+    .hint.is-stop { color: #9f1239; }
+    .hint.is-go { color: #166534; }
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding:
+        max(12px, env(safe-area-inset-top))
+        12px
+        max(12px, env(safe-area-inset-bottom));
+      background: rgba(48, 20, 16, .62);
+      overflow: hidden;
+    }
+    .card {
+      width: min(100%, 420px);
+      max-height: calc(100dvh - 24px);
+      overflow: auto;
+      margin: 0 auto;
+      padding: 14px 14px 12px;
+      border-radius: 22px;
+      background: var(--paper);
+      box-shadow: 0 18px 48px rgba(48, 20, 16, .32);
+      text-align: center;
+    }
+    .card h1 {
+      margin: 0;
+      font-size: 1.55rem;
+      letter-spacing: .04em;
+      line-height: 1.2;
+    }
+    .en, .fine, .best {
+      margin: 3px 0;
+      color: var(--muted);
+      font-size: .75rem;
+      font-weight: 800;
+    }
+    .rules {
+      margin: 8px 0;
+      padding: 8px 10px 8px 28px;
+      border-radius: 14px;
+      background: #fff1ea;
+      text-align: left;
+      font-weight: 900;
+      font-size: .92rem;
+    }
+    .rules li { margin: 3px 0; }
+    .go, .retry, .share, .ghost {
+      display: block;
+      width: 100%;
+      min-height: 48px;
+      margin-top: 8px;
+      border: 0;
+      border-radius: 14px;
+      font-weight: 900;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .go, .retry { background: var(--accent); color: white; }
+    .share { background: #1d9bf0; color: white; text-align: center; line-height: 48px; }
+    .ghost { background: #fff; box-shadow: inset 0 0 0 1px var(--line); }
+    .fine a { color: var(--muted); font-weight: 900; }
+    .quote {
+      margin: 8px 0 4px;
+      font-size: 1.15rem;
+      font-weight: 900;
+      line-height: 1.35;
+    }
+    .res-score { margin: 2px 0; font-weight: 900; font-size: .95rem; }
+    .why { margin: 4px 0; font-weight: 900; font-size: 1rem; color: #9f1239; }
+    .why.win { color: var(--good); }
+    .flavor { margin: 4px 0; font-weight: 800; font-size: .88rem; }
+    #shot {
+      width: 100%;
+      height: auto;
+      border-radius: 12px;
+      background: #fff;
+      box-shadow: inset 0 0 0 1px var(--line);
+    }
+    .mascot { width: 84px; margin: 0 auto; }
+    .hud .mascot { width: 58px; flex: none; }
+    .mascot svg { width: 100%; height: auto; display: block; overflow: visible; }
+    .mascot .face { display: none; }
+    .mascot[data-mood="idle"] .face.idle,
+    .mascot[data-mood="gleeful"] .face.gleeful,
+    .mascot[data-mood="innocent"] .face.innocent,
+    .mascot[data-mood="busted"] .face.busted,
+    .mascot[data-mood="sad"] .face.sad,
+    .mascot[data-mood="yay"] .face.yay { display: block; }
+    .mascot[data-mood="idle"] { animation: bob 2.2s ease-in-out infinite; }
+    .mascot.is-pop[data-mood="gleeful"],
+    .mascot.is-pop[data-mood="yay"] { animation: hop .48s ease; }
+    .mascot.is-pop[data-mood="busted"] { animation: shake .4s ease; }
+    @keyframes bob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+    @keyframes hop {
+      0% { transform: translateY(0); }
+      40% { transform: translateY(-10px); }
+      100% { transform: translateY(0); }
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      30% { transform: translateX(-4px) rotate(-3deg); }
+      70% { transform: translateX(4px) rotate(3deg); }
+    }
+    .live {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+    }
+    @media (max-height: 700px) {
+      .card { padding: 10px 12px; }
+      .card h1 { font-size: 1.28rem; }
+      .rules { font-size: .82rem; margin: 6px 0; }
+      .mascot { width: 64px; }
+      .hud .mascot { width: 48px; }
+      .say { font-size: .78rem; }
+      .banner b { font-size: 1.35rem; }
+      .quote { font-size: 1rem; }
+      .hint { font-size: .78rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .mascot, .hearts i, .banner, .bar, .alert { animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <a class="back" href="../../index.html">ギャラリー</a>
+  <button type="button" class="mute" id="mute" aria-pressed="false" aria-label="音を消す">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="M4 9h4l5-4v14l-5-4H4z"/>
+      <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 9.5a4 4 0 0 1 0 5"/>
+      <path class="slash" fill="none" stroke="#e11d48" stroke-width="2.4" stroke-linecap="round" d="M6 5l13 14"/>
+    </svg>
+  </button>
+  <p class="live" id="live" aria-live="polite"></p>
+  <div class="shell">
+    <header class="hud">
+      <div class="hud-row">
+        <div id="hud-mascot"></div>
+        <div class="hud-main">
+          <div class="hud-top">
+            <b>こわして帰宅前</b>
+            <span class="hearts" id="hearts" aria-label="ハート2">♥♥</span>
+          </div>
+          <p class="say" id="say"><span class="who">モカ</span><span id="say-text">お留守ばん、まかされた</span></p>
+          <div class="hud-stats">
+            <span id="round-label">ラウンド 1/5</span>
+            <strong id="yen">¥0 / ¥4,200</strong>
+          </div>
+          <div class="bar" id="timebar" aria-hidden="true"><span id="timefill"></span></div>
+          <div class="hud-stats">
+            <span id="time-label">のこり 30秒</span>
+            <span id="total-label">合計 ¥0</span>
+          </div>
+        </div>
+      </div>
+    </header>
+    <div class="stage-view" id="stage">
+      <canvas id="game" width="360" height="520" aria-label="こわして帰宅前。ものをおしたままこわす。見てるあいだは止める"></canvas>
+      <div class="alert" id="alert" hidden>
+        <div class="alert-row">
+          <span class="alert-ico" id="alert-ico">ドア・足音</span>
+          <span id="alert-label">足音</span>
+          <b id="alert-num">2.0</b>
+        </div>
+        <div class="alert-bar" aria-hidden="true"><span id="alert-fill"></span></div>
+      </div>
+      <p class="banner" id="banner" hidden><b id="banner-main"></b><span id="banner-sub"></span></p>
+    </div>
+    <p class="hint" id="hint">ゆび・マウスで、ものをおしたまま</p>
+  </div>
+
+  <div class="overlay" id="title">
+    <div class="card">
+      <div id="title-mascot"></div>
+      <h1>こわして帰宅前</h1>
+      <p class="en">Mischief Home · Day 29</p>
+      <ol class="rules">
+        <li>ものにゆびかマウスをおしたまま。リングが満タンになると被害額が増える。はなしても、リングは残る。</li>
+        <li>ドア・足音のバーが0になると見てる。見てるあいだに触る・動かすとバレた！ バーが戻るのはニセ足音。</li>
+        <li>目標の被害額に時間内でとどくとクリア。時間切れも失敗。ハートは2つ。ラウンド1の失敗は練習で、ハートは減らない。</li>
+      </ol>
+      <p class="best" id="title-best" hidden></p>
+      <button type="button" class="go" id="btn-start">いたずらはじめる</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="preview" hidden>
+    <div class="card">
+      <p class="en" id="prev-kicker">ラウンド 2</p>
+      <h1 id="prev-title">ニセの足音</h1>
+      <p class="quote" id="prev-body"></p>
+      <button type="button" class="go" id="btn-preview">わかった</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="result" hidden>
+    <div class="card" id="res-card">
+      <div id="res-mascot"></div>
+      <canvas id="shot" width="720" height="960" aria-label="被害額請求書"></canvas>
+      <p class="quote" id="res-quote">「現場の現行犯」</p>
+      <p class="res-score" id="res-score">¥0　こわした 0個</p>
+      <p class="why" id="res-why"></p>
+      <p class="flavor" id="res-flavor"></p>
+      <p class="best" id="res-best" hidden></p>
+      <button type="button" class="retry" id="btn-retry">すぐリトライ</button>
+      <a class="share" id="btn-share" href="https://x.com/intent/tweet" target="_blank" rel="noopener noreferrer">結果をXでシェア</a>
+      <button type="button" class="ghost" id="btn-save">請求書を保存</button>
+      <p class="fine"><a href="../../index.html">ギャラリーへ</a></p>
+    </div>
+  </div>
+
+  <template id="mascot-tpl">
+    <div class="mascot" data-mood="idle">
+      <svg viewBox="0 0 140 156" aria-hidden="true">
+        <ellipse cx="70" cy="148" rx="32" ry="6" fill="rgba(80,40,20,.18)"/>
+        <path d="M34 108c-16 8-22 26-8 32 10-8 14-20 16-28z" fill="#e0a15a"/>
+        <path d="M40 112c-8 6-8 16-2 18 6-6 8-12 8-16z" fill="#c47a45"/>
+        <ellipse cx="48" cy="132" rx="10" ry="7" fill="#e0a15a"/>
+        <ellipse cx="92" cy="132" rx="10" ry="7" fill="#e0a15a"/>
+        <ellipse cx="70" cy="116" rx="32" ry="24" fill="#e0a15a"/>
+        <ellipse cx="70" cy="122" rx="16" ry="13" fill="#ffe6c4"/>
+        <path d="M52 104h36l-4 12H56z" fill="#e23b4a"/>
+        <path d="M70 104l-5 8h10z" fill="#f0c14a"/>
+        <ellipse cx="70" cy="74" rx="34" ry="32" fill="#e0a15a"/>
+        <path d="M40 66L28 24c16 10 22 22 24 38z" fill="#e0a15a"/>
+        <path d="M100 66l12-42c-16 10-22 22-24 38z" fill="#e0a15a"/>
+        <path d="M46 58l-4-20c8 6 12 12 12 18z" fill="#f3b0a4"/>
+        <path d="M94 58l4-20c-8 6-12 12-12 18z" fill="#f3b0a4"/>
+        <path d="M48 52c6 4 10 4 14 0" fill="none" stroke="#c47a45" stroke-width="3" stroke-linecap="round"/>
+        <path d="M78 50c6 5 12 5 16 0" fill="none" stroke="#c47a45" stroke-width="3" stroke-linecap="round"/>
+        <ellipse cx="70" cy="86" rx="14" ry="10" fill="#ffe6c4"/>
+        <ellipse cx="70" cy="90" rx="5" ry="3.4" fill="#f3b0a4"/>
+        <g class="face idle">
+          <path d="M50 74c6 4 12 2 14-2" fill="none" stroke="#3a2418" stroke-width="2.4" stroke-linecap="round"/>
+          <ellipse cx="86" cy="76" rx="4.6" ry="5.4" fill="#3a2418"/>
+          <ellipse cx="87.2" cy="74.6" rx="1.4" ry="1.6" fill="#fff"/>
+          <path d="M60 98c6 6 14 6 20 0" fill="none" stroke="#3a2418" stroke-width="2.2" stroke-linecap="round"/>
+        </g>
+        <g class="face gleeful">
+          <path d="M50 78c4-8 12-8 14 0" fill="none" stroke="#3a2418" stroke-width="2.6" stroke-linecap="round"/>
+          <path d="M78 78c4-8 12-8 14 0" fill="none" stroke="#3a2418" stroke-width="2.6" stroke-linecap="round"/>
+          <path d="M58 94c8 12 20 12 28 0" fill="#3a2418"/>
+          <path d="M66 98c4 5 10 5 14 0" fill="#f3b0a4"/>
+          <path d="M112 42l1.2 3 3.2.2-2.4 2 .8 3.1-2.8-1.6-2.8 1.6.8-3.1-2.4-2 3.2-.2z" fill="#ffd56a"/>
+        </g>
+        <g class="face innocent">
+          <ellipse cx="56" cy="76" rx="7" ry="8" fill="#fff"/>
+          <ellipse cx="86" cy="76" rx="7" ry="8" fill="#fff"/>
+          <ellipse cx="56" cy="77" rx="3.2" ry="3.6" fill="#3a2418"/>
+          <ellipse cx="86" cy="77" rx="3.2" ry="3.6" fill="#3a2418"/>
+          <ellipse cx="57.4" cy="75.6" rx="1.2" ry="1.3" fill="#fff"/>
+          <ellipse cx="87.4" cy="75.6" rx="1.2" ry="1.3" fill="#fff"/>
+          <path d="M64 98c4 3 10 3 14 0" fill="none" stroke="#3a2418" stroke-width="2" stroke-linecap="round"/>
+          <ellipse cx="46" cy="90" rx="5" ry="3" fill="#ffb3c0" opacity=".9"/>
+          <ellipse cx="96" cy="90" rx="5" ry="3" fill="#ffb3c0" opacity=".9"/>
+        </g>
+        <g class="face busted">
+          <ellipse cx="56" cy="76" rx="7.2" ry="8.2" fill="#fff"/>
+          <ellipse cx="86" cy="76" rx="7.2" ry="8.2" fill="#fff"/>
+          <ellipse cx="56" cy="78" rx="2.4" ry="2.8" fill="#3a2418"/>
+          <ellipse cx="86" cy="78" rx="2.4" ry="2.8" fill="#3a2418"/>
+          <path d="M62 100c4 2 8 1 12-2 2 3 4 3 8 1" fill="none" stroke="#3a2418" stroke-width="2.2" stroke-linecap="round"/>
+          <path d="M98 64c6 8 4 16-2 16" fill="none" stroke="#7ec8e3" stroke-width="2.4" stroke-linecap="round"/>
+          <circle cx="94" cy="84" r="2.2" fill="#7ec8e3"/>
+        </g>
+        <g class="face sad">
+          <path d="M48 70c6 4 12 4 14 0" fill="none" stroke="#3a2418" stroke-width="2.2" stroke-linecap="round"/>
+          <path d="M78 70c4 4 10 4 14 0" fill="none" stroke="#3a2418" stroke-width="2.2" stroke-linecap="round"/>
+          <ellipse cx="56" cy="80" rx="3.4" ry="4" fill="#3a2418"/>
+          <ellipse cx="86" cy="80" rx="3.4" ry="4" fill="#3a2418"/>
+          <path d="M62 102c6-5 14-5 18 0" fill="none" stroke="#3a2418" stroke-width="2.2" stroke-linecap="round"/>
+        </g>
+        <g class="face yay">
+          <path d="M50 78c4-8 12-8 14 0" fill="none" stroke="#3a2418" stroke-width="2.6" stroke-linecap="round"/>
+          <path d="M78 78c4-8 12-8 14 0" fill="none" stroke="#3a2418" stroke-width="2.6" stroke-linecap="round"/>
+          <path d="M58 92c8 14 22 14 30 0" fill="#fff" stroke="#3a2418" stroke-width="2"/>
+          <path d="M108 36l1.6 4 4.2.4-3.2 2.6 1 4-3.6-2.2-3.6 2.2 1-4-3.2-2.6 4.2-.4z" fill="#ffd56a"/>
+          <path d="M30 40l1.2 3 3 .2-2.3 1.8.7 2.8-2.6-1.5-2.6 1.5.7-2.8-2.3-1.8 3-.2z" fill="#fff"/>
+        </g>
+      </svg>
+    </div>
+  </template>
+
+  <script>
+  (function () {
+    "use strict";
+
+    var PLAY_URL = "https://grokbot365game.github.io/daily-casual-games/games/2026-10-24-mischief-home/";
+    var STORE = "mischief-home-2026-10-24";
+    var LW = 360;
+    var LH = 520;
+    var FONT = "'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Yu Gothic UI', 'WenQuanYi Micro Hei', 'Droid Sans Fallback', sans-serif";
+    var REWIND = 0.82;
+    var MOVE_FAIL = 36;
+    var COMBO_FALLBACK = 4.2;
+    var HOT_RATIO = 0.7;
+
+    var BASE = {
+      cushion: { name: "クッション", yen: 1100, hold: 2.15, x: 62, y: 268, r: 38, lx: 62, ly: 214 },
+      tissue: { name: "ティッシュ", yen: 900, hold: 1.9, x: 176, y: 304, r: 36, lx: 176, ly: 360 },
+      tp: { name: "トイレットペーパー", short: "紙ロール", yen: 1200, hold: 2.25, x: 304, y: 250, r: 32, lx: 304, ly: 196 },
+      curtain: { name: "カーテン", yen: 1500, hold: 2.45, x: 48, y: 98, r: 36, lx: 48, ly: 156 },
+      plant: { name: "観葉植物", yen: 1700, hold: 2.65, x: 228, y: 172, r: 34, lx: 210, ly: 226 },
+      vase: { name: "花びん", yen: 2600, hold: 2.85, x: 168, y: 108, r: 32, lx: 168, ly: 158, noisy: true },
+      sofa: { name: "ソファ", yen: 2200, hold: 2.95, x: 86, y: 404, r: 44, lx: 86, ly: 342, comboEnd: true }
+    };
+
+    var ROUNDS = [
+      {
+        practice: true,
+        time: 30,
+        target: 4200,
+        mul: 0.72,
+        hello: "クッションから、おしたまま",
+        coach: "クッションをおしたまま",
+        objects: ["cushion", "tissue", "tp", "curtain"],
+        warn: 2.35,
+        look: 1.6,
+        events: [{ t: 3.3, kind: "real" }]
+      },
+      {
+        time: 30,
+        target: 6000,
+        mul: 2.12,
+        hello: "足音のバー、よく見て",
+        objects: ["cushion", "tissue", "tp", "curtain", "plant"],
+        warn: 1.9,
+        look: 1.35,
+        events: [
+          { t: 2.5, kind: "fake" },
+          { t: 13.0, kind: "real" },
+          { t: 22.2, kind: "fake" }
+        ],
+        previewKicker: "ラウンド 2",
+        previewTitle: "ニセの足音",
+        preview: "あたらしい：足音のバーが戻ったら、またこわしていい。赤になったら、手をはなして。"
+      },
+      {
+        time: 30,
+        target: 6200,
+        mul: 1.62,
+        hello: "ぞきが速い。バーに注目",
+        objects: ["cushion", "tissue", "tp", "curtain", "plant"],
+        warn: 1.02,
+        look: 1.08,
+        events: [
+          { t: 2.3, kind: "real" },
+          { t: 8.6, kind: "fake" },
+          { t: 15.2, kind: "real" },
+          { t: 22.6, kind: "real" }
+        ],
+        previewKicker: "ラウンド 3",
+        previewTitle: "速いぞき",
+        preview: "あたらしい：ぞきが速い。足音バーがすぐ0になる。0の前に、必ず手をはなす。"
+      },
+      {
+        time: 32,
+        target: 8400,
+        mul: 1.22,
+        hello: "花びんは音マーク",
+        objects: ["cushion", "tissue", "tp", "curtain", "plant", "vase"],
+        warn: 1.16,
+        look: 1.1,
+        noiseWarn: 1.28,
+        noiseLook: 1.12,
+        events: [
+          { t: 3.1, kind: "real" },
+          { t: 12.0, kind: "fake" },
+          { t: 21.2, kind: "real" }
+        ],
+        previewKicker: "ラウンド 4",
+        previewTitle: "うるさい花びん",
+        preview: "あたらしい：音マークはこわすのに時間がかかる。こわれると、すぐ足音がはじまる。"
+      },
+      {
+        time: 32,
+        target: 11200,
+        mul: 1.12,
+        hello: "クッションのあと、ソファ",
+        comboTime: 6.5,
+        comboYen: 1800,
+        objects: ["cushion", "tissue", "tp", "curtain", "plant", "vase", "sofa"],
+        warn: 0.98,
+        look: 1.02,
+        noiseWarn: 1.12,
+        noiseLook: 1.02,
+        events: [
+          { t: 2.2, kind: "fake" },
+          { t: 8.4, kind: "real" },
+          { t: 16.4, kind: "real" },
+          { t: 24.6, kind: "fake" }
+        ],
+        previewKicker: "ラウンド 5",
+        previewTitle: "コンボ",
+        preview: "あたらしい：クッションをこわすとソファが光る。光っているあいだにソファをこわすと、コンボで被害額が増える。"
+      }
+    ];
+
+    var COMMENTS = [
+      "カーテンがベッドまで歩いていった",
+      "トイレットペーパーの旅が長すぎる",
+      "花びん、おばあちゃんのだった",
+      "クッションの中身が雪みたい",
+      "この顔でやってないは、無理がある",
+      "ソファが先にギブアップしてた",
+      "観葉植物が横向きで土を出してる",
+      "被害額、おやつ代の何年分？",
+      "帰宅5秒で現実に帰りたい",
+      "保険屋さん、今日は電話しないで"
+    ];
+
+    var canvas = document.getElementById("game");
+    var ctx = canvas.getContext("2d");
+    var shot = document.getElementById("shot");
+    var sctx = shot.getContext("2d");
+    var titleEl = document.getElementById("title");
+    var previewEl = document.getElementById("preview");
+    var resultEl = document.getElementById("result");
+    var heartsEl = document.getElementById("hearts");
+    var sayText = document.getElementById("say-text");
+    var roundLabel = document.getElementById("round-label");
+    var yenEl = document.getElementById("yen");
+    var timebar = document.getElementById("timebar");
+    var timefill = document.getElementById("timefill");
+    var timeLabel = document.getElementById("time-label");
+    var totalLabel = document.getElementById("total-label");
+    var alertEl = document.getElementById("alert");
+    var alertIco = document.getElementById("alert-ico");
+    var alertLabel = document.getElementById("alert-label");
+    var alertNum = document.getElementById("alert-num");
+    var alertFill = document.getElementById("alert-fill");
+    var bannerEl = document.getElementById("banner");
+    var bannerMain = document.getElementById("banner-main");
+    var bannerSub = document.getElementById("banner-sub");
+    var hintEl = document.getElementById("hint");
+    var liveEl = document.getElementById("live");
+    var titleBest = document.getElementById("title-best");
+    var prevKicker = document.getElementById("prev-kicker");
+    var prevTitle = document.getElementById("prev-title");
+    var prevBody = document.getElementById("prev-body");
+    var resQuote = document.getElementById("res-quote");
+    var resScore = document.getElementById("res-score");
+    var resWhy = document.getElementById("res-why");
+    var resFlavor = document.getElementById("res-flavor");
+    var resBest = document.getElementById("res-best");
+    var btnStart = document.getElementById("btn-start");
+    var btnPreview = document.getElementById("btn-preview");
+    var btnRetry = document.getElementById("btn-retry");
+    var btnShare = document.getElementById("btn-share");
+    var btnSave = document.getElementById("btn-save");
+    var muteBtn = document.getElementById("mute");
+    var tpl = document.getElementById("mascot-tpl");
+    var hudMascot = document.getElementById("hud-mascot");
+    var titleMascot = document.getElementById("title-mascot");
+    var resMascot = document.getElementById("res-mascot");
+    var mascot = tpl.content.firstElementChild.cloneNode(true);
+    titleMascot.appendChild(mascot);
+    hudMascot.appendChild(tpl.content.firstElementChild.cloneNode(true));
+    resMascot.appendChild(tpl.content.firstElementChild.cloneNode(true));
+
+    var reduceMotion = false;
+    try {
+      reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    } catch (err) { /* ignore */ }
+
+    var ac = null;
+    var master = null;
+    var noiseBuf = null;
+    var muted = false;
+    var bestYen = 0;
+    var dpr = 1;
+    var phase = "title";
+    var roundIndex = 0;
+    var hearts = 2;
+    var totalYen = 0;
+    var roundYen = 0;
+    var snapYen = 0;
+    var snapLog = 0;
+    var log = [];
+    var objects = [];
+    var sched = [];
+    var elapsed = 0;
+    var failReason = "";
+    var won = false;
+    var holding = null;
+    var coachT = 0;
+    var celeT = 0;
+    var failT = 0;
+    var gleefulT = 0;
+    var combo = 0;
+    var comboSaid = false;
+    var noiseQueued = false;
+    var cooldown = 0;
+    var shakeT = 0;
+    var catX = 206;
+    var catY = 452;
+    var mood = "idle";
+    var clock = 0;
+    var last = 0;
+    var bannerUntil = 0;
+    var footAcc = 0;
+    var shredAcc = 0;
+    var previewIndex = 1;
+    var floats = [];
+    var bits = [];
+    var ptr = { id: null, down: false, seen: false, x: 180, y: 400, anchor: null };
+    var alert = { kind: "none", real: false, t: 0, warnDur: 1, lookDur: 1, peak: 1, noise: false };
+
+    function rand(a, b) { return a + Math.random() * (b - a); }
+    function pick(arr) { return arr[(Math.random() * arr.length) | 0]; }
+    function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+    function yen(n) {
+      var s = String(Math.max(0, Math.round(n)));
+      return "¥" + s.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
+    function def() { return ROUNDS[roundIndex]; }
+    function hasId(id) {
+      var i;
+      for (i = 0; i < objects.length; i++) if (objects[i].id === id) return objects[i];
+      return null;
+    }
+
+    function setMood(next) {
+      if (mood === next) return;
+      mood = next;
+      var nodes = document.querySelectorAll(".mascot");
+      var i;
+      for (i = 0; i < nodes.length; i++) {
+        nodes[i].dataset.mood = next;
+        nodes[i].classList.remove("is-pop");
+        if (next === "gleeful" || next === "yay" || next === "busted") {
+          void nodes[i].offsetWidth;
+          nodes[i].classList.add("is-pop");
+        }
+      }
+    }
+    function say(text) {
+      if (sayText.textContent === text) return;
+      sayText.textContent = text;
+    }
+    function announce(text) { liveEl.textContent = text; }
+
+    function showBanner(main, sub, ms) {
+      bannerMain.textContent = main;
+      bannerSub.textContent = sub || "";
+      bannerSub.hidden = !sub;
+      bannerEl.hidden = false;
+      bannerEl.classList.remove("pop");
+      void bannerEl.offsetWidth;
+      bannerEl.classList.add("pop");
+      bannerUntil = performance.now() + (ms == null ? 1200 : ms);
+      announce(sub ? main + " " + sub : main);
+    }
+    function hideBanner() {
+      bannerEl.hidden = true;
+      bannerUntil = 0;
+    }
+
+    function updateHearts(pop) {
+      var h = "";
+      h += '<i class="' + (hearts >= 1 ? "" : "off") + (pop && hearts === 0 ? " pop" : "") + '">♥</i>';
+      h += '<i class="' + (hearts >= 2 ? "" : "off") + (pop && hearts === 1 ? " pop" : "") + '">♥</i>';
+      heartsEl.innerHTML = h;
+      heartsEl.setAttribute("aria-label", "ハート" + hearts);
+    }
+
+    function loadStore() {
+      try {
+        var raw = localStorage.getItem(STORE);
+        if (!raw) return;
+        var data = JSON.parse(raw);
+        if (data && typeof data.bestYen === "number" && isFinite(data.bestYen)) bestYen = Math.max(0, Math.round(data.bestYen));
+        if (data && data.mute) muted = true;
+      } catch (err) { /* ignore */ }
+    }
+    function saveStore() {
+      try {
+        localStorage.setItem(STORE, JSON.stringify({ mute: muted, bestYen: bestYen }));
+      } catch (err) { /* ignore */ }
+    }
+    function applyMute() {
+      muteBtn.classList.toggle("is-muted", muted);
+      muteBtn.setAttribute("aria-pressed", muted ? "true" : "false");
+      muteBtn.setAttribute("aria-label", muted ? "音を出す" : "音を消す");
+      if (master) master.gain.value = muted ? 0 : 0.8;
+    }
+    function refreshBest() {
+      if (bestYen > 0) {
+        titleBest.hidden = false;
+        titleBest.textContent = "ベスト " + yen(bestYen);
+      } else {
+        titleBest.hidden = true;
+      }
+    }
+
+    function audioGesture() {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      try {
+        if (!ac) {
+          ac = new AC();
+          master = ac.createGain();
+          master.gain.value = muted ? 0 : 0.8;
+          master.connect(ac.destination);
+        }
+        if (ac.state === "suspended") ac.resume();
+        return ac;
+      } catch (err) {
+        return null;
+      }
+    }
+    function tone(freqHz, dur, type, vol, delay) {
+      if (!ac || muted || !master) return;
+      try {
+        var t = ac.currentTime + (delay || 0);
+        var osc = ac.createOscillator();
+        var gain = ac.createGain();
+        osc.type = type || "sine";
+        osc.frequency.setValueAtTime(freqHz, t);
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.exponentialRampToValueAtTime(vol || 0.06, t + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        osc.connect(gain);
+        gain.connect(master);
+        osc.start(t);
+        osc.stop(t + dur + 0.02);
+      } catch (err) { /* ignore */ }
+    }
+    function noiseBuffer() {
+      if (!ac) return null;
+      if (noiseBuf) return noiseBuf;
+      var len = ac.sampleRate;
+      var buf = ac.createBuffer(1, len, ac.sampleRate);
+      var data = buf.getChannelData(0);
+      var b0 = 0;
+      var n;
+      for (n = 0; n < len; n++) {
+        var white = Math.random() * 2 - 1;
+        b0 = 0.97 * b0 + 0.03 * white;
+        data[n] = b0 * 3;
+      }
+      noiseBuf = buf;
+      return buf;
+    }
+    function burstNoise(freqHz, dur, vol) {
+      if (!ac || muted || !master) return;
+      try {
+        var t = ac.currentTime;
+        var src = ac.createBufferSource();
+        src.buffer = noiseBuffer();
+        var filter = ac.createBiquadFilter();
+        filter.type = "bandpass";
+        filter.frequency.setValueAtTime(freqHz, t);
+        filter.Q.value = 0.7;
+        var gain = ac.createGain();
+        gain.gain.setValueAtTime(vol, t);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        src.connect(filter);
+        filter.connect(gain);
+        gain.connect(master);
+        src.start(t);
+        src.stop(t + dur + 0.02);
+      } catch (err) { /* ignore */ }
+    }
+    function playFoot() { tone(rand(90, 140), 0.09, "sine", 0.07, 0); }
+    function playShred() { burstNoise(rand(700, 1400), 0.05, 0.03); }
+    function playBreak(noisy) {
+      burstNoise(noisy ? 280 : 520, noisy ? 0.28 : 0.16, noisy ? 0.12 : 0.07);
+      tone(noisy ? 180 : 420, 0.12, "triangle", 0.06, 0);
+      if (noisy) tone(90, 0.22, "sine", 0.07, 0.04);
+    }
+    function playFail() {
+      tone(220, 0.12, "triangle", 0.07, 0);
+      tone(140, 0.26, "sine", 0.07, 0.06);
+      burstNoise(240, 0.18, 0.08);
+    }
+    function playWin() {
+      var notes = [523, 659, 784, 1046];
+      var i;
+      for (i = 0; i < notes.length; i++) tone(notes[i], 0.16, "sine", 0.06, i * 0.07);
+    }
+    function playFakeEnd() {
+      tone(520, 0.1, "sine", 0.05, 0);
+      tone(340, 0.14, "sine", 0.04, 0.08);
+    }
+    function playLook() {
+      burstNoise(180, 0.12, 0.05);
+      tone(160, 0.16, "sine", 0.06, 0);
+    }
+    function playCombo() {
+      tone(660, 0.08, "triangle", 0.06, 0);
+      tone(880, 0.12, "sine", 0.06, 0.07);
+    }
+
+    function floatText(x, y, text) {
+      floats.push({ x: x, y: y, text: text, life: 0.95 });
+    }
+    function burstBits(x, y, color, n) {
+      var i;
+      for (i = 0; i < n; i++) {
+        bits.push({
+          x: x,
+          y: y,
+          vx: rand(-70, 70),
+          vy: rand(-160, -30),
+          life: rand(0.4, 0.85),
+          color: color,
+          r: rand(2, 5)
+        });
+      }
+    }
+
+    function makeObj(id, mul) {
+      var b = BASE[id];
+      return {
+        id: id,
+        name: b.name,
+        yen: b.yen,
+        hold: b.hold * mul,
+        x: b.x,
+        y: b.y,
+        r: b.r,
+        lx: b.lx,
+        ly: b.ly,
+        short: b.short || "",
+        prog: 0,
+        broken: false,
+        noisy: !!b.noisy,
+        comboEnd: !!b.comboEnd
+      };
+    }
+
+    function resetAlert() {
+      alert.kind = "none";
+      alert.real = false;
+      alert.t = 0;
+      alert.noise = false;
+      alert.peak = 1;
+      ptr.anchor = null;
+      footAcc = 0;
+    }
+
+    function startRound(index, isRetry) {
+      var d = ROUNDS[index];
+      var i;
+      roundIndex = index;
+      if (!isRetry) {
+        snapYen = totalYen;
+        snapLog = log.length;
+      } else {
+        totalYen = snapYen;
+        log.length = snapLog;
+      }
+      roundYen = 0;
+      elapsed = 0;
+      objects = [];
+      for (i = 0; i < d.objects.length; i++) objects.push(makeObj(d.objects[i], d.mul));
+      sched = [];
+      for (i = 0; i < d.events.length; i++) {
+        sched.push({
+          t: d.events[i].t,
+          kind: d.events[i].kind,
+          warn: d.events[i].warn || d.warn,
+          look: d.events[i].look || d.look,
+          fired: false
+        });
+      }
+      resetAlert();
+      noiseQueued = false;
+      cooldown = 0.3;
+      combo = 0;
+      comboSaid = false;
+      holding = null;
+      ptr.down = false;
+      ptr.id = null;
+      ptr.anchor = null;
+      coachT = index === 0 ? 3.4 : 0;
+      celeT = 0;
+      failT = 0;
+      gleefulT = 0;
+      floats = [];
+      bits = [];
+      catX = 200;
+      catY = 456;
+      phase = "play";
+      titleEl.hidden = true;
+      previewEl.hidden = true;
+      resultEl.hidden = true;
+      hideBanner();
+      if (d.coach) showBanner(d.coach, "ゆび・マウスで、おしたまま", 3200);
+      say(d.hello);
+      setMood("idle");
+      announce(d.practice ? "練習ラウンド" : ("ラウンド" + (index + 1)));
+      updateHud();
+    }
+
+    function showPreview(index) {
+      var d = ROUNDS[index];
+      previewIndex = index;
+      phase = "preview";
+      prevKicker.textContent = d.previewKicker;
+      prevTitle.textContent = d.previewTitle;
+      prevBody.textContent = d.preview;
+      previewEl.hidden = false;
+      hideBanner();
+      say("つぎのラウンド");
+      setMood("gleeful");
+      announce(d.previewTitle + " " + d.preview);
+    }
+
+    function billLines() {
+      var order = [];
+      var map = {};
+      var i;
+      for (i = 0; i < log.length; i++) {
+        var name = log[i].name;
+        if (!map[name]) {
+          map[name] = { name: name, yen: 0, n: 0 };
+          order.push(map[name]);
+        }
+        map[name].yen += log[i].yen;
+        map[name].n += 1;
+      }
+      return order;
+    }
+
+    function itemCount() {
+      var n = 0;
+      var i;
+      for (i = 0; i < log.length; i++) if (log[i].name !== "コンボ") n++;
+      return n;
+    }
+
+    function pickRank() {
+      var r = roundIndex + 1;
+      if (won && hearts === 2) return "伝説の留守番破壊神";
+      if (won) return "笑顔の災害";
+      if (failReason === "time" && r >= 5) return "時間切れの大惨事";
+      if (failReason === "caught" && r >= 5) return "あと一歩の現行犯";
+      if (failReason === "caught" && r >= 4) return "音で割れた犯人";
+      if (failReason === "time") return "時間切れのいたずらっ子";
+      if (failReason === "caught") return "現場の現行犯";
+      return "こねこの途中退場";
+    }
+
+    function openResult(didWin) {
+      phase = "result";
+      won = didWin;
+      holding = null;
+      ptr.down = false;
+      previewEl.hidden = true;
+      titleEl.hidden = true;
+      hideBanner();
+      resetAlert();
+      var rank = pickRank();
+      var comment = pick(COMMENTS);
+      var why = didWin ? "5ラウンドクリア" : (failReason === "caught" ? "バレた！" : "時間切れ");
+      resQuote.textContent = "「" + rank + "」";
+      resScore.textContent = yen(totalYen) + "　こわした " + itemCount() + "個";
+      resWhy.textContent = why;
+      resWhy.classList.toggle("win", didWin);
+      resFlavor.textContent = "飼い主「" + comment + "」";
+      if (totalYen > bestYen) {
+        bestYen = totalYen;
+        saveStore();
+      }
+      if (bestYen > 0) {
+        resBest.hidden = false;
+        resBest.textContent = "ベスト " + yen(bestYen);
+      }
+      refreshBest();
+      drawCard(rank, comment, why, didWin);
+      var share = "こわして帰宅前 Day29 " + (didWin ? "クリア" : "ここまで") +
+        " 被害額" + yen(totalYen) + " 「" + rank + "」 " + PLAY_URL;
+      btnShare.href = "https://x.com/intent/tweet?text=" + encodeURIComponent(share);
+      resultEl.hidden = false;
+      setMood(didWin ? "yay" : (failReason === "caught" ? "busted" : "sad"));
+      announce(rank + " " + why + " " + yen(totalYen));
+    }
+
+    function bust(reason) {
+      if (phase !== "play") return;
+      phase = "failpause";
+      failReason = reason;
+      failT = 0;
+      holding = null;
+      ptr.down = false;
+      ptr.anchor = null;
+      var line = reason === "caught" ? "バレた！" : "時間切れ";
+      var practice = !!def().practice;
+      if (!practice) {
+        hearts -= 1;
+        updateHearts(true);
+      }
+      setMood(reason === "caught" ? "busted" : "sad");
+      showBanner(line, practice ? "練習。ハートは減らない" : "", 900);
+      shakeT = 0.45;
+      playFail();
+    }
+
+    function clearRound() {
+      if (phase !== "play") return;
+      phase = "celebrate";
+      celeT = 0;
+      holding = null;
+      ptr.down = false;
+      resetAlert();
+      setMood("yay");
+      showBanner("目標達成！", yen(roundYen), 900);
+      playWin();
+      var i;
+      for (i = 0; i < 14; i++) burstBits(rand(40, 320), rand(80, 200), pick(["#ffd56a", "#e23b4a", "#fff", "#2a9d8f"]), 1);
+    }
+
+    function breakObject(o) {
+      var d;
+      var sofa;
+      if (o.broken || phase !== "play") return;
+      o.broken = true;
+      o.prog = 1;
+      roundYen += o.yen;
+      totalYen += o.yen;
+      log.push({ name: o.name, yen: o.yen });
+      floatText(o.x, o.y - o.r - 8, "+" + yen(o.yen));
+      burstBits(o.x, o.y, o.noisy ? "#8fd3e2" : "#e7a15a", o.noisy ? 16 : 10);
+      shakeT = o.noisy ? 0.4 : 0.25;
+      gleefulT = 0.65;
+      playBreak(o.noisy);
+      say(o.name + "、こわれた");
+      d = def();
+      if (o.id === "cushion" && hasId("sofa")) {
+        combo = d.comboTime || COMBO_FALLBACK;
+        comboSaid = false;
+        floatText(hasId("sofa").x, hasId("sofa").y - 36, "コンボ");
+        say("ソファが光ってるあいだ！");
+      }
+      if (o.comboEnd) {
+        if (combo > 0) {
+          var bonus = d.comboYen || 1800;
+          roundYen += bonus;
+          totalYen += bonus;
+          log.push({ name: "コンボ", yen: bonus });
+          combo = 0;
+          comboSaid = true;
+          floatText(o.x, o.y - o.r - 28, "コンボ +" + yen(bonus));
+          playCombo();
+          say("コンボ！");
+        } else {
+          var cush = hasId("cushion");
+          if (cush && !cush.broken) {
+            floatText(o.x, o.y - o.r - 24, "先にクッション");
+            say("コンボは、先にクッション");
+          }
+        }
+      }
+      if (o.noisy) {
+        floatText(o.x, o.y - 8, "大きな音！");
+        say("大きな音！");
+        noiseQueued = true;
+      }
+      if (roundYen >= d.target) clearRound();
+      sofa = o;
+      return sofa;
+    }
+
+    function startRise(real, warnDur, lookDur, noise) {
+      alert.kind = "rise";
+      alert.real = !!real;
+      alert.t = 0;
+      alert.warnDur = Math.max(0.4, warnDur);
+      alert.lookDur = lookDur || 1;
+      alert.peak = real ? 1 : rand(0.5, 0.6);
+      alert.noise = !!noise;
+      ptr.anchor = null;
+      footAcc = 0;
+      if (noise) say("大きな音。手をはなして");
+      else say("足音…");
+    }
+    function beginLook() {
+      if (phase !== "play") return;
+      alert.kind = "look";
+      alert.t = 0;
+      ptr.anchor = ptr.seen ? { x: ptr.x, y: ptr.y } : null;
+      playLook();
+      say("みてないよ");
+      announce("見てる");
+      if (ptr.down) bust("caught");
+    }
+    function beginRewind() {
+      alert.kind = "rewind";
+      alert.t = 0;
+      playFakeEnd();
+      floatText(300, 120, "やんだ");
+      say("まだ帰ってない");
+      announce("やんだ");
+    }
+    function endAlert() {
+      if (alert.kind === "none") return;
+      alert.kind = "none";
+      ptr.anchor = null;
+      cooldown = 0.42;
+    }
+
+    function threat() {
+      if (alert.kind === "rise") return clamp(alert.t / alert.warnDur, 0, alert.real ? 1 : alert.peak);
+      if (alert.kind === "rewind") return alert.peak * (1 - clamp(alert.t / REWIND, 0, 1));
+      if (alert.kind === "look") return 1;
+      return 0;
+    }
+
+    function updateAlertUi() {
+      var th = threat();
+      var hot = false;
+      var label = "足音";
+      var num = "";
+      var ico = "ドア・足音";
+      var fill = th;
+      if (alert.kind === "none") {
+        alertEl.hidden = true;
+        alertEl.className = "alert";
+        return;
+      }
+      alertEl.hidden = false;
+      if (alert.noise && alert.kind !== "rewind") ico = "大きな音";
+      if (alert.kind === "rise") {
+        num = Math.max(0, alert.warnDur - alert.t).toFixed(1);
+        hot = alert.real && (alert.t / alert.warnDur) >= HOT_RATIO;
+        label = hot ? "もうすぐ" : "見てるまで";
+        fill = clamp((alert.warnDur - alert.t) / alert.warnDur, 0, 1);
+      } else if (alert.kind === "rewind") {
+        label = "やんだ";
+        num = "";
+        fill = (1 - alert.peak) + alert.peak * clamp(alert.t / REWIND, 0, 1);
+      } else if (alert.kind === "look") {
+        label = "見てる";
+        num = Math.max(0, alert.lookDur - alert.t).toFixed(1);
+        fill = clamp(1 - alert.t / alert.lookDur, 0, 1);
+      }
+      alertIco.textContent = ico;
+      alertLabel.textContent = label;
+      alertNum.textContent = num;
+      alertFill.style.width = Math.round(fill * 100) + "%";
+      alertEl.className = "alert" +
+        (alert.kind === "look" ? " is-look" : "") +
+        (alert.kind === "rewind" ? " is-rewind" : "") +
+        (hot ? " is-hot" : "");
+    }
+
+    function updateHud() {
+      var d = def();
+      var left = d ? Math.max(0, d.time - elapsed) : 30;
+      var target = d ? d.target : 3000;
+      roundLabel.textContent = "ラウンド " + (roundIndex + 1) + "/5" + (d && d.practice ? " 練習" : "");
+      yenEl.textContent = yen(roundYen) + " / " + yen(target);
+      totalLabel.textContent = "合計 " + yen(totalYen);
+      timeLabel.textContent = "のこり " + Math.ceil(left) + "秒";
+      var pct = d ? clamp(left / d.time, 0, 1) : 1;
+      timefill.style.width = Math.round(pct * 100) + "%";
+      timebar.classList.toggle("hot", phase === "play" && left <= 5);
+      updateAlertUi();
+      hintEl.className = "hint";
+      if ((phase === "play" && alert.kind === "look") || (phase === "failpause" && failReason === "caught")) {
+        hintEl.textContent = "見てるあいだは、ゆびもマウスも止める";
+        hintEl.classList.add("is-stop");
+      } else if (phase === "play" && alert.kind === "rise") {
+        hintEl.textContent = "バーが0になる前に、手をはなす";
+        hintEl.classList.add("is-stop");
+      } else if (phase === "play" && alert.kind === "rewind") {
+        hintEl.textContent = "やんだ。また、おしたまま";
+        hintEl.classList.add("is-go");
+      } else {
+        hintEl.textContent = "ゆび・マウスで、ものをおしたまま";
+      }
+    }
+
+    function desiredMood() {
+      if (phase === "failpause") return failReason === "caught" ? "busted" : "sad";
+      if (phase === "celebrate") return "yay";
+      if (phase === "result") return won ? "yay" : (failReason === "caught" ? "busted" : "sad");
+      if (alert.kind === "look") return "innocent";
+      if (holding || gleefulT > 0) return "gleeful";
+      return "idle";
+    }
+
+    function pickObj(x, y) {
+      var best = null;
+      var bestD = 1e9;
+      var i;
+      for (i = 0; i < objects.length; i++) {
+        var o = objects[i];
+        var dx = x - o.x;
+        var dy = y - o.y;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist <= o.r && dist < bestD) {
+          best = o;
+          bestD = dist;
+        }
+      }
+      return best;
+    }
+
+    function update(dt) {
+      var d = def();
+      var i;
+      clock += dt;
+      if (shakeT > 0) shakeT = Math.max(0, shakeT - dt);
+      if (gleefulT > 0 && !holding) gleefulT = Math.max(0, gleefulT - dt);
+      for (i = floats.length - 1; i >= 0; i--) {
+        floats[i].life -= dt;
+        floats[i].y -= 34 * dt;
+        if (floats[i].life <= 0) floats.splice(i, 1);
+      }
+      for (i = bits.length - 1; i >= 0; i--) {
+        var b = bits[i];
+        b.life -= dt;
+        b.x += b.vx * dt;
+        b.y += b.vy * dt;
+        b.vy += 280 * dt;
+        if (b.life <= 0) bits.splice(i, 1);
+      }
+
+      if (phase === "celebrate") {
+        celeT += dt;
+        if (celeT > 0.85) {
+          if (roundIndex >= ROUNDS.length - 1) openResult(true);
+          else showPreview(roundIndex + 1);
+        }
+      } else if (phase === "failpause") {
+        failT += dt;
+        if (failT > 0.78) {
+          if (d.practice) startRound(roundIndex, true);
+          else if (hearts <= 0) openResult(false);
+          else startRound(roundIndex, true);
+        }
+      } else if (phase === "play") {
+        elapsed += dt;
+        if (coachT > 0) coachT -= dt;
+        if (alert.kind === "rise") {
+          alert.t += dt;
+          footAcc += dt;
+          if (footAcc > 0.32) {
+            footAcc = 0;
+            playFoot();
+          }
+          var limit = alert.real ? alert.warnDur : alert.warnDur * alert.peak;
+          if (alert.t >= limit) {
+            if (alert.real) beginLook();
+            else beginRewind();
+          }
+        } else if (alert.kind === "rewind") {
+          alert.t += dt;
+          if (alert.t >= REWIND) endAlert();
+        } else if (alert.kind === "look") {
+          alert.t += dt;
+          if (ptr.down) bust("caught");
+          else if (alert.t >= alert.lookDur) endAlert();
+        }
+
+        if (phase === "play" && combo > 0) {
+          combo -= dt;
+          if (combo <= 0) {
+            combo = 0;
+            if (!comboSaid) {
+              comboSaid = true;
+              var sofa = hasId("sofa");
+              if (sofa && !sofa.broken) floatText(sofa.x, sofa.y - 20, "コンボきえた");
+              say("コンボきえた");
+            }
+          }
+        }
+
+        if (phase === "play" && holding && !holding.broken && alert.kind !== "look") {
+          holding.prog = Math.min(1, holding.prog + dt / holding.hold);
+          shredAcc += dt;
+          if (shredAcc > 0.18) {
+            shredAcc = 0;
+            playShred();
+            burstBits(holding.x + rand(-8, 8), holding.y + rand(-6, 6), "#f4d2b0", 1);
+          }
+          if (holding.prog >= 1) breakObject(holding);
+        }
+
+        if (phase === "play" && (d.time - elapsed) <= 0 && roundYen < d.target) bust("time");
+
+        if (phase === "play") {
+          if (cooldown > 0) cooldown -= dt;
+          if (alert.kind === "none" && cooldown <= 0) {
+            if (noiseQueued) {
+              noiseQueued = false;
+              startRise(true, d.noiseWarn || 1.2, d.noiseLook || 1.1, true);
+            } else {
+              for (i = 0; i < sched.length; i++) {
+                if (!sched[i].fired && elapsed >= sched[i].t) {
+                  sched[i].fired = true;
+                  if (sched[i].kind === "fake") startRise(false, sched[i].warn, sched[i].look, false);
+                  else startRise(true, sched[i].warn, sched[i].look, false);
+                  break;
+                }
+              }
+            }
+          }
+        }
+
+        var frozen = alert.kind === "look" || phase !== "play";
+        if (!frozen) {
+          var tx = 206;
+          var ty = 452;
+          if (holding && !holding.broken) {
+            tx = holding.x * 0.28 + 206 * 0.72;
+            ty = Math.min(470, holding.y * 0.18 + 452 * 0.82);
+          }
+          catX += (tx - catX) * Math.min(1, dt * 5);
+          catY += (ty - catY) * Math.min(1, dt * 5);
+        }
+      }
+
+      setMood(desiredMood());
+      updateHud();
+    }
+
+    function roundRect(g, x, y, w, h, r) {
+      var rr = Math.max(0, Math.min(r, w / 2, h / 2));
+      g.beginPath();
+      g.moveTo(x + rr, y);
+      g.arcTo(x + w, y, x + w, y + h, rr);
+      g.arcTo(x + w, y + h, x, y + h, rr);
+      g.arcTo(x, y + h, x, y, rr);
+      g.arcTo(x, y, x + w, y, rr);
+      g.closePath();
+    }
+
+    function drawCat(g, x, y, m, t, frozen) {
+      g.save();
+      g.translate(x, y);
+      var bob = frozen || m === "innocent" || reduceMotion ? 0 : Math.sin(t * (m === "gleeful" ? 10 : 5)) * (m === "gleeful" ? 3 : 1.4);
+      g.translate(0, bob);
+      if (m === "busted" && !reduceMotion) g.rotate(Math.sin(t * 22) * 0.06);
+      g.fillStyle = "rgba(80,40,20,.16)";
+      g.beginPath();
+      g.ellipse(0, 42, 30, 7, 0, 0, Math.PI * 2);
+      g.fill();
+      g.strokeStyle = "#e0a15a";
+      g.lineWidth = 8;
+      g.lineCap = "round";
+      g.beginPath();
+      var wag = frozen || m === "innocent" ? 0 : Math.sin(t * 8) * 10;
+      g.moveTo(-16, 12);
+      g.quadraticCurveTo(-46, 20 + wag, -34, -8 + wag);
+      g.stroke();
+      g.fillStyle = "#c47a45";
+      g.beginPath();
+      g.arc(-36, -10 + wag * 0.3, 5, 0, Math.PI * 2);
+      g.fill();
+      g.fillStyle = "#e0a15a";
+      g.beginPath();
+      g.ellipse(0, 16, 28, 20, 0, 0, Math.PI * 2);
+      g.fill();
+      g.fillStyle = "#ffe6c4";
+      g.beginPath();
+      g.ellipse(2, 20, 14, 12, 0, 0, Math.PI * 2);
+      g.fill();
+      g.fillStyle = "#e0a15a";
+      g.beginPath();
+      g.ellipse(-16, 30, 8, 6, 0, 0, Math.PI * 2);
+      g.ellipse(16, 30, 8, 6, 0, 0, Math.PI * 2);
+      g.fill();
+      g.beginPath();
+      g.arc(0, -16, 22, 0, Math.PI * 2);
+      g.fill();
+      g.beginPath();
+      g.moveTo(-16, -28);
+      g.lineTo(-26, -50);
+      g.lineTo(-4, -30);
+      g.closePath();
+      g.moveTo(16, -28);
+      g.lineTo(26, -50);
+      g.lineTo(4, -30);
+      g.closePath();
+      g.fill();
+      g.fillStyle = "#f3b0a4";
+      g.beginPath();
+      g.moveTo(-14, -30);
+      g.lineTo(-20, -44);
+      g.lineTo(-8, -32);
+      g.closePath();
+      g.moveTo(14, -30);
+      g.lineTo(20, -44);
+      g.lineTo(8, -32);
+      g.closePath();
+      g.fill();
+      g.strokeStyle = "#c47a45";
+      g.lineWidth = 2;
+      g.beginPath();
+      g.arc(-6, -22, 8, Math.PI * 1.15, Math.PI * 1.8);
+      g.stroke();
+      g.fillStyle = "#e23b4a";
+      roundRect(g, -14, -6, 28, 10, 3);
+      g.fill();
+      g.fillStyle = "#f0c14a";
+      g.beginPath();
+      g.moveTo(0, -6);
+      g.lineTo(-4, 2);
+      g.lineTo(4, 2);
+      g.fill();
+      g.fillStyle = "#ffe6c4";
+      g.beginPath();
+      g.ellipse(0, -8, 10, 8, 0, 0, Math.PI * 2);
+      g.fill();
+      g.fillStyle = "#f3b0a4";
+      g.beginPath();
+      g.ellipse(0, -6, 3.2, 2.4, 0, 0, Math.PI * 2);
+      g.fill();
+      g.fillStyle = "#3a2418";
+      if (m === "gleeful" || m === "yay") {
+        g.lineWidth = 2.4;
+        g.strokeStyle = "#3a2418";
+        g.beginPath();
+        g.arc(-8, -12, 5, Math.PI, 0);
+        g.stroke();
+        g.beginPath();
+        g.arc(8, -12, 5, Math.PI, 0);
+        g.stroke();
+        g.fillStyle = "#3a2418";
+        g.beginPath();
+        g.ellipse(0, 2, 7, m === "yay" ? 8 : 6, 0, 0, Math.PI);
+        g.fill();
+        g.fillStyle = "#f3b0a4";
+        g.beginPath();
+        g.ellipse(0, 4, 4, 3, 0, 0, Math.PI);
+        g.fill();
+      } else if (m === "innocent") {
+        g.fillStyle = "#fff";
+        g.beginPath();
+        g.arc(-8, -12, 6.2, 0, Math.PI * 2);
+        g.arc(8, -12, 6.2, 0, Math.PI * 2);
+        g.fill();
+        g.fillStyle = "#3a2418";
+        g.beginPath();
+        g.arc(-8, -11, 2.8, 0, Math.PI * 2);
+        g.arc(8, -11, 2.8, 0, Math.PI * 2);
+        g.fill();
+        g.fillStyle = "#fff";
+        g.beginPath();
+        g.arc(-7, -12, 1, 0, Math.PI * 2);
+        g.arc(9, -12, 1, 0, Math.PI * 2);
+        g.fill();
+        g.strokeStyle = "#3a2418";
+        g.lineWidth = 1.8;
+        g.beginPath();
+        g.arc(0, 2, 4, 0.15 * Math.PI, 0.85 * Math.PI);
+        g.stroke();
+      } else if (m === "busted") {
+        g.fillStyle = "#fff";
+        g.beginPath();
+        g.arc(-8, -12, 6.4, 0, Math.PI * 2);
+        g.arc(8, -12, 6.4, 0, Math.PI * 2);
+        g.fill();
+        g.fillStyle = "#3a2418";
+        g.beginPath();
+        g.arc(-8, -10, 2.2, 0, Math.PI * 2);
+        g.arc(8, -10, 2.2, 0, Math.PI * 2);
+        g.fill();
+        g.strokeStyle = "#3a2418";
+        g.lineWidth = 1.8;
+        g.beginPath();
+        g.moveTo(-6, 4);
+        g.quadraticCurveTo(0, 1, 6, 5);
+        g.stroke();
+        g.strokeStyle = "#7ec8e3";
+        g.beginPath();
+        g.moveTo(16, -20);
+        g.quadraticCurveTo(22, -8, 16, 0);
+        g.stroke();
+      } else if (m === "sad") {
+        g.beginPath();
+        g.arc(-8, -10, 2.6, 0, Math.PI * 2);
+        g.arc(8, -10, 2.6, 0, Math.PI * 2);
+        g.fill();
+        g.strokeStyle = "#3a2418";
+        g.lineWidth = 1.8;
+        g.beginPath();
+        g.moveTo(-14, -18);
+        g.lineTo(-4, -15);
+        g.moveTo(14, -18);
+        g.lineTo(4, -15);
+        g.moveTo(-5, 5);
+        g.quadraticCurveTo(0, 1, 6, 5);
+        g.stroke();
+      } else {
+        g.beginPath();
+        g.arc(8, -12, 3, 0, Math.PI * 2);
+        g.fill();
+        g.fillStyle = "#fff";
+        g.beginPath();
+        g.arc(9, -13, 1, 0, Math.PI * 2);
+        g.fill();
+        g.strokeStyle = "#3a2418";
+        g.lineWidth = 2;
+        g.beginPath();
+        g.moveTo(-14, -14);
+        g.quadraticCurveTo(-8, -8, -2, -12);
+        g.moveTo(-5, 3);
+        g.quadraticCurveTo(2, 8, 8, 2);
+        g.stroke();
+      }
+      if ((m === "gleeful" || m === "yay") && !reduceMotion) {
+        g.fillStyle = "#ffd56a";
+        g.beginPath();
+        g.arc(24 + Math.sin(t * 6) * 2, -36, 2.4, 0, Math.PI * 2);
+        g.fill();
+      }
+      g.restore();
+    }
+
+    function drawRing(g, o) {
+      var a0 = -Math.PI / 2;
+      g.lineWidth = 6;
+      g.strokeStyle = "rgba(255,255,255,.75)";
+      g.beginPath();
+      g.arc(o.x, o.y, o.r + 8, 0, Math.PI * 2);
+      g.stroke();
+      g.strokeStyle = holding === o ? "#e23b4a" : "#e07a3c";
+      g.lineCap = "round";
+      g.beginPath();
+      g.arc(o.x, o.y, o.r + 8, a0, a0 + Math.PI * 2 * clamp(o.prog, 0, 1));
+      g.stroke();
+    }
+
+    function drawLabel(g, o) {
+      var text = o.broken ? "こわれた" : (o.short || o.name);
+      var sub = o.broken ? "" : ((o.noisy ? "音 " : "") + yen(o.yen));
+      g.font = "800 12px " + FONT;
+      g.textAlign = "center";
+      g.textBaseline = "middle";
+      var w = Math.max(g.measureText(text).width, sub ? g.measureText(sub).width : 0) + 14;
+      var h = sub ? 32 : 18;
+      var x = (o.lx || o.x) - w / 2;
+      var y = (o.ly || o.y) - h / 2;
+      g.fillStyle = "rgba(255,250,246,.94)";
+      roundRect(g, x, y, w, h, 8);
+      g.fill();
+      g.fillStyle = o.broken ? "#8a5c50" : "#3a241c";
+      g.fillText(text, o.lx || o.x, y + 10);
+      if (sub) {
+        g.fillStyle = o.noisy ? "#c2410c" : "#9a3412";
+        g.fillText(sub, o.lx || o.x, y + 23);
+      }
+    }
+
+    function drawObject(g, o, t) {
+      var wob = holding === o && !reduceMotion ? Math.sin(t * 18) * 0.08 : 0;
+      var crack = o.broken ? 1 : o.prog;
+      g.save();
+      g.translate(o.x, o.y);
+      g.rotate(wob);
+      if (o.id === "cushion") {
+        g.fillStyle = crack > 0.66 || o.broken ? "#f2c1b0" : "#ff8fab";
+        roundRect(g, -28, -20, 56, 40, 14);
+        g.fill();
+        g.fillStyle = "rgba(255,255,255,.35)";
+        roundRect(g, -16, -10, 20, 8, 4);
+        g.fill();
+        if (crack > 0.35) {
+          g.strokeStyle = "#fff";
+          g.lineWidth = 2;
+          g.beginPath();
+          g.moveTo(-6, -8);
+          g.lineTo(4, 6);
+          g.lineTo(0, 10);
+          g.stroke();
+        }
+        if (o.broken) {
+          g.fillStyle = "#fff";
+          g.beginPath();
+          g.arc(-10, 0, 5, 0, Math.PI * 2);
+          g.arc(8, 4, 4, 0, Math.PI * 2);
+          g.arc(2, -6, 3, 0, Math.PI * 2);
+          g.fill();
+        }
+      } else if (o.id === "tissue") {
+        g.fillStyle = "#fff";
+        roundRect(g, -22, -12, 44, 26, 4);
+        g.fill();
+        g.fillStyle = "#ffd6e0";
+        g.beginPath();
+        g.moveTo(-8, -12);
+        g.quadraticCurveTo(0, -28 - crack * 10, 8, -12);
+        g.lineTo(6, -4);
+        g.lineTo(-6, -4);
+        g.fill();
+        g.strokeStyle = "#e7b8c4";
+        g.strokeRect(-22, -12, 44, 26);
+        if (o.broken) {
+          g.fillStyle = "#fff";
+          g.beginPath();
+          g.ellipse(-16, 16, 8, 4, -0.4, 0, Math.PI * 2);
+          g.ellipse(10, 18, 10, 4, 0.3, 0, Math.PI * 2);
+          g.fill();
+        }
+      } else if (o.id === "tp") {
+        g.fillStyle = "#fffaf2";
+        g.beginPath();
+        g.arc(0, 0, 16, 0, Math.PI * 2);
+        g.fill();
+        g.fillStyle = "#f3d3b0";
+        g.beginPath();
+        g.arc(0, 0, 6, 0, Math.PI * 2);
+        g.fill();
+        if (crack > 0.2) {
+          g.strokeStyle = "#fff";
+          g.lineWidth = 4;
+          g.beginPath();
+          g.moveTo(10, 4);
+          g.quadraticCurveTo(24, 16 + crack * 20, 8, 28 + (o.broken ? 24 : crack * 10));
+          g.stroke();
+        }
+      } else if (o.id === "curtain") {
+        g.fillStyle = "#f4efe4";
+        roundRect(g, -30, -34, 26, 70, 4);
+        g.fill();
+        g.fillStyle = o.broken ? "#d9d0c4" : "#ffe8d2";
+        if (o.broken) {
+          roundRect(g, 4, 8, 26, 28, 4);
+          g.fill();
+        } else {
+          var drop = crack * 18;
+          roundRect(g, 4, -34 + drop, 26, 70 - drop, 4);
+          g.fill();
+        }
+        g.fillStyle = "#e7a15a";
+        g.fillRect(-32, -38, 66, 6);
+      } else if (o.id === "plant") {
+        g.fillStyle = "#d4654a";
+        g.beginPath();
+        g.moveTo(-14, 8);
+        g.lineTo(14, 8);
+        g.lineTo(10, 24);
+        g.lineTo(-10, 24);
+        g.fill();
+        g.fillStyle = o.broken ? "#8d6a45" : "#c9844a";
+        g.beginPath();
+        g.ellipse(0, 22, 16, 5, 0, 0, Math.PI * 2);
+        g.fill();
+        g.fillStyle = o.broken ? "#2f6b40" : "#3d9a5b";
+        if (o.broken) {
+          g.beginPath();
+          g.ellipse(-16, 20, 12, 6, -0.6, 0, Math.PI * 2);
+          g.ellipse(12, 16, 10, 5, 0.8, 0, Math.PI * 2);
+          g.fill();
+        } else {
+          g.beginPath();
+          g.ellipse(-10, -8 - crack * 2, 12, 16, -0.4, 0, Math.PI * 2);
+          g.ellipse(12, -12, 11, 15, 0.5, 0, Math.PI * 2);
+          g.ellipse(0, -18, 10, 14, 0, 0, Math.PI * 2);
+          g.fill();
+        }
+      } else if (o.id === "vase") {
+        if (o.broken) {
+          g.fillStyle = "#8fd3e2";
+          g.beginPath();
+          g.moveTo(-16, 10);
+          g.lineTo(-6, 0);
+          g.lineTo(-12, 16);
+          g.fill();
+          g.beginPath();
+          g.moveTo(4, 6);
+          g.lineTo(16, 14);
+          g.lineTo(6, 18);
+          g.fill();
+          g.fillStyle = "#3d9a5b";
+          g.beginPath();
+          g.ellipse(0, 8, 8, 4, 0.6, 0, Math.PI * 2);
+          g.fill();
+        } else {
+          g.fillStyle = "#7ec8e3";
+          g.beginPath();
+          g.moveTo(-8, -8);
+          g.quadraticCurveTo(-16, 16, -8, 20);
+          g.lineTo(8, 20);
+          g.quadraticCurveTo(16, 16, 8, -8);
+          g.closePath();
+          g.fill();
+          g.fillStyle = "#3d9a5b";
+          g.beginPath();
+          g.ellipse(-8, -16, 8, 10, -0.4, 0, Math.PI * 2);
+          g.ellipse(8, -18, 7, 11, 0.4, 0, Math.PI * 2);
+          g.fill();
+          g.fillStyle = "#e23b4a";
+          g.beginPath();
+          g.arc(0, -22, 4, 0, Math.PI * 2);
+          g.fill();
+          if (crack > 0.45) {
+            g.strokeStyle = "#fff";
+            g.lineWidth = 1.6;
+            g.beginPath();
+            g.moveTo(-4, 0);
+            g.lineTo(2, 10);
+            g.stroke();
+          }
+        }
+      } else if (o.id === "sofa") {
+        g.fillStyle = o.broken ? "#8ea4b8" : "#6d8caf";
+        roundRect(g, -40, -16, 80, 36, 12);
+        g.fill();
+        roundRect(g, -46, -8, 14, 28, 6);
+        g.fill();
+        roundRect(g, 32, -8, 14, 28, 6);
+        g.fill();
+        g.fillStyle = o.broken ? "#d7e2ea" : "#f7fbff";
+        roundRect(g, -22, -22, 22, 18, 6);
+        g.fill();
+        roundRect(g, 2, -22, 22, 18, 6);
+        g.fill();
+        if (o.broken) {
+          g.fillStyle = "#fff";
+          g.beginPath();
+          g.arc(-6, -2, 5, 0, Math.PI * 2);
+          g.arc(10, 2, 4, 0, Math.PI * 2);
+          g.fill();
+        }
+      }
+      g.restore();
+      if (!o.broken && (o.prog > 0.01 || holding === o)) drawRing(g, o);
+      if (o.comboEnd && combo > 0 && !o.broken) {
+        var maxT = def().comboTime || COMBO_FALLBACK;
+        g.strokeStyle = "#f0b429";
+        g.lineWidth = 5;
+        g.beginPath();
+        g.arc(o.x, o.y, o.r + 16, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * clamp(combo / maxT, 0, 1));
+        g.stroke();
+        g.font = "800 12px " + FONT;
+        g.textAlign = "center";
+        g.fillStyle = "#9a6700";
+        g.fillText("コンボ", o.x, o.y - o.r - 28);
+      }
+      if (roundIndex === 0 && o.id === "cushion" && coachT > 0 && !o.broken && holding !== o) {
+        var pulse = 0.55 + 0.45 * Math.sin(clock * 6);
+        g.strokeStyle = "rgba(226,59,74," + pulse + ")";
+        g.lineWidth = 4;
+        g.beginPath();
+        g.arc(o.x, o.y, o.r + 16 + (1 - pulse) * 6, 0, Math.PI * 2);
+        g.stroke();
+      }
+      drawLabel(g, o);
+    }
+
+    function drawRoom(g, t) {
+      var th = threat();
+      var look = alert.kind === "look";
+      g.fillStyle = "#f6d3c4";
+      g.fillRect(0, 0, LW, LH);
+      g.fillStyle = "#f3c3b0";
+      g.fillRect(0, 0, LW, 34);
+      var wx = 18;
+      g.fillStyle = "#7ec8e3";
+      roundRect(g, wx, 36, 62, 78, 6);
+      g.fill();
+      g.fillStyle = "#fff";
+      g.globalAlpha = 0.35;
+      g.fillRect(wx + 8, 48, 18, 28);
+      g.globalAlpha = 1;
+      g.strokeStyle = "#e7a15a";
+      g.lineWidth = 4;
+      g.strokeRect(wx, 36, 62, 78);
+      g.fillStyle = "#e7b089";
+      g.fillRect(0, 236, LW, 10);
+      g.fillStyle = "#e0a36a";
+      g.fillRect(0, 246, LW, LH - 246);
+      var plank;
+      g.strokeStyle = "rgba(140,72,32,.25)";
+      g.lineWidth = 2;
+      for (plank = 0; plank < 6; plank++) {
+        g.beginPath();
+        g.moveTo(0, 270 + plank * 42);
+        g.lineTo(LW, 270 + plank * 42);
+        g.stroke();
+      }
+      g.fillStyle = "#ef6b5a";
+      g.beginPath();
+      g.ellipse(200, 470, 78, 28, 0, 0, Math.PI * 2);
+      g.fill();
+      g.fillStyle = "#f7a394";
+      g.beginPath();
+      g.ellipse(200, 466, 48, 14, 0, 0, Math.PI * 2);
+      g.fill();
+
+      var doorX = 308;
+      var doorY = 42;
+      var doorW = 52;
+      var doorH = 168;
+      g.fillStyle = "#8c4a32";
+      roundRect(g, doorX, doorY, doorW, doorH, 4);
+      g.fill();
+      g.fillStyle = "#f0c14a";
+      g.beginPath();
+      g.arc(doorX + 12, doorY + 96, 3, 0, Math.PI * 2);
+      g.fill();
+      if (th > 0.02) {
+        g.fillStyle = "rgba(40,18,12," + (0.08 + th * 0.28) + ")";
+        g.beginPath();
+        g.moveTo(doorX, doorY + doorH);
+        g.lineTo(doorX + doorW, doorY + doorH);
+        g.lineTo(doorX + 20 - th * 80, 500);
+        g.lineTo(doorX - 40 - th * 120, 500);
+        g.fill();
+        g.fillStyle = "rgba(90,50,30," + th + ")";
+        g.beginPath();
+        g.ellipse(doorX - 10, 300, 8, 4, -0.4, 0, Math.PI * 2);
+        g.ellipse(doorX - 28, 312, 8, 4, -0.2, 0, Math.PI * 2);
+        g.fill();
+      }
+      if (look || (phase === "failpause" && failReason === "caught")) {
+        var open = 18;
+        g.fillStyle = "#2a1c18";
+        g.fillRect(doorX + doorW - open, doorY + 8, open, doorH - 16);
+        g.fillStyle = "#f3c2a4";
+        g.beginPath();
+        g.ellipse(doorX + doorW - 8, doorY + 78, 10, 16, 0, 0, Math.PI * 2);
+        g.fill();
+        g.fillStyle = "#fff";
+        g.beginPath();
+        g.arc(doorX + doorW - 10, doorY + 74, 3.4, 0, Math.PI * 2);
+        g.fill();
+        g.fillStyle = "#3a2418";
+        g.beginPath();
+        g.arc(doorX + doorW - 11, doorY + 74, 1.6, 0, Math.PI * 2);
+        g.fill();
+        g.strokeStyle = "#3a2418";
+        g.lineWidth = 1.5;
+        g.beginPath();
+        g.moveTo(doorX + doorW - 16, doorY + 66);
+        g.lineTo(doorX + doorW - 6, doorY + 68);
+        g.stroke();
+      }
+
+      g.fillStyle = "#e7b089";
+      roundRect(g, BASE.vase.x - 38, BASE.vase.y + 24, 76, 8, 2);
+      g.fill();
+      g.fillStyle = "#c9844a";
+      roundRect(g, BASE.tissue.x - 30, BASE.tissue.y + 18, 60, 10, 3);
+      g.fill();
+
+      var i;
+      for (i = 0; i < objects.length; i++) drawObject(g, objects[i], t);
+
+      for (i = 0; i < bits.length; i++) {
+        g.globalAlpha = clamp(bits[i].life, 0, 1);
+        g.fillStyle = bits[i].color;
+        g.beginPath();
+        g.arc(bits[i].x, bits[i].y, bits[i].r, 0, Math.PI * 2);
+        g.fill();
+      }
+      g.globalAlpha = 1;
+
+      var frozen = alert.kind === "look" || phase === "failpause";
+      drawCat(g, catX, catY, desiredMood(), t, frozen);
+
+      if (look && phase === "play") {
+        g.fillStyle = "rgba(80, 10, 24, .16)";
+        g.fillRect(0, 0, LW, LH);
+      }
+
+      for (i = 0; i < floats.length; i++) {
+        g.globalAlpha = clamp(floats[i].life, 0, 1);
+        g.font = "900 16px " + FONT;
+        g.textAlign = "center";
+        g.lineWidth = 4;
+        g.strokeStyle = "rgba(255,250,246,.9)";
+        g.strokeText(floats[i].text, floats[i].x, floats[i].y);
+        g.fillStyle = "#9f1239";
+        g.fillText(floats[i].text, floats[i].x, floats[i].y);
+      }
+      g.globalAlpha = 1;
+
+      if (phase === "play" && roundIndex === 0 && coachT > 0) {
+        g.font = "900 18px " + FONT;
+        g.textAlign = "center";
+        g.fillStyle = "rgba(255,250,246,.94)";
+        var cap = "おしたまま＝こわす";
+        var tw = g.measureText(cap).width + 22;
+        roundRect(g, (LW - tw) / 2, LH - 42, tw, 28, 10);
+        g.fill();
+        g.fillStyle = "#3a241c";
+        g.textBaseline = "middle";
+        g.fillText(cap, LW / 2, LH - 28);
+        g.textBaseline = "alphabetic";
+      }
+    }
+
+    function drawCard(rank, comment, why, didWin) {
+      var w = shot.width;
+      var h = shot.height;
+      var g = sctx;
+      var grd = g.createLinearGradient(0, 0, 0, h);
+      grd.addColorStop(0, "#fffaf4");
+      grd.addColorStop(1, "#ffe1cf");
+      g.fillStyle = grd;
+      g.fillRect(0, 0, w, h);
+      g.strokeStyle = "#e23b4a";
+      g.lineWidth = 10;
+      g.strokeRect(18, 18, w - 36, h - 36);
+      g.strokeStyle = "#e7b089";
+      g.lineWidth = 2;
+      g.strokeRect(30, 30, w - 60, h - 60);
+      g.fillStyle = "#3a241c";
+      g.textAlign = "center";
+      g.textBaseline = "middle";
+      g.font = "800 22px " + FONT;
+      g.fillText("お留守番 事故", w / 2, 78);
+      g.font = "900 48px " + FONT;
+      g.fillText("被害額請求書", w / 2, 128);
+      g.font = "700 20px " + FONT;
+      g.fillStyle = "#8a5c50";
+      g.fillText("2026-10-24  ·  加害者 こねこのモカ", w / 2, 172);
+
+      g.save();
+      g.translate(w - 150, 210);
+      g.rotate(-0.18);
+      g.strokeStyle = didWin ? "#1f8a4c" : "#e23b4a";
+      g.lineWidth = 6;
+      g.beginPath();
+      g.arc(0, 0, 58, 0, Math.PI * 2);
+      g.stroke();
+      g.fillStyle = didWin ? "#1f8a4c" : "#e23b4a";
+      g.font = "900 22px " + FONT;
+      g.fillText(didWin ? "達成" : (why.length > 4 ? why.slice(0, 4) : why), 0, 2);
+      g.restore();
+
+      g.save();
+      g.translate(96, 300);
+      g.scale(0.82, 0.82);
+      drawCat(g, 0, 0, didWin ? "yay" : (failReason === "caught" ? "busted" : "sad"), 1, true);
+      g.restore();
+
+      g.font = "900 54px " + FONT;
+      g.fillStyle = "#9f1239";
+      g.textAlign = "center";
+      g.fillText(yen(totalYen), w / 2 + 50, 286);
+      g.font = "800 22px " + FONT;
+      g.fillStyle = "#3a241c";
+      g.fillText("こわした " + itemCount() + "個", w / 2 + 50, 332);
+
+      var bill = billLines();
+      g.font = "700 22px " + FONT;
+      var i;
+      if (!bill.length) {
+        g.fillStyle = "#8a5c50";
+        g.textAlign = "center";
+        g.fillText("こわしたもの なし", w / 2, 420);
+      }
+      for (i = 0; i < bill.length; i++) {
+        var by = 400 + i * 32;
+        var label = bill[i].name + (bill[i].n > 1 ? " ×" + bill[i].n : "");
+        g.fillStyle = "#3a241c";
+        g.textAlign = "left";
+        g.fillText(label, 78, by);
+        g.textAlign = "right";
+        g.fillText(yen(bill[i].yen), w - 78, by);
+      }
+
+      g.textAlign = "center";
+      g.font = "900 32px " + FONT;
+      var lines = wrapText(g, "「" + rank + "」", w - 140);
+      var y = 690;
+      for (i = 0; i < lines.length; i++) {
+        g.fillStyle = "#3a241c";
+        g.fillText(lines[i], w / 2, y);
+        y += 40;
+      }
+      g.font = "700 22px " + FONT;
+      g.fillStyle = "#7a4a40";
+      var clines = wrapText(g, "飼い主「" + comment + "」", w - 150);
+      for (i = 0; i < clines.length; i++) {
+        g.fillText(clines[i], w / 2, y);
+        y += 30;
+      }
+      if (!didWin) {
+        g.font = "900 28px " + FONT;
+        g.fillStyle = "#e23b4a";
+        g.fillText(why, w / 2, Math.min(h - 78, y + 10));
+      }
+      g.font = "700 16px " + FONT;
+      g.fillStyle = "#8a5c50";
+      g.fillText("こわして帰宅前", w / 2, h - 48);
+    }
+
+    function wrapText(g, text, maxW) {
+      var lines = [];
+      var line = "";
+      var i;
+      for (i = 0; i < text.length; i++) {
+        var ch = text.charAt(i);
+        var test = line + ch;
+        if (line && g.measureText(test).width > maxW) {
+          lines.push(line);
+          line = ch;
+        } else line = test;
+      }
+      if (line) lines.push(line);
+      return lines;
+    }
+
+    function geom() {
+      var rect = canvas.getBoundingClientRect();
+      var s = Math.min(rect.width / LW, rect.height / LH);
+      if (s <= 0) s = 1;
+      return {
+        rect: rect,
+        s: s,
+        ox: (rect.width - LW * s) / 2,
+        oy: (rect.height - LH * s) / 2
+      };
+    }
+    function toLogical(e) {
+      var gm = geom();
+      return {
+        x: (e.clientX - gm.rect.left - gm.ox) / gm.s,
+        y: (e.clientY - gm.rect.top - gm.oy) / gm.s
+      };
+    }
+    function resize() {
+      var rect = canvas.getBoundingClientRect();
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      var w = Math.max(2, rect.width);
+      var h = Math.max(2, rect.height);
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+    }
+
+    function draw() {
+      var gm = geom();
+      var shx = 0;
+      var shy = 0;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (shakeT > 0 && !reduceMotion) {
+        shx = Math.sin(shakeT * 70) * 5 * shakeT;
+        shy = Math.cos(shakeT * 60) * 3 * shakeT;
+      }
+      ctx.setTransform(dpr * gm.s, 0, 0, dpr * gm.s, dpr * (gm.ox + shx), dpr * (gm.oy + shy));
+      drawRoom(ctx, clock);
+    }
+
+    function pointerDown(e) {
+      if (e.isPrimary === false) return;
+      if (ptr.id != null) return;
+      if (e.button != null && e.button !== 0) return;
+      e.preventDefault();
+      try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+      audioGesture();
+      var p = toLogical(e);
+      ptr.id = e.pointerId;
+      ptr.down = true;
+      ptr.seen = true;
+      ptr.x = p.x;
+      ptr.y = p.y;
+      if (phase !== "play") return;
+      if (alert.kind === "look") {
+        bust("caught");
+        return;
+      }
+      var hit = pickObj(p.x, p.y);
+      if (!hit) {
+        floatText(p.x, p.y - 10, "そこはこわせない");
+        say("そこはこわせない");
+        return;
+      }
+      if (hit.broken) {
+        floatText(hit.x, hit.y - hit.r, "もうこわれてる");
+        say(hit.name + "は、もうこわれてる");
+        return;
+      }
+      holding = hit;
+      coachT = 0;
+      shredAcc = 0;
+      if (hit.noisy && hit.prog < 0.05) say("音マーク。こわれると足音");
+      else say(hit.name + "、こわしてる");
+      setMood("gleeful");
+    }
+    function pointerMove(e) {
+      if (ptr.id != null && e.pointerId !== ptr.id) return;
+      var p = toLogical(e);
+      ptr.seen = true;
+      if (phase === "play" && alert.kind === "look") {
+        if (!ptr.anchor) ptr.anchor = { x: p.x, y: p.y };
+        else {
+          var dx = p.x - ptr.anchor.x;
+          var dy = p.y - ptr.anchor.y;
+          if (dx * dx + dy * dy > MOVE_FAIL * MOVE_FAIL) bust("caught");
+        }
+      }
+      ptr.x = p.x;
+      ptr.y = p.y;
+    }
+    function pointerUp(e) {
+      if (ptr.id != null && e.pointerId !== ptr.id) return;
+      var was = holding;
+      holding = null;
+      ptr.down = false;
+      ptr.id = null;
+      if (phase === "play" && was && !was.broken && alert.kind !== "look") {
+        floatText(was.x, was.y - was.r - 6, "まだこわれてない");
+        say(was.name + "、まだこわれてない");
+      }
+    }
+
+    function loop(now) {
+      var dt = last ? (now - last) / 1000 : 0;
+      last = now;
+      if (dt > 0.05) dt = 0.05;
+      if (dt < 0) dt = 0;
+      update(dt);
+      draw();
+      if (bannerUntil && now > bannerUntil && phase === "play") hideBanner();
+      requestAnimationFrame(loop);
+    }
+
+    canvas.addEventListener("pointerdown", pointerDown, { passive: false });
+    canvas.addEventListener("pointermove", pointerMove, { passive: true });
+    canvas.addEventListener("pointerup", pointerUp);
+    canvas.addEventListener("pointercancel", pointerUp);
+    canvas.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+    window.addEventListener("resize", resize);
+    if (window.ResizeObserver) {
+      var ro = new ResizeObserver(resize);
+      ro.observe(canvas.parentNode);
+    }
+
+    btnStart.addEventListener("click", function () {
+      audioGesture();
+      hearts = 2;
+      totalYen = 0;
+      log = [];
+      failReason = "";
+      won = false;
+      updateHearts(false);
+      startRound(0, false);
+    });
+    btnPreview.addEventListener("click", function () {
+      audioGesture();
+      startRound(previewIndex, false);
+    });
+    btnRetry.addEventListener("click", function () {
+      audioGesture();
+      hearts = 2;
+      totalYen = 0;
+      log = [];
+      failReason = "";
+      won = false;
+      updateHearts(false);
+      startRound(0, false);
+    });
+    btnSave.addEventListener("click", function () {
+      var a = document.createElement("a");
+      a.href = shot.toDataURL("image/png");
+      a.download = "moka-bill.png";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    });
+    muteBtn.addEventListener("click", function () {
+      audioGesture();
+      muted = !muted;
+      applyMute();
+      saveStore();
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.repeat) return;
+      if ((e.code === "Enter" || e.code === "Space") && phase === "title") {
+        e.preventDefault();
+        btnStart.click();
+      } else if (e.code === "Enter" && phase === "preview") {
+        e.preventDefault();
+        btnPreview.click();
+      } else if (e.code === "Enter" && phase === "result") {
+        e.preventDefault();
+        btnRetry.click();
+      }
+    });
+
+    function dressRoom() {
+      var d = ROUNDS[0];
+      var i;
+      objects = [];
+      for (i = 0; i < d.objects.length; i++) objects.push(makeObj(d.objects[i], d.mul));
+    }
+
+    loadStore();
+    applyMute();
+    refreshBest();
+    updateHearts(false);
+    dressRoom();
+    resize();
+    requestAnimationFrame(loop);
+  })();
+  </script>
+</body>
+</html>
