@@ -1,0 +1,1921 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#f3b4c4">
+  <meta name="description" content="ぴったりケーキ。ペン店長が丸いケーキを人数ぶん等分する。押したまま包丁が回り、離すとカット。許容を超えるとハートが減る。">
+  <meta property="og:title" content="ぴったりケーキ — Cake Cut">
+  <meta property="og:description" content="丸いケーキを等分。許容は画面に表示。練習はハートが減らない。">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://grokbot365game.github.io/daily-casual-games/games/2026-10-25-cake-cut/">
+  <title>ぴったりケーキ</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='8' fill='%23f3b4c4'/%3E%3Ccircle cx='8' cy='8.2' r='4.2' fill='%23fffaf3'/%3E%3Cpath d='M8 4.2v8M4.2 8.2h7.6' stroke='%23e4547a' stroke-width='1'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      --ink: #3b2430;
+      --muted: #8a5d6c;
+      --paper: #fffaf7;
+      --line: rgba(59, 36, 48, .14);
+      --accent: #e4547a;
+      --gold: #f0b429;
+      --good: #146c43;
+      --bad: #9f1239;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none; }
+    body {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      color: var(--ink);
+      background:
+        radial-gradient(80% 42% at 50% -10%, #fff 0%, transparent 58%),
+        linear-gradient(180deg, #ffe4ec 0%, #f7c4d4 46%, #f0b7a0 100%);
+      font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Yu Gothic", "WenQuanYi Micro Hei", "Droid Sans Fallback", "Meiryo", sans-serif;
+      font-size: 16px;
+      line-height: 1.4;
+      -webkit-text-size-adjust: 100%;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: none;
+    }
+    [hidden] { display: none !important; }
+    button, a { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+    button:focus-visible, a:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+    .back, .mute {
+      position: fixed;
+      z-index: 70;
+      top: max(10px, env(safe-area-inset-top));
+      border: 0;
+      border-radius: 999px;
+      color: var(--ink);
+      background: rgba(255, 250, 247, .94);
+      box-shadow: inset 0 0 0 1px var(--line);
+      font-weight: 800;
+      text-decoration: none;
+    }
+    .back {
+      left: max(12px, env(safe-area-inset-left));
+      padding: 8px 14px;
+      min-height: 44px;
+      display: grid;
+      place-items: center;
+      font-size: .78rem;
+      letter-spacing: .04em;
+    }
+    .mute {
+      right: max(12px, env(safe-area-inset-right));
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+    }
+    .mute svg { width: 22px; height: 22px; display: block; }
+    .mute .slash { display: none; }
+    .mute.is-muted .slash { display: block; }
+    .shell {
+      height: 100%;
+      max-width: 520px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding:
+        calc(max(8px, env(safe-area-inset-top)) + 48px)
+        max(10px, env(safe-area-inset-right))
+        max(8px, env(safe-area-inset-bottom))
+        max(10px, env(safe-area-inset-left));
+      min-height: 0;
+    }
+    .hud {
+      flex: none;
+      border-radius: 16px;
+      padding: 6px 8px 7px;
+      background: rgba(255, 250, 247, .96);
+      box-shadow: inset 0 0 0 1px var(--line), 0 8px 18px rgba(59, 36, 48, .08);
+    }
+    .hud-row { display: flex; gap: 8px; align-items: center; }
+    .hud-main { flex: 1; min-width: 0; }
+    .hud-top, .hud-stats {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px 8px;
+    }
+    .hud-top b { font-size: .92rem; letter-spacing: .03em; }
+    .say {
+      margin: 1px 0 2px;
+      min-height: 1.25em;
+      font-size: .84rem;
+      font-weight: 900;
+      line-height: 1.3;
+    }
+    .say .who { color: var(--accent); margin-right: 4px; letter-spacing: .06em; font-size: .75rem; }
+    .hud-stats { font-size: .78rem; font-weight: 800; color: var(--muted); }
+    .hud-stats strong, .tol {
+      color: var(--bad);
+      font-variant-numeric: tabular-nums;
+    }
+    .tol {
+      background: #ffe4ea;
+      border-radius: 999px;
+      padding: 1px 8px;
+    }
+    .note {
+      margin: 2px 0 0;
+      font-size: .75rem;
+      font-weight: 800;
+      color: var(--ink);
+    }
+    .hearts { letter-spacing: .08em; font-size: .95rem; }
+    .hearts i { font-style: normal; color: #e4547a; }
+    .hearts i.off { color: #ead5dc; }
+    .hearts i.pop { display: inline-block; animation: heartpop .35s ease; }
+    @keyframes heartpop {
+      0% { transform: scale(1.45); }
+      100% { transform: scale(1); }
+    }
+    .stage {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      border-radius: 22px;
+      overflow: hidden;
+      background: #fff1e8;
+      touch-action: none;
+      box-shadow: inset 0 0 0 1px rgba(59, 36, 48, .08);
+    }
+    canvas#game {
+      width: 100%;
+      height: 100%;
+      display: block;
+      touch-action: none;
+      cursor: pointer;
+    }
+    .hint {
+      flex: none;
+      margin: 0;
+      min-height: 1.35em;
+      text-align: center;
+      font-size: .84rem;
+      font-weight: 900;
+    }
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding:
+        max(12px, env(safe-area-inset-top))
+        12px
+        max(12px, env(safe-area-inset-bottom));
+      background: rgba(48, 20, 32, .62);
+      overflow: hidden;
+    }
+    .card {
+      width: min(100%, 420px);
+      max-height: calc(100dvh - 24px);
+      overflow: auto;
+      margin: 0 auto;
+      padding: 14px 14px 12px;
+      border-radius: 22px;
+      background: var(--paper);
+      box-shadow: 0 18px 48px rgba(48, 20, 32, .32);
+      text-align: center;
+    }
+    .card h1, .card h2 {
+      margin: 0;
+      font-size: 1.5rem;
+      letter-spacing: .04em;
+      line-height: 1.2;
+    }
+    .card h2.ok { color: var(--good); }
+    .card h2.bad { color: var(--bad); }
+    .en, .fine, .best {
+      margin: 3px 0;
+      color: var(--muted);
+      font-size: .75rem;
+      font-weight: 800;
+    }
+    .rules {
+      margin: 8px 0;
+      padding: 8px 10px 8px 28px;
+      border-radius: 14px;
+      background: #fff1f4;
+      text-align: left;
+      font-weight: 900;
+      font-size: .9rem;
+      line-height: 1.45;
+    }
+    .rules li { margin: 4px 0; }
+    .go, .retry, .share, .ghost {
+      display: block;
+      width: 100%;
+      min-height: 48px;
+      margin-top: 8px;
+      border: 0;
+      border-radius: 14px;
+      font-weight: 900;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .go, .retry { background: var(--accent); color: white; }
+    .share { background: #1d9bf0; color: white; text-align: center; line-height: 48px; }
+    .ghost { background: #fff; box-shadow: inset 0 0 0 1px var(--line); }
+    .fine a { color: var(--muted); font-weight: 900; }
+    .quote {
+      margin: 6px 0 2px;
+      font-size: 1.7rem;
+      font-weight: 900;
+      line-height: 1.25;
+      letter-spacing: .04em;
+    }
+    .res-score { margin: 2px 0; font-weight: 900; font-size: 1.05rem; }
+    .why { margin: 4px 0; font-weight: 900; font-size: .95rem; text-align: left; }
+    .why.ok { color: var(--good); }
+    .why.bad { color: var(--bad); }
+    .meta-line {
+      margin: 4px 0;
+      font-weight: 900;
+      font-size: .92rem;
+    }
+    .slices {
+      list-style: none;
+      margin: 8px 0;
+      padding: 0;
+      text-align: left;
+    }
+    .slices li {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 4px 0;
+      padding: 6px 8px;
+      border-radius: 10px;
+      background: #e7f6ee;
+      color: var(--good);
+      font-weight: 900;
+      font-size: 1.02rem;
+      font-variant-numeric: tabular-nums;
+    }
+    .slices li.bad { background: #fde8ee; color: var(--bad); }
+    .slices li b { font-weight: 900; }
+    .worst {
+      margin: 6px 0 2px;
+      font-size: 1.45rem;
+      font-weight: 900;
+      letter-spacing: .02em;
+      font-variant-numeric: tabular-nums;
+    }
+    .worst.ok { color: var(--good); }
+    .worst.bad { color: var(--bad); }
+    #shot {
+      width: 100%;
+      height: auto;
+      max-height: 280px;
+      object-fit: contain;
+      border-radius: 12px;
+      background: #fff;
+      box-shadow: inset 0 0 0 1px var(--line);
+    }
+    .mascot { width: 84px; margin: 0 auto; }
+    .hud .mascot { width: 64px; flex: none; }
+    .mascot svg { width: 100%; height: auto; display: block; overflow: visible; }
+    .mascot .face { display: none; }
+    .mascot[data-mood="idle"] .face.idle,
+    .mascot[data-mood="focus"] .face.focus,
+    .mascot[data-mood="happy"] .face.happy,
+    .mascot[data-mood="panic"] .face.panic { display: block; }
+    .mascot[data-mood="idle"] { animation: bob 2.2s ease-in-out infinite; }
+    .mascot.is-pop[data-mood="happy"] { animation: hop .48s ease; }
+    .mascot.is-pop[data-mood="panic"] { animation: shake .4s ease; }
+    @keyframes bob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+    @keyframes hop {
+      0% { transform: translateY(0); }
+      40% { transform: translateY(-10px); }
+      100% { transform: translateY(0); }
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      30% { transform: translateX(-4px) rotate(-3deg); }
+      70% { transform: translateX(4px) rotate(3deg); }
+    }
+    .live {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+    }
+    @media (max-height: 740px) {
+      .card { padding: 10px 12px; }
+      .card h1, .card h2 { font-size: 1.28rem; }
+      .rules { font-size: .8rem; margin: 6px 0; }
+      .mascot { width: 64px; }
+      .hud .mascot { width: 52px; }
+      .say { font-size: .78rem; }
+      .quote { font-size: 1.35rem; }
+      .worst { font-size: 1.2rem; }
+      .slices li { font-size: .92rem; padding: 4px 8px; }
+      #shot { max-height: 180px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .mascot, .hearts i { animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <a class="back" href="../../index.html">ギャラリー</a>
+  <button type="button" class="mute is-muted" id="mute" aria-pressed="true" aria-label="音を出す">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="M4 9h4l5-4v14l-5-4H4z"/>
+      <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 9.5a4 4 0 0 1 0 5"/>
+      <path class="slash" fill="none" stroke="#e11d48" stroke-width="2.4" stroke-linecap="round" d="M6 5l13 14"/>
+    </svg>
+  </button>
+  <p class="live" id="live" aria-live="polite"></p>
+  <div class="shell">
+    <header class="hud">
+      <div class="hud-row">
+        <div id="hud-mascot"></div>
+        <div class="hud-main">
+          <div class="hud-top">
+            <b>ぴったりケーキ</b>
+            <span class="hearts" id="hearts" aria-label="ハート2"><i>♥</i><i>♥</i></span>
+          </div>
+          <p class="say" id="say"><span class="who">ペン店長</span><span id="say-text">等分、たのむよ</span></p>
+          <div class="hud-stats">
+            <span id="round-label">ラウンド 1/6 練習</span>
+            <span class="tol" id="tol-label">許容 ±8%</span>
+            <span id="target-label">目標 50.0%</span>
+            <span id="cut-label">カット 0/1</span>
+          </div>
+          <p class="note" id="note">うすい線が等分の位置。失敗してもハートは減らない</p>
+        </div>
+      </div>
+    </header>
+    <div class="stage" id="stage">
+      <canvas id="game" width="360" height="520" aria-label="ぴったりケーキ。押したまま包丁が回り、離すとカット"></canvas>
+    </div>
+    <p class="hint" id="hint">押したまま（ゆび・マウス・スペース）</p>
+  </div>
+
+  <div class="overlay" id="title">
+    <div class="card">
+      <div id="title-mascot"></div>
+      <h1>ぴったりケーキ</h1>
+      <p class="en">Cake Cut · Day 30</p>
+      <ol class="rules">
+        <li>押したまま回して離すとカット。前の線から4°未満は無効。1本目は12時固定、最後の1切れは残り。</li>
+        <li>ずれ（表示の小数1位）が許容を超える一切れ（残り含む）があると失敗。切る最中に割合は出ない。許容：練習±8、3人±6、4人±5、5人±4、6人±3、いちご±5。</li>
+        <li>失敗でハート−1（2つ、0で終了）。練習は減らず、成功まで進まない。いちご回は中心の白点で1切れに1つ。白点が線の上なら次の一切れ。</li>
+      </ol>
+      <p class="best" id="title-best" hidden></p>
+      <button type="button" class="go" id="btn-start">カットをはじめる</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="between" hidden>
+    <div class="card" id="between-card">
+      <div id="between-mascot"></div>
+      <p class="en" id="between-kicker">ラウンド 1/6 練習</p>
+      <h2 id="between-title">練習クリア</h2>
+      <p class="meta-line" id="between-meta">目標 50.0%　許容 ±8%</p>
+      <ol class="slices" id="between-slices"></ol>
+      <p class="worst ok" id="between-worst">最大のずれ 0.0%</p>
+      <p class="why ok" id="between-why"></p>
+      <button type="button" class="retry" id="btn-next">つぎへ</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="end" hidden>
+    <div class="card" id="end-card">
+      <div id="end-mascot"></div>
+      <canvas id="shot" width="720" height="960" aria-label="結果カード"></canvas>
+      <p class="quote" id="end-quote">『ケーキ泥棒』</p>
+      <p class="res-score" id="end-score">平均誤差 0.0%　クリア 0/6</p>
+      <p class="fine" id="end-fine">平均は、各ラウンド最後の判定</p>
+      <p class="why" id="end-why"></p>
+      <p class="meta-line" id="end-meta"></p>
+      <ol class="slices" id="end-slices"></ol>
+      <p class="worst" id="end-worst"></p>
+      <p class="best" id="end-best" hidden></p>
+      <button type="button" class="retry" id="btn-retry">すぐリトライ</button>
+      <a class="share" id="btn-share" href="https://x.com/intent/tweet" target="_blank" rel="noopener noreferrer">結果をXでシェア</a>
+      <button type="button" class="ghost" id="btn-save">カードを保存</button>
+      <p class="fine"><a href="../../index.html">ギャラリーへ</a></p>
+    </div>
+  </div>
+
+  <template id="mascot-tpl">
+    <div class="mascot" data-mood="idle">
+      <svg viewBox="0 0 140 160" aria-hidden="true">
+        <ellipse cx="70" cy="152" rx="34" ry="6" fill="rgba(50,24,36,.16)"/>
+        <ellipse cx="48" cy="146" rx="16" ry="8" fill="#f0b429"/>
+        <ellipse cx="94" cy="146" rx="16" ry="8" fill="#f0b429"/>
+        <ellipse cx="26" cy="104" rx="12" ry="22" fill="#243044" transform="rotate(18 26 104)"/>
+        <ellipse cx="114" cy="102" rx="12" ry="22" fill="#243044" transform="rotate(-22 114 102)"/>
+        <path d="M118 90c8 0 14 10 6 18-8-4-12-8-14-4z" fill="#f4a4b8"/>
+        <ellipse cx="70" cy="108" rx="42" ry="36" fill="#243044"/>
+        <ellipse cx="70" cy="116" rx="26" ry="24" fill="#fffdf8"/>
+        <path d="M46 98h48l-6 30H52z" fill="#fff"/>
+        <path d="M46 98h48l-3 8H49z" fill="#e4547a"/>
+        <circle cx="70" cy="116" r="4.5" fill="#e4547a"/>
+        <ellipse cx="70" cy="58" rx="36" ry="32" fill="#243044"/>
+        <ellipse cx="70" cy="66" rx="24" ry="20" fill="#fffdf8"/>
+        <ellipse cx="46" cy="72" rx="6" ry="3.4" fill="#ffb3c4"/>
+        <ellipse cx="94" cy="72" rx="6" ry="3.4" fill="#ffb3c4"/>
+        <ellipse cx="70" cy="74" rx="9" ry="6" fill="#f0b429"/>
+        <path d="M62 74h16" stroke="#e0a31a" stroke-width="1.2"/>
+        <rect x="46" y="20" width="48" height="22" rx="8" fill="#fff"/>
+        <ellipse cx="70" cy="20" rx="20" ry="10" fill="#fff"/>
+        <rect x="56" y="6" width="28" height="18" rx="10" fill="#fff"/>
+        <ellipse cx="70" cy="6" rx="12" ry="6" fill="#fff"/>
+        <rect x="46" y="36" width="48" height="6" rx="2" fill="#f6e4ea"/>
+        <g class="face idle">
+          <ellipse cx="56" cy="60" rx="4.2" ry="5" fill="#243044"/>
+          <ellipse cx="84" cy="60" rx="4.2" ry="5" fill="#243044"/>
+          <ellipse cx="57.4" cy="58.4" rx="1.4" ry="1.6" fill="#fff"/>
+          <ellipse cx="85.4" cy="58.4" rx="1.4" ry="1.6" fill="#fff"/>
+          <path d="M62 84c4 4 12 4 16 0" fill="none" stroke="#243044" stroke-width="2" stroke-linecap="round"/>
+        </g>
+        <g class="face focus">
+          <ellipse cx="56" cy="62" rx="4.4" ry="3.2" fill="#243044"/>
+          <ellipse cx="84" cy="62" rx="4.4" ry="3.2" fill="#243044"/>
+          <path d="M63 84h14" stroke="#243044" stroke-width="2" stroke-linecap="round"/>
+        </g>
+        <g class="face happy">
+          <path d="M48 62c4-8 12-8 14 0" fill="none" stroke="#243044" stroke-width="2.6" stroke-linecap="round"/>
+          <path d="M78 62c4-8 12-8 14 0" fill="none" stroke="#243044" stroke-width="2.6" stroke-linecap="round"/>
+          <path d="M58 82c6 10 18 10 24 0" fill="#243044"/>
+          <path d="M64 84c4 5 10 5 14 0" fill="#f7b6c8"/>
+          <circle cx="112" cy="40" r="3" fill="#f0b429"/>
+        </g>
+        <g class="face panic">
+          <ellipse cx="56" cy="60" rx="7" ry="8" fill="#fff"/>
+          <ellipse cx="86" cy="60" rx="7" ry="8" fill="#fff"/>
+          <ellipse cx="57" cy="61" rx="3" ry="3.4" fill="#243044"/>
+          <ellipse cx="87" cy="61" rx="3" ry="3.4" fill="#243044"/>
+          <ellipse cx="70" cy="86" rx="5" ry="6" fill="#243044"/>
+          <path d="M102 40c2 6-2 8-1 12" fill="none" stroke="#7ec8e8" stroke-width="2.4" stroke-linecap="round"/>
+          <circle cx="100" cy="54" r="2.2" fill="#7ec8e8"/>
+        </g>
+      </svg>
+    </div>
+  </template>
+
+  <script>
+  (function () {
+    "use strict";
+
+    /* ラウンド: 練習2人±8（ゴースト・ハート減なし）→3人±6→4人±5→5人±4→6人±3→いちご4人±5（中心80/170/260/350°）
+       失敗: 表示ずれ（小数第1位）が許容より大きい、またはいちごが1つでない。4°未満のリリースは無効。
+       称号: 全クリアかつ平均<=1.5% 神の包丁 / <=3.5% だいたい職人 / それ以上のクリア 見習い店長 / ハート0 ケーキ泥棒
+       平均は各ラウンド最後の判定（リトライは最後の1回だけ） */
+
+    var PLAY_URL = "https://grokbot365game.github.io/daily-casual-games/games/2026-10-25-cake-cut/";
+    var STORE = "cake-cut-2026-10-25";
+    var FONT = "'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Yu Gothic UI', 'WenQuanYi Micro Hei', 'Droid Sans Fallback', sans-serif";
+    var MIN_SWEEP = 4;
+    var GOD_TENTHS = 15;
+    var SOFT_TENTHS = 35;
+    var ROUNDS = [
+      { guests: 2, tol: 8, sweep: 9.2, practice: true, ghost: true, berries: null, tag: "練習" },
+      { guests: 3, tol: 6, sweep: 8.8, practice: false, ghost: false, berries: null, tag: "3人" },
+      { guests: 4, tol: 5, sweep: 8.2, practice: false, ghost: false, berries: null, tag: "4人" },
+      { guests: 5, tol: 4, sweep: 7.6, practice: false, ghost: false, berries: null, tag: "5人" },
+      { guests: 6, tol: 3, sweep: 7.4, practice: false, ghost: false, berries: null, tag: "6人" },
+      { guests: 4, tol: 5, sweep: 8.2, practice: false, ghost: false, berries: [80, 170, 260, 350], tag: "いちご" }
+    ];
+    var GUESTS = [
+      { name: "うさぎ", kind: "bunny", body: "#f7f7f7", ear: "#f4f4f4", inner: "#f7b6c8" },
+      { name: "くま", kind: "bear", body: "#c68642", ear: "#a86b34", inner: "#e8bc8a" },
+      { name: "ひよこ", kind: "chick", body: "#ffe56a", ear: "#ffe56a", inner: "#ffb703" },
+      { name: "かえる", kind: "frog", body: "#7dce6a", ear: "#5eae4e", inner: "#ff8fab" },
+      { name: "きつね", kind: "fox", body: "#f08a3c", ear: "#e07020", inner: "#fff7ef" },
+      { name: "ハム", kind: "ham", body: "#e7c39a", ear: "#e7c39a", inner: "#f7b6c8" }
+    ];
+    var SPRINKLES = [
+      [28, 0.32, "#f48fb1"],
+      [74, 0.48, "#ffd166"],
+      [128, 0.26, "#90e0ef"],
+      [206, 0.44, "#f48fb1"],
+      [248, 0.58, "#cdb4db"],
+      [318, 0.3, "#ffd166"]
+    ];
+
+    var canvas = document.getElementById("game");
+    var ctx = canvas.getContext("2d");
+    var shot = document.getElementById("shot");
+    var sctx = shot.getContext("2d");
+    var stage = document.getElementById("stage");
+    var titleEl = document.getElementById("title");
+    var betweenEl = document.getElementById("between");
+    var endEl = document.getElementById("end");
+    var heartsEl = document.getElementById("hearts");
+    var sayText = document.getElementById("say-text");
+    var roundLabel = document.getElementById("round-label");
+    var tolLabel = document.getElementById("tol-label");
+    var targetLabel = document.getElementById("target-label");
+    var cutLabel = document.getElementById("cut-label");
+    var noteEl = document.getElementById("note");
+    var hintEl = document.getElementById("hint");
+    var liveEl = document.getElementById("live");
+    var titleBest = document.getElementById("title-best");
+    var betweenCard = document.getElementById("between-card");
+    var betweenKicker = document.getElementById("between-kicker");
+    var betweenTitle = document.getElementById("between-title");
+    var betweenMeta = document.getElementById("between-meta");
+    var betweenSlices = document.getElementById("between-slices");
+    var betweenWorst = document.getElementById("between-worst");
+    var betweenWhy = document.getElementById("between-why");
+    var endCard = document.getElementById("end-card");
+    var endQuote = document.getElementById("end-quote");
+    var endScore = document.getElementById("end-score");
+    var endWhy = document.getElementById("end-why");
+    var endMeta = document.getElementById("end-meta");
+    var endSlices = document.getElementById("end-slices");
+    var endWorst = document.getElementById("end-worst");
+    var endBest = document.getElementById("end-best");
+    var btnStart = document.getElementById("btn-start");
+    var btnNext = document.getElementById("btn-next");
+    var btnRetry = document.getElementById("btn-retry");
+    var btnShare = document.getElementById("btn-share");
+    var btnSave = document.getElementById("btn-save");
+    var muteBtn = document.getElementById("mute");
+    var tpl = document.getElementById("mascot-tpl");
+
+    document.getElementById("title-mascot").appendChild(tpl.content.firstElementChild.cloneNode(true));
+    document.getElementById("hud-mascot").appendChild(tpl.content.firstElementChild.cloneNode(true));
+    document.getElementById("between-mascot").appendChild(tpl.content.firstElementChild.cloneNode(true));
+    document.getElementById("end-mascot").appendChild(tpl.content.firstElementChild.cloneNode(true));
+
+    var reduceMotion = false;
+    try { reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (err) {}
+
+    var ac = null;
+    var muted = true;
+    var bestAvg = null;
+    var bestCleared = 0;
+    var dpr = 1;
+    var cssW = 360;
+    var cssH = 520;
+    var phase = "title";
+    var roundIndex = 0;
+    var hearts = 2;
+    var roundsCleared = 0;
+    var attemptErrs = {};
+    var cuts = [0];
+    var knife = 0;
+    var armed = false;
+    var holdPointer = false;
+    var holdSpace = false;
+    var ptrId = null;
+    var suppressSpaceUp = false;
+    var lastResult = null;
+    var mood = "idle";
+    var clock = 0;
+    var last = 0;
+    var shakeT = 0;
+    var bits = [];
+    var debugMode = /[?&]debug=1(?:&|$)/.test(location.search);
+    var simPause = debugMode;
+
+    function current() { return ROUNDS[roundIndex]; }
+    function fmtPct(tenths) { return (tenths / 10).toFixed(1); }
+    function targetTenths(n) { return Math.round(1000 / n); }
+    function spanTenths(deg0, deg1) { return Math.round((deg1 - deg0) / 360 * 1000); }
+
+    function judge(cutAngles, round) {
+      var n = round.guests;
+      var target = targetTenths(n);
+      var angles = cutAngles.slice(0, n);
+      while (angles.length < n) angles.push(angles.length ? angles[angles.length - 1] : 0);
+      angles[0] = 0;
+      var bounds = angles.slice();
+      bounds.push(360);
+      var counts = null;
+      var b;
+      var s;
+      if (round.berries) {
+        counts = [];
+        for (s = 0; s < n; s++) counts.push(0);
+        for (b = 0; b < round.berries.length; b++) {
+          var ang = round.berries[b];
+          var idx = n - 1;
+          for (s = 0; s < n; s++) {
+            if (ang >= bounds[s] && ang < bounds[s + 1]) { idx = s; break; }
+          }
+          counts[idx] += 1;
+        }
+      }
+      var rows = [];
+      var worst = 0;
+      var sizeFail = false;
+      var berryFail = false;
+      var i;
+      for (i = 0; i < n; i++) {
+        var pct = spanTenths(bounds[i], bounds[i + 1]);
+        var err = Math.abs(pct - target);
+        var over = err > round.tol * 10;
+        var berries = counts ? counts[i] : null;
+        var berryBad = !!(counts && counts[i] !== 1);
+        if (over) sizeFail = true;
+        if (berryBad) berryFail = true;
+        if (err > worst) worst = err;
+        rows.push({
+          index: i,
+          pctTenths: pct,
+          errTenths: err,
+          over: over,
+          berries: berries,
+          berryBad: berryBad
+        });
+      }
+      return {
+        rows: rows,
+        worstTenths: worst,
+        sizeFail: sizeFail,
+        berryFail: berryFail,
+        pass: !sizeFail && !berryFail,
+        targetTenths: target
+      };
+    }
+
+    function titleFor(win, avgTenths) {
+      if (!win) return "ケーキ泥棒";
+      if (avgTenths <= GOD_TENTHS) return "神の包丁";
+      if (avgTenths <= SOFT_TENTHS) return "だいたい職人";
+      return "見習い店長";
+    }
+
+    function sliceWho(i, n) {
+      var name = GUESTS[i].name;
+      if (i === n - 1) return name + "（残り）";
+      return name;
+    }
+
+    function cryIndexes(result) {
+      var list = [];
+      if (!result || result.pass) return list;
+      var i;
+      for (i = 0; i < result.rows.length; i++) {
+        var row = result.rows[i];
+        if ((row.over && row.pctTenths < result.targetTenths) || (row.berryBad && row.berries === 0)) list.push(i);
+      }
+      if (!list.length) {
+        var s = 0;
+        for (i = 1; i < result.rows.length; i++) {
+          if (result.rows[i].pctTenths < result.rows[s].pctTenths) s = i;
+        }
+        list.push(s);
+      }
+      return list;
+    }
+
+    function outcomeCopy(result, round, heartsNow) {
+      var n = result.rows.length;
+      var parts = [];
+      var i;
+      if (result.pass) {
+        parts.push("このラウンドは許容以内。最大のずれ " + fmtPct(result.worstTenths) + "%");
+        if (round.practice) parts.push("練習クリア。ハートは減らない");
+        return parts.join("。");
+      }
+      if (result.sizeFail) {
+        var worstRow = result.rows[0];
+        for (i = 1; i < n; i++) if (result.rows[i].errTenths > worstRow.errTenths) worstRow = result.rows[i];
+        var dir = worstRow.pctTenths < result.targetTenths ? "小さい" : "大きい";
+        parts.push("許容超え。最大は" + sliceWho(worstRow.index, n) + "が" + dir + "（ずれ " + fmtPct(worstRow.errTenths) + "%、許容 ±" + round.tol + "%）");
+      }
+      if (result.berryFail) {
+        var bitsB = [];
+        for (i = 0; i < n; i++) {
+          if (result.rows[i].berryBad) bitsB.push(sliceWho(i, n) + "のいちごは" + result.rows[i].berries + "こ");
+        }
+        parts.push(bitsB.join("、") + "（1つが条件）");
+      }
+      var cries = cryIndexes(result);
+      var names = [];
+      var measured = false;
+      for (i = 0; i < cries.length; i++) {
+        var rowC = result.rows[cries[i]];
+        names.push(sliceWho(cries[i], n));
+        if ((rowC.over && rowC.pctTenths < result.targetTenths) || (rowC.berryBad && rowC.berries === 0)) measured = true;
+      }
+      if (names.length) parts.push((measured ? "" : "一番小さい") + names.join("と") + "が泣いている");
+      if (round.practice) parts.push("練習なのでハートは減らない");
+      else if (heartsNow <= 0) parts.push("ハートが0");
+      else parts.push("ハートがあと" + heartsNow + "つ");
+      return parts.join("。");
+    }
+
+    function loadStore() {
+      try {
+        var raw = localStorage.getItem(STORE);
+        if (!raw) return;
+        var data = JSON.parse(raw);
+        if (data && typeof data.bestAvg === "number") bestAvg = data.bestAvg;
+        if (data && typeof data.bestCleared === "number") bestCleared = data.bestCleared;
+        if (data && typeof data.muted === "boolean") muted = data.muted;
+      } catch (e) {}
+    }
+    function saveStore() {
+      try {
+        localStorage.setItem(STORE, JSON.stringify({
+          bestAvg: bestAvg,
+          bestCleared: bestCleared,
+          muted: muted
+        }));
+      } catch (e) {}
+    }
+    function bestLabel() {
+      if (bestAvg == null && bestCleared <= 0) return "";
+      var parts = [];
+      if (bestCleared > 0) parts.push("クリア " + bestCleared + "/6");
+      if (bestAvg != null) parts.push("平均 " + fmtPct(bestAvg) + "%");
+      return "ベスト " + parts.join("・");
+    }
+    function refreshBest() {
+      var label = bestLabel();
+      titleBest.hidden = !label;
+      titleBest.textContent = label;
+    }
+
+    function ensureAudio() {
+      if (ac) {
+        if (ac.state === "suspended") {
+          try { ac.resume(); } catch (e) {}
+        }
+        return;
+      }
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      try { ac = new AC(); } catch (e) { ac = null; }
+    }
+    function blipAt(freq, dur, when, type) {
+      if (muted || !ac) return;
+      try {
+        var o = ac.createOscillator();
+        var g = ac.createGain();
+        var t0 = ac.currentTime + when;
+        o.type = type || "sine";
+        o.frequency.setValueAtTime(freq, t0);
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(0.035, t0 + 0.012);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+        o.connect(g);
+        g.connect(ac.destination);
+        o.start(t0);
+        o.stop(t0 + dur + 0.02);
+      } catch (e) {}
+    }
+    function blipCut() { blipAt(740, 0.06, 0, "sine"); }
+    function blipWin() {
+      blipAt(523, 0.08, 0, "sine");
+      blipAt(659, 0.08, 0.09, "sine");
+      blipAt(784, 0.12, 0.18, "sine");
+    }
+    function blipFail() { blipAt(150, 0.2, 0, "triangle"); }
+
+    function applyMute() {
+      muteBtn.classList.toggle("is-muted", muted);
+      muteBtn.setAttribute("aria-pressed", muted ? "true" : "false");
+      muteBtn.setAttribute("aria-label", muted ? "音を出す" : "音を消す");
+    }
+    function setMood(next) {
+      mood = next;
+      var nodes = document.querySelectorAll(".mascot");
+      var i;
+      for (i = 0; i < nodes.length; i++) {
+        nodes[i].dataset.mood = next;
+        nodes[i].classList.remove("is-pop");
+        if (next === "happy" || next === "panic") {
+          void nodes[i].offsetWidth;
+          nodes[i].classList.add("is-pop");
+        }
+      }
+    }
+    function say(text) {
+      if (sayText.textContent === text) return;
+      sayText.textContent = text;
+    }
+    function announce(text) { liveEl.textContent = text; }
+    function updateHearts(pop) {
+      var h = "";
+      h += '<i class="' + (hearts >= 1 ? "" : "off") + (pop && hearts === 0 ? " pop" : "") + '">♥</i>';
+      h += '<i class="' + (hearts >= 2 ? "" : "off") + (pop && hearts === 1 ? " pop" : "") + '">♥</i>';
+      heartsEl.innerHTML = h;
+      heartsEl.setAttribute("aria-label", "ハート" + hearts);
+    }
+    function updateHud() {
+      var d = current();
+      var need = d.guests - 1;
+      var done = Math.min(need, Math.max(0, cuts.length - 1));
+      roundLabel.textContent = "ラウンド " + (roundIndex + 1) + "/" + ROUNDS.length + " " + d.tag;
+      tolLabel.textContent = "許容 ±" + d.tol + "%";
+      targetLabel.textContent = "目標 " + fmtPct(targetTenths(d.guests)) + "%";
+      cutLabel.textContent = "カット " + done + "/" + need;
+      if (d.practice) noteEl.textContent = "うすい線が等分の位置。失敗してもハートは減らない";
+      else if (d.berries) noteEl.textContent = "いちごは中心の白点で1つずつ。白点が線の上なら次の一切れ";
+      else noteEl.textContent = "最後の残りも、許容を超えたら失敗";
+    }
+    function syncHint() {
+      var next = "";
+      if (phase === "play") {
+        var d = current();
+        var need = d.guests - 1;
+        var done = Math.min(need, Math.max(0, cuts.length - 1));
+        if (armed && (holdPointer || holdSpace)) next = knife > 350 ? "端まで来た。離すとカット" : "離すとカット";
+        else next = "押したまま（ゆび・マウス・スペース）　カット " + done + "/" + need;
+      }
+      if (hintEl.textContent !== next) hintEl.textContent = next;
+    }
+
+    function burst() {
+      var i;
+      for (i = 0; i < 16; i++) {
+        bits.push({
+          x: cssW * 0.55,
+          y: cssH * 0.32,
+          vx: (Math.random() - 0.5) * 180,
+          vy: -40 - Math.random() * 120,
+          t: 0,
+          life: 0.7 + Math.random() * 0.4,
+          color: ["#f0b429", "#e4547a", "#fff", "#7dce6a"][i % 4],
+          r: 3 + Math.random() * 3
+        });
+      }
+    }
+
+    function fillSlices(list, result) {
+      var cries = cryIndexes(result);
+      list.innerHTML = "";
+      var i;
+      for (i = 0; i < result.rows.length; i++) {
+        var row = result.rows[i];
+        var li = document.createElement("li");
+        if (row.over || row.berryBad) li.className = "bad";
+        var left = document.createElement("span");
+        var cry = cries.indexOf(i) >= 0;
+        left.textContent = (i + 1) + " " + sliceWho(i, result.rows.length) + (cry ? " 泣" : "");
+        var right = document.createElement("b");
+        var berry = row.berries == null ? "" : "　いちご" + row.berries;
+        right.textContent = fmtPct(row.pctTenths) + "%　ずれ " + fmtPct(row.errTenths) + berry;
+        li.appendChild(left);
+        li.appendChild(right);
+        list.appendChild(li);
+      }
+    }
+    function paintWorst(el, result, tol) {
+      var over = result.worstTenths > tol * 10;
+      el.className = "worst " + (over ? "bad" : "ok");
+      el.textContent = "最大のずれ " + fmtPct(result.worstTenths) + "%（許容 ±" + tol + "%）";
+    }
+
+    function clearHolds() {
+      holdPointer = false;
+      holdSpace = false;
+      armed = false;
+      ptrId = null;
+    }
+
+    function startRound(index) {
+      roundIndex = index;
+      cuts = [0];
+      knife = 0;
+      clearHolds();
+      lastResult = null;
+      shakeT = 0;
+      bits = [];
+      phase = "play";
+      titleEl.hidden = true;
+      betweenEl.hidden = true;
+      endEl.hidden = true;
+      setMood("idle");
+      if (document.activeElement && document.activeElement.blur) {
+        try { document.activeElement.blur(); } catch (err) {}
+      }
+      var d = current();
+      var tgt = fmtPct(targetTenths(d.guests));
+      if (d.practice) say("練習。うすい線のところで離して。失敗してもハートは減らない");
+      else if (d.berries) say(d.guests + "人分。いちごは中心の白点で1つずつ。目標" + tgt + "%、許容±" + d.tol + "%");
+      else say(d.guests + "人分。目標" + tgt + "%、許容±" + d.tol + "%。うすい線はない");
+      updateHud();
+      syncHint();
+      announce(roundLabel.textContent + " " + tolLabel.textContent);
+    }
+
+    function recordAttempt(result) {
+      var list = [];
+      var i;
+      for (i = 0; i < result.rows.length; i++) list.push(result.rows[i].errTenths);
+      attemptErrs[roundIndex] = list;
+    }
+    function avgTenthsNow() {
+      var sum = 0;
+      var n = 0;
+      var key;
+      for (key in attemptErrs) {
+        if (!Object.prototype.hasOwnProperty.call(attemptErrs, key)) continue;
+        var list = attemptErrs[key];
+        var i;
+        for (i = 0; i < list.length; i++) {
+          sum += list[i];
+          n += 1;
+        }
+      }
+      if (!n) return 0;
+      return Math.round(sum / n);
+    }
+    function newRun() {
+      hearts = 2;
+      roundsCleared = 0;
+      attemptErrs = {};
+      updateHearts(false);
+      startRound(0);
+    }
+
+    function finishRound() {
+      clearHolds();
+      var round = current();
+      var result = judge(cuts, round);
+      lastResult = result;
+      recordAttempt(result);
+      if (result.pass) {
+        roundsCleared += 1;
+        setMood("happy");
+        burst();
+        blipWin();
+      } else {
+        if (!round.practice) {
+          hearts -= 1;
+          updateHearts(true);
+        }
+        setMood("panic");
+        shakeT = 0.45;
+        blipFail();
+      }
+      var text = outcomeCopy(result, round, hearts);
+      say(text);
+      announce(text);
+      updateHud();
+      if (result.pass && roundIndex === ROUNDS.length - 1) openEnd(true, result, round, text);
+      else if (!result.pass && !round.practice && hearts <= 0) openEnd(false, result, round, text);
+      else openBetween(result, round, text);
+    }
+
+    function openBetween(result, round, text) {
+      phase = "between";
+      betweenKicker.textContent = roundLabel.textContent;
+      betweenTitle.textContent = result.pass ? (round.practice ? "練習クリア" : "クリア") : (round.practice ? "練習失敗" : "失敗");
+      betweenTitle.className = result.pass ? "ok" : "bad";
+      betweenMeta.textContent = "目標 " + fmtPct(result.targetTenths) + "%　許容 ±" + round.tol + "%";
+      fillSlices(betweenSlices, result);
+      paintWorst(betweenWorst, result, round.tol);
+      betweenWhy.textContent = text;
+      betweenWhy.className = "why " + (result.pass ? "ok" : "bad");
+      btnNext.textContent = result.pass ? "つぎへ" : "もういちど";
+      betweenCard.scrollTop = 0;
+      betweenEl.hidden = false;
+    }
+
+    function openEnd(win, result, round, text) {
+      phase = "end";
+      var avgT = avgTenthsNow();
+      var name = titleFor(win, avgT);
+      var avgLabel = fmtPct(avgT);
+      var prevBest = bestAvg;
+      endQuote.textContent = "『" + name + "』";
+      endScore.textContent = "平均誤差 " + avgLabel + "%　クリア " + roundsCleared + "/6";
+      endWhy.textContent = text;
+      endWhy.className = "why " + (win ? "ok" : "bad");
+      endMeta.textContent = "最後のラウンド　目標 " + fmtPct(result.targetTenths) + "%　許容 ±" + round.tol + "%";
+      fillSlices(endSlices, result);
+      paintWorst(endWorst, result, round.tol);
+      if (win && (bestAvg == null || avgT < bestAvg)) bestAvg = avgT;
+      if (roundsCleared > bestCleared) bestCleared = roundsCleared;
+      var improved = win && (prevBest == null || avgT < prevBest);
+      if (bestAvg != null) {
+        endBest.hidden = false;
+        endBest.textContent = improved ? ("ベスト更新　平均 " + fmtPct(bestAvg) + "%") : ("ベスト平均 " + fmtPct(bestAvg) + "%");
+      } else {
+        endBest.hidden = true;
+      }
+      saveStore();
+      refreshBest();
+      drawShare(name, avgLabel, roundsCleared, hearts, win);
+      shot.setAttribute("aria-label", "結果カード " + name + " 平均誤差" + avgLabel + "% クリア" + roundsCleared + "/6");
+      var share = "ぴったりケーキ Day30 『" + name + "』 平均誤差" + avgLabel + "% クリア" + roundsCleared + "/6\n" + PLAY_URL + "\n#ねむねむゲーム部";
+      btnShare.href = "https://x.com/intent/tweet?text=" + encodeURIComponent(share);
+      endCard.scrollTop = 0;
+      endEl.hidden = false;
+      betweenEl.hidden = true;
+      titleEl.hidden = true;
+    }
+
+    function beginSweep() {
+      if (phase !== "play" || armed) return;
+      if (cuts.length >= current().guests) return;
+      if (!(holdPointer || holdSpace)) return;
+      armed = true;
+      knife = cuts[cuts.length - 1];
+      setMood("focus");
+      say("そのまま回してる…");
+    }
+    function releaseSweep() {
+      if (!armed) return;
+      if (holdPointer || holdSpace) return;
+      if (phase !== "play") { armed = false; return; }
+      armed = false;
+      var lastCut = cuts[cuts.length - 1];
+      if (knife - lastCut < MIN_SWEEP) {
+        knife = lastCut;
+        setMood("idle");
+        say("前の線から4°未満。もう少し押したまま");
+        return;
+      }
+      pushCut(knife);
+    }
+    function pushCut(angle) {
+      if (phase !== "play") return;
+      var lastCut = cuts[cuts.length - 1];
+      var cap = 360 - 0.4;
+      var a = angle;
+      if (a > cap) a = cap;
+      if (a < lastCut) a = lastCut;
+      cuts.push(a);
+      knife = a;
+      blipCut();
+      var need = current().guests;
+      if (cuts.length < need && (360 - a) < MIN_SWEEP) {
+        while (cuts.length < need) cuts.push(a);
+      }
+      if (cuts.length >= need) finishRound();
+      else {
+        setMood("idle");
+        say("つぎのカット。押したまま");
+        updateHud();
+      }
+    }
+
+    function onPointerDown(e) {
+      if (phase !== "play") return;
+      if (ptrId !== null) return;
+      if (e.button != null && e.button !== 0) return;
+      ptrId = e.pointerId;
+      try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+      e.preventDefault();
+      holdPointer = true;
+      beginSweep();
+    }
+    function onPointerUp(e) {
+      if (ptrId === null) return;
+      if (e && e.pointerId != null && e.pointerId !== ptrId) return;
+      ptrId = null;
+      holdPointer = false;
+      releaseSweep();
+    }
+
+    function resize() {
+      var rect = stage.getBoundingClientRect();
+      cssW = Math.max(1, rect.width);
+      cssH = Math.max(1, rect.height);
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.max(1, Math.round(cssW * dpr));
+      canvas.height = Math.max(1, Math.round(cssH * dpr));
+    }
+
+    function layout() {
+      var w = cssW;
+      var h = cssH;
+      var n = current().guests;
+      var s = Math.max(14, Math.min(26, (w - 16) / Math.max(1.8, n * 1.7)));
+      var guestY = h - s * 1.25 - 2;
+      var span = Math.max(0, w - s * 2 - 8);
+      var step = n === 1 ? 0 : span / (n - 1);
+      var guests = [];
+      var i;
+      for (i = 0; i < n; i++) guests.push({ x: 4 + s + step * i, y: guestY, s: s, i: i });
+      var pw = Math.min(80, Math.max(56, w * 0.2));
+      var ph = pw * 1.42;
+      var top = 32;
+      var bottom = guestY - s * 0.4;
+      var R = Math.min(w * 0.32, Math.max(36, (bottom - top) * 0.46));
+      var cx = w * 0.58;
+      var minCx = pw * 0.78 + R;
+      if (cx < minCx) cx = minCx;
+      if (cx + R > w - 8) {
+        R = Math.max(36, (w - 8 - pw * 0.78) / 2);
+        cx = pw * 0.78 + R;
+      }
+      var cy = top + R;
+      if (cy + R * 1.1 > bottom) cy = Math.max(top, bottom - R * 1.1);
+      return { w: w, h: h, cx: cx, cy: cy, R: R, guests: guests, pw: pw, ph: ph };
+    }
+
+    function polar(cx, cy, deg, r) {
+      var a = (deg - 90) * Math.PI / 180;
+      return [cx + Math.cos(a) * r, cy + Math.sin(a) * r];
+    }
+    function traceWedge(c, cx, cy, R, a0, a1) {
+      var p0 = (a0 - 90) * Math.PI / 180;
+      var p1 = (a1 - 90) * Math.PI / 180;
+      c.beginPath();
+      c.moveTo(cx, cy);
+      c.arc(cx, cy, R, p0, p1, false);
+      c.closePath();
+    }
+
+    function drawPenguin(c, x, y, w, h, m, t) {
+      c.save();
+      var bob = 0;
+      if (!reduceMotion && m !== "focus") bob = Math.sin(t * 3) * Math.min(3, h * 0.015);
+      if (m === "panic" && !reduceMotion) c.translate(Math.sin(t * 40) * 1.8, bob);
+      else if (m === "happy" && !reduceMotion) c.translate(0, bob - Math.abs(Math.sin(t * 8)) * 2);
+      else c.translate(0, bob);
+      c.translate(x, y);
+      c.scale(w / 86, w / 86);
+      c.fillStyle = "rgba(50,24,36,.16)";
+      c.beginPath();
+      c.ellipse(43, 118, 26, 5, 0, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = "#f0b429";
+      c.beginPath();
+      c.ellipse(30, 114, 12, 5.5, 0, 0, Math.PI * 2);
+      c.ellipse(56, 114, 12, 5.5, 0, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = "#1c2838";
+      c.beginPath();
+      c.ellipse(12, 78, 9, 16, 0.45, 0, Math.PI * 2);
+      c.ellipse(74, 76, 9, 16, -0.5, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = "#f4a4b8";
+      c.beginPath();
+      c.moveTo(76, 64);
+      c.quadraticCurveTo(92, 68, 84, 86);
+      c.quadraticCurveTo(74, 78, 76, 64);
+      c.fill();
+      c.fillStyle = "#fff";
+      c.beginPath();
+      c.arc(80, 63, 3, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = "#243044";
+      c.beginPath();
+      c.ellipse(43, 84, 28, 26, 0, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = "#fffdf8";
+      c.beginPath();
+      c.ellipse(43, 90, 15, 15, 0, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = "#fff";
+      c.beginPath();
+      c.moveTo(24, 72);
+      c.lineTo(62, 72);
+      c.lineTo(56, 104);
+      c.lineTo(30, 104);
+      c.closePath();
+      c.fill();
+      c.fillStyle = "#e4547a";
+      c.fillRect(24, 72, 38, 6);
+      c.beginPath();
+      c.arc(43, 88, 3.3, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = "#243044";
+      c.beginPath();
+      c.arc(43, 42, 22, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = "#fffdf8";
+      c.beginPath();
+      c.ellipse(43, 48, 14, 12, 0, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = "#ffb3c4";
+      c.beginPath();
+      c.ellipse(30, 50, 4, 2.2, 0, 0, Math.PI * 2);
+      c.ellipse(56, 50, 4, 2.2, 0, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = "#f0b429";
+      c.beginPath();
+      c.ellipse(43, 52, 7, 4.2, 0, 0, Math.PI * 2);
+      c.fill();
+      c.strokeStyle = "#e0a31a";
+      c.lineWidth = 1;
+      c.beginPath();
+      c.moveTo(36, 52);
+      c.lineTo(50, 52);
+      c.stroke();
+      c.fillStyle = "#fff";
+      roundPath(c, 24, 14, 38, 16, 6);
+      c.fill();
+      c.beginPath();
+      c.ellipse(43, 14, 16, 6, 0, 0, Math.PI * 2);
+      c.fill();
+      roundPath(c, 31, 2, 24, 14, 7);
+      c.fill();
+      c.beginPath();
+      c.ellipse(43, 2, 10, 4, 0, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = "#f6e4ea";
+      c.fillRect(24, 26, 38, 4);
+      c.lineCap = "round";
+      if (m === "happy") {
+        c.strokeStyle = "#243044";
+        c.lineWidth = 2.2;
+        c.beginPath();
+        c.moveTo(32, 44);
+        c.quadraticCurveTo(37, 38, 42, 44);
+        c.moveTo(44, 44);
+        c.quadraticCurveTo(49, 38, 54, 44);
+        c.stroke();
+        c.fillStyle = "#243044";
+        c.beginPath();
+        c.ellipse(43, 60, 6, 3.4, 0, 0, Math.PI);
+        c.fill();
+      } else if (m === "panic") {
+        c.fillStyle = "#fff";
+        c.beginPath();
+        c.ellipse(34, 44, 5.2, 6, 0, 0, Math.PI * 2);
+        c.ellipse(52, 44, 5.2, 6, 0, 0, Math.PI * 2);
+        c.fill();
+        c.fillStyle = "#243044";
+        c.beginPath();
+        c.arc(35, 45, 2.1, 0, Math.PI * 2);
+        c.arc(53, 45, 2.1, 0, Math.PI * 2);
+        c.fill();
+        c.beginPath();
+        c.ellipse(43, 60, 3.2, 4.2, 0, 0, Math.PI * 2);
+        c.fill();
+        c.strokeStyle = "#7ec8e8";
+        c.lineWidth = 2;
+        c.beginPath();
+        c.moveTo(64, 22);
+        c.quadraticCurveTo(70, 30, 66, 36);
+        c.stroke();
+      } else if (m === "focus") {
+        c.fillStyle = "#243044";
+        c.beginPath();
+        c.ellipse(34, 45, 3.6, 2.2, 0, 0, Math.PI * 2);
+        c.ellipse(52, 45, 3.6, 2.2, 0, 0, Math.PI * 2);
+        c.fill();
+        c.strokeStyle = "#243044";
+        c.lineWidth = 1.8;
+        c.beginPath();
+        c.moveTo(38, 60);
+        c.lineTo(48, 60);
+        c.stroke();
+      } else {
+        c.fillStyle = "#243044";
+        c.beginPath();
+        c.ellipse(34, 44, 3.2, 4, 0, 0, Math.PI * 2);
+        c.ellipse(52, 44, 3.2, 4, 0, 0, Math.PI * 2);
+        c.fill();
+        c.fillStyle = "#fff";
+        c.beginPath();
+        c.arc(35, 43, 1.1, 0, Math.PI * 2);
+        c.arc(53, 43, 1.1, 0, Math.PI * 2);
+        c.fill();
+        c.strokeStyle = "#243044";
+        c.lineWidth = 1.8;
+        c.beginPath();
+        c.moveTo(37, 60);
+        c.quadraticCurveTo(43, 64, 49, 60);
+        c.stroke();
+      }
+      c.restore();
+    }
+
+    function drawAnimal(c, g, x, y, s, expr) {
+      c.save();
+      c.translate(x, y);
+      c.fillStyle = "rgba(50,24,36,.12)";
+      c.beginPath();
+      c.ellipse(0, s * 0.72, s * 0.55, s * 0.16, 0, 0, Math.PI * 2);
+      c.fill();
+      if (g.kind === "bunny") {
+        c.fillStyle = g.ear;
+        c.beginPath();
+        c.ellipse(-s * 0.28, -s * 0.55, s * 0.16, s * 0.42, -0.2, 0, Math.PI * 2);
+        c.ellipse(s * 0.28, -s * 0.55, s * 0.16, s * 0.42, 0.2, 0, Math.PI * 2);
+        c.fill();
+        c.fillStyle = g.inner;
+        c.beginPath();
+        c.ellipse(-s * 0.28, -s * 0.52, s * 0.07, s * 0.24, -0.2, 0, Math.PI * 2);
+        c.ellipse(s * 0.28, -s * 0.52, s * 0.07, s * 0.24, 0.2, 0, Math.PI * 2);
+        c.fill();
+      } else if (g.kind === "bear" || g.kind === "ham") {
+        c.fillStyle = g.ear;
+        c.beginPath();
+        c.arc(-s * 0.48, -s * 0.42, s * 0.28, 0, Math.PI * 2);
+        c.arc(s * 0.48, -s * 0.42, s * 0.28, 0, Math.PI * 2);
+        c.fill();
+        c.fillStyle = g.inner;
+        c.beginPath();
+        c.arc(-s * 0.48, -s * 0.42, s * 0.14, 0, Math.PI * 2);
+        c.arc(s * 0.48, -s * 0.42, s * 0.14, 0, Math.PI * 2);
+        c.fill();
+      } else if (g.kind === "fox") {
+        c.fillStyle = g.body;
+        c.beginPath();
+        c.moveTo(-s * 0.55, -s * 0.1);
+        c.lineTo(-s * 0.2, -s * 0.95);
+        c.lineTo(s * 0.05, -s * 0.2);
+        c.moveTo(s * 0.55, -s * 0.1);
+        c.lineTo(s * 0.2, -s * 0.95);
+        c.lineTo(-s * 0.05, -s * 0.2);
+        c.fill();
+      } else if (g.kind === "frog") {
+        c.fillStyle = g.body;
+        c.beginPath();
+        c.arc(-s * 0.32, -s * 0.55, s * 0.28, 0, Math.PI * 2);
+        c.arc(s * 0.32, -s * 0.55, s * 0.28, 0, Math.PI * 2);
+        c.fill();
+      } else if (g.kind === "chick") {
+        c.fillStyle = g.inner;
+        c.beginPath();
+        c.ellipse(0, -s * 0.72, s * 0.12, s * 0.2, 0, 0, Math.PI * 2);
+        c.fill();
+      }
+      c.fillStyle = g.body;
+      c.beginPath();
+      c.arc(0, 0, s * 0.62, 0, Math.PI * 2);
+      c.fill();
+      if (g.kind === "fox") {
+        c.fillStyle = g.inner;
+        c.beginPath();
+        c.ellipse(0, s * 0.12, s * 0.28, s * 0.24, 0, 0, Math.PI * 2);
+        c.fill();
+      }
+      if (g.kind === "frog") {
+        c.fillStyle = "#fff";
+        c.beginPath();
+        c.arc(-s * 0.32, -s * 0.58, s * 0.16, 0, Math.PI * 2);
+        c.arc(s * 0.32, -s * 0.58, s * 0.16, 0, Math.PI * 2);
+        c.fill();
+        c.fillStyle = "#243044";
+        c.beginPath();
+        c.arc(-s * 0.32, -s * 0.58, s * 0.07, 0, Math.PI * 2);
+        c.arc(s * 0.32, -s * 0.58, s * 0.07, 0, Math.PI * 2);
+        c.fill();
+      }
+      if (expr === "cry") {
+        c.strokeStyle = "#243044";
+        c.lineWidth = Math.max(1.4, s * 0.08);
+        c.lineCap = "round";
+        c.beginPath();
+        c.moveTo(-s * 0.28, -s * 0.08);
+        c.quadraticCurveTo(-s * 0.16, s * 0.08, -s * 0.04, -s * 0.02);
+        c.moveTo(s * 0.04, -s * 0.02);
+        c.quadraticCurveTo(s * 0.16, s * 0.08, s * 0.28, -s * 0.08);
+        c.stroke();
+        c.fillStyle = "#7ec8e8";
+        c.beginPath();
+        c.ellipse(-s * 0.22, s * 0.18, s * 0.06, s * 0.1, 0, 0, Math.PI * 2);
+        c.ellipse(s * 0.22, s * 0.22, s * 0.06, s * 0.1, 0, 0, Math.PI * 2);
+        c.fill();
+        c.fillStyle = "#243044";
+        c.beginPath();
+        c.ellipse(0, s * 0.28, s * 0.1, s * 0.12, 0, 0, Math.PI * 2);
+        c.fill();
+      } else if (expr === "smile") {
+        c.strokeStyle = "#243044";
+        c.lineWidth = Math.max(1.4, s * 0.08);
+        c.lineCap = "round";
+        c.beginPath();
+        c.moveTo(-s * 0.22, -s * 0.02);
+        c.quadraticCurveTo(-s * 0.12, -s * 0.16, -s * 0.02, -s * 0.02);
+        c.moveTo(s * 0.02, -s * 0.02);
+        c.quadraticCurveTo(s * 0.12, -s * 0.16, s * 0.22, -s * 0.02);
+        c.moveTo(-s * 0.16, s * 0.2);
+        c.quadraticCurveTo(0, s * 0.36, s * 0.16, s * 0.2);
+        c.stroke();
+      } else if (expr === "worry") {
+        c.fillStyle = "#243044";
+        c.beginPath();
+        c.arc(-s * 0.18, 0, s * 0.07, 0, Math.PI * 2);
+        c.arc(s * 0.18, 0, s * 0.07, 0, Math.PI * 2);
+        c.fill();
+        c.strokeStyle = "#243044";
+        c.lineWidth = Math.max(1.2, s * 0.07);
+        c.beginPath();
+        c.moveTo(-s * 0.12, s * 0.26);
+        c.quadraticCurveTo(0, s * 0.16, s * 0.12, s * 0.26);
+        c.stroke();
+      } else {
+        c.fillStyle = "#243044";
+        c.beginPath();
+        c.arc(-s * 0.18, -s * 0.02, s * 0.07, 0, Math.PI * 2);
+        c.arc(s * 0.18, -s * 0.02, s * 0.07, 0, Math.PI * 2);
+        c.fill();
+        c.strokeStyle = "#243044";
+        c.lineWidth = Math.max(1.2, s * 0.07);
+        c.beginPath();
+        c.moveTo(-s * 0.12, s * 0.2);
+        c.quadraticCurveTo(0, s * 0.3, s * 0.12, s * 0.2);
+        c.stroke();
+      }
+      if (g.kind === "chick") {
+        c.fillStyle = "#f08a3c";
+        c.beginPath();
+        c.moveTo(-s * 0.1, s * 0.08);
+        c.lineTo(s * 0.1, s * 0.08);
+        c.lineTo(0, s * 0.2);
+        c.fill();
+      }
+      c.restore();
+    }
+
+    function drawBerry(c, x, y, r) {
+      c.save();
+      c.translate(x, y);
+      c.fillStyle = "#2f9e44";
+      c.beginPath();
+      c.ellipse(0, -r * 0.95, r * 0.55, r * 0.28, -0.4, 0, Math.PI * 2);
+      c.ellipse(0, -r * 0.95, r * 0.55, r * 0.28, 0.5, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = "#d6284a";
+      c.beginPath();
+      c.arc(0, 0, r, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = "#ff5c7a";
+      c.beginPath();
+      c.arc(-r * 0.2, -r * 0.22, r * 0.72, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = "#ffe08a";
+      c.beginPath();
+      c.arc(-r * 0.35, -r * 0.1, r * 0.12, 0, Math.PI * 2);
+      c.arc(r * 0.2, -r * 0.35, r * 0.1, 0, Math.PI * 2);
+      c.arc(r * 0.28, r * 0.2, r * 0.1, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = "#fff";
+      c.beginPath();
+      c.arc(0, 0, Math.max(1.6, r * 0.24), 0, Math.PI * 2);
+      c.fill();
+      c.restore();
+    }
+
+    function guestExpr(i) {
+      if (!lastResult || phase === "play" || phase === "title") return "wait";
+      var cries = cryIndexes(lastResult);
+      if (cries.indexOf(i) >= 0) return "cry";
+      if (lastResult.pass) return "smile";
+      var row = lastResult.rows[i];
+      if (row && (row.over || row.berryBad)) return "worry";
+      return "wait";
+    }
+
+    function draw() {
+      var L = layout();
+      var w = L.w;
+      var h = L.h;
+      var cx = L.cx;
+      var cy = L.cy;
+      var R = L.R;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+      var bg = ctx.createLinearGradient(0, 0, 0, h);
+      bg.addColorStop(0, "#fff6f2");
+      bg.addColorStop(1, "#f8d7c4");
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = "rgba(255,255,255,.45)";
+      var gx;
+      for (gx = 0; gx < w; gx += 28) {
+        ctx.fillRect(gx, 0, 14, h);
+      }
+
+      var shake = shakeT > 0 && !reduceMotion ? Math.sin(clock * 46) * 3 * (shakeT / 0.45) : 0;
+      ctx.save();
+      ctx.translate(shake, 0);
+
+      ctx.fillStyle = "#e7b48a";
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + R * 0.72, R * 1.55, R * 0.72, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#f6d7b0";
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + R * 0.62, R * 1.35, R * 0.55, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "rgba(80,40,40,.08)";
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + 8, R * 1.08, R * 1.02, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#fff";
+      ctx.beginPath();
+      ctx.arc(cx, cy, R * 1.16, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#f3d5dc";
+      ctx.lineWidth = Math.max(4, R * 0.06);
+      ctx.stroke();
+
+      ctx.fillStyle = "#e9899c";
+      ctx.beginPath();
+      ctx.arc(cx, cy + R * 0.06, R, 0, Math.PI * 2);
+      ctx.fill();
+      var frosting = ctx.createRadialGradient(cx - R * 0.3, cy - R * 0.35, R * 0.1, cx, cy, R);
+      frosting.addColorStop(0, "#fffdf8");
+      frosting.addColorStop(1, "#ffe9dc");
+      ctx.fillStyle = frosting;
+      ctx.beginPath();
+      ctx.arc(cx, cy, R * 0.98, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, R * 0.96, 0, Math.PI * 2);
+      ctx.clip();
+
+      var d = current();
+      var i;
+      for (i = 0; i < cuts.length - 1; i++) {
+        ctx.fillStyle = i % 2 === 0 ? "rgba(255,170,190,.16)" : "rgba(255,255,255,.05)";
+        traceWedge(ctx, cx, cy, R, cuts[i], cuts[i + 1]);
+        ctx.fill();
+      }
+      if (d.ghost && phase === "play" && cuts.length < d.guests) {
+        var ideal = cuts.length * (360 / d.guests);
+        var from = cuts[cuts.length - 1];
+        if (ideal > from) {
+          ctx.fillStyle = "rgba(240,180,41,.16)";
+          traceWedge(ctx, cx, cy, R, from, ideal);
+          ctx.fill();
+        }
+      }
+      if (phase === "play" && armed) {
+        var fromK = cuts[cuts.length - 1];
+        if (knife > fromK + 0.2) {
+          ctx.fillStyle = "rgba(255,214,102,.34)";
+          traceWedge(ctx, cx, cy, R, fromK, knife);
+          ctx.fill();
+        }
+      }
+      if (!d.berries) {
+        for (i = 0; i < SPRINKLES.length; i++) {
+          var sp = polar(cx, cy, SPRINKLES[i][0], R * SPRINKLES[i][1]);
+          ctx.fillStyle = SPRINKLES[i][2];
+          ctx.beginPath();
+          ctx.ellipse(sp[0], sp[1], R * 0.035, R * 0.02, SPRINKLES[i][0], 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      ctx.restore();
+
+      if (d.berries) {
+        for (i = 0; i < d.berries.length; i++) {
+          var bp = polar(cx, cy, d.berries[i], R * 0.58);
+          drawBerry(ctx, bp[0], bp[1], Math.max(7, R * 0.085));
+        }
+      }
+
+      ctx.strokeStyle = "rgba(90,40,55,.8)";
+      ctx.lineWidth = Math.max(2, R * 0.02);
+      ctx.lineCap = "round";
+      var lines = cuts.slice();
+      if (lastResult && phase !== "play") lines = cuts.slice();
+      for (i = 0; i < lines.length; i++) {
+        var p = polar(cx, cy, lines[i], R * 0.96);
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(p[0], p[1]);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = "rgba(90,40,55,.95)";
+      ctx.lineWidth = Math.max(3, R * 0.028);
+      var fixed = polar(cx, cy, 0, R * 0.96);
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(fixed[0], fixed[1]);
+      ctx.stroke();
+
+      if (d.ghost && (phase === "play" || phase === "title") && cuts.length < d.guests) {
+        var ideal2 = cuts.length * (360 / d.guests);
+        var gp = polar(cx, cy, ideal2, R * 1.08);
+        ctx.save();
+        ctx.setLineDash([5, 5]);
+        ctx.strokeStyle = "#c9860a";
+        ctx.lineWidth = Math.max(2, R * 0.02);
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(gp[0], gp[1]);
+        ctx.stroke();
+        ctx.restore();
+        ctx.fillStyle = "#c9860a";
+        ctx.beginPath();
+        ctx.arc(gp[0], gp[1], Math.max(3, R * 0.035), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.font = "800 " + Math.max(10, R * 0.11) + "px " + FONT;
+        ctx.fillStyle = "#8a5a10";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "bottom";
+        ctx.fillText("等分", gp[0], gp[1] - 4);
+      }
+
+      var mark = polar(cx, cy, 0, R * 1.28);
+      ctx.fillStyle = "#e4547a";
+      ctx.beginPath();
+      ctx.moveTo(mark[0], mark[1] - 8);
+      ctx.lineTo(mark[0] - 6, mark[1] + 4);
+      ctx.lineTo(mark[0] + 6, mark[1] + 4);
+      ctx.fill();
+      ctx.font = "800 " + Math.max(11, R * 0.12) + "px " + FONT;
+      ctx.fillStyle = "#9f1239";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "bottom";
+      ctx.fillText("12 固定", mark[0], mark[1] - 8);
+
+      if (phase === "play") drawKnife(ctx, cx, cy, R, knife);
+
+      ctx.restore();
+
+      var py = L.cy + L.R * 0.28 - (42 * L.pw / 86);
+      var foot = 118 * L.pw / 86;
+      if (py + foot > L.h - 2) py = L.h - 2 - foot;
+      if (py < 0) py = 0;
+      drawPenguin(ctx, 0, py, L.pw, L.ph, mood, clock);
+
+      for (i = 0; i < L.guests.length; i++) {
+        var guest = L.guests[i];
+        drawAnimal(ctx, GUESTS[guest.i], guest.x, guest.y, guest.s, guestExpr(guest.i));
+        ctx.font = "800 " + Math.max(10, guest.s * 0.38) + "px " + FONT;
+        ctx.fillStyle = "#6a4452";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        ctx.fillText(String(guest.i + 1), guest.x, guest.y + guest.s * 0.62);
+      }
+
+      var b;
+      for (b = 0; b < bits.length; b++) {
+        ctx.globalAlpha = Math.max(0, 1 - bits[b].t / bits[b].life);
+        ctx.fillStyle = bits[b].color;
+        ctx.beginPath();
+        ctx.arc(bits[b].x, bits[b].y, bits[b].r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    function drawKnife(c, cx, cy, R, deg) {
+      c.save();
+      c.translate(cx, cy);
+      c.rotate(deg * Math.PI / 180);
+      c.lineCap = "round";
+      c.strokeStyle = "#4d5966";
+      c.lineWidth = Math.max(7, R * 0.075);
+      c.beginPath();
+      c.moveTo(0, 0);
+      c.lineTo(0, -R * 1.12);
+      c.stroke();
+      c.strokeStyle = "#f7f9fb";
+      c.lineWidth = Math.max(3.5, R * 0.042);
+      c.beginPath();
+      c.moveTo(0, 0);
+      c.lineTo(0, -R * 1.08);
+      c.stroke();
+      c.strokeStyle = "#9aa3ad";
+      c.lineWidth = Math.max(1, R * 0.012);
+      c.beginPath();
+      c.moveTo(R * 0.02, -R * 0.2);
+      c.lineTo(R * 0.02, -R * 1.02);
+      c.stroke();
+      c.fillStyle = "#8a5a3c";
+      roundPath(c, -R * 0.045, -R * 1.28, R * 0.09, R * 0.24, 4);
+      c.fill();
+      c.fillStyle = "#f0b429";
+      c.fillRect(-R * 0.05, -R * 1.08, R * 0.1, R * 0.035);
+      c.restore();
+    }
+
+    function roundPath(c, x, y, w, h, r) {
+      var rr = Math.min(r, w / 2, h / 2);
+      c.beginPath();
+      c.moveTo(x + rr, y);
+      c.arcTo(x + w, y, x + w, y + h, rr);
+      c.arcTo(x + w, y + h, x, y + h, rr);
+      c.arcTo(x, y + h, x, y, rr);
+      c.arcTo(x, y, x + w, y, rr);
+      c.closePath();
+    }
+
+    function drawShare(name, avgLabel, cleared, heartsNow, win) {
+      var w = shot.width;
+      var h = shot.height;
+      var g = sctx;
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      var bg = g.createLinearGradient(0, 0, 0, h);
+      bg.addColorStop(0, "#fff0f4");
+      bg.addColorStop(1, "#f7c4d4");
+      g.fillStyle = bg;
+      g.fillRect(0, 0, w, h);
+      g.fillStyle = "#fffaf7";
+      roundPath(g, 48, 48, w - 96, h - 96, 36);
+      g.fill();
+      g.fillStyle = "#e4547a";
+      g.beginPath();
+      g.arc(w / 2, 230, 92, 0, Math.PI * 2);
+      g.fill();
+      g.fillStyle = "#fffaf3";
+      g.beginPath();
+      g.arc(w / 2, 224, 78, 0, Math.PI * 2);
+      g.fill();
+      g.strokeStyle = "#e4547a";
+      g.lineWidth = 4;
+      g.beginPath();
+      g.moveTo(w / 2, 150);
+      g.lineTo(w / 2, 300);
+      g.moveTo(w / 2 - 74, 224);
+      g.lineTo(w / 2 + 74, 224);
+      g.stroke();
+      g.fillStyle = "#8a5d6c";
+      g.font = "800 28px " + FONT;
+      g.textAlign = "center";
+      g.textBaseline = "middle";
+      g.fillText("ねむねむゲーム部", w / 2, 390);
+      g.fillStyle = "#3b2430";
+      g.font = "900 42px " + FONT;
+      g.fillText("ぴったりケーキ", w / 2, 450);
+      g.font = "900 64px " + FONT;
+      g.fillStyle = win ? "#146c43" : "#9f1239";
+      g.fillText("『" + name + "』", w / 2, 540);
+      g.fillStyle = "#3b2430";
+      g.font = "900 40px " + FONT;
+      g.fillText("平均誤差 " + avgLabel + "%", w / 2, 640);
+      g.font = "800 36px " + FONT;
+      g.fillText("クリア " + cleared + "/6", w / 2, 710);
+      var heartStr = "";
+      var hi;
+      for (hi = 0; hi < 2; hi++) heartStr += hi < heartsNow ? "♥" : "♡";
+      g.fillStyle = "#e4547a";
+      g.font = "900 42px " + FONT;
+      g.fillText(heartStr, w / 2, 790);
+      g.fillStyle = "#8a5d6c";
+      g.font = "700 22px " + FONT;
+      g.fillText("Day 30", w / 2, 860);
+    }
+
+    function update(dt) {
+      clock += dt;
+      if (shakeT > 0) shakeT = Math.max(0, shakeT - dt);
+      var i = bits.length;
+      while (i--) {
+        var bit = bits[i];
+        bit.t += dt;
+        bit.x += bit.vx * dt;
+        bit.y += bit.vy * dt;
+        bit.vy += 280 * dt;
+        if (bit.t > bit.life) bits.splice(i, 1);
+      }
+      if (phase === "play" && armed && (holdPointer || holdSpace)) {
+        var speed = 360 / current().sweep;
+        knife += speed * dt;
+        var cap = 360 - 0.4;
+        if (knife > cap) knife = cap;
+      }
+      syncHint();
+    }
+
+    function loop(now) {
+      var dt = last ? (now - last) / 1000 : 0;
+      last = now;
+      if (dt > 0.05) dt = 0.05;
+      if (dt < 0) dt = 0;
+      if (!simPause) update(dt);
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    canvas.addEventListener("pointerdown", onPointerDown, { passive: false });
+    window.addEventListener("pointerup", onPointerUp);
+    window.addEventListener("pointercancel", onPointerUp);
+    canvas.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+    window.addEventListener("blur", function () {
+      holdPointer = false;
+      holdSpace = false;
+      releaseSweep();
+    });
+    window.addEventListener("resize", resize);
+    if (window.ResizeObserver) {
+      var ro = new ResizeObserver(resize);
+      ro.observe(stage);
+    }
+    btnStart.addEventListener("click", function () { newRun(); });
+    btnNext.addEventListener("click", function () {
+      if (phase !== "between") return;
+      if (lastResult && lastResult.pass) startRound(roundIndex + 1);
+      else startRound(roundIndex);
+    });
+    btnRetry.addEventListener("click", function () {
+      if (phase !== "end") return;
+      newRun();
+    });
+    btnSave.addEventListener("click", function () {
+      var a = document.createElement("a");
+      a.href = shot.toDataURL("image/png");
+      a.download = "pittari-cake.png";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    });
+    muteBtn.addEventListener("click", function () {
+      ensureAudio();
+      muted = !muted;
+      applyMute();
+      saveStore();
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.code !== "Space" && e.code !== "Enter") return;
+      var tag = e.target && e.target.tagName;
+      if (tag === "A") return;
+      if (e.code === "Space") e.preventDefault();
+      if (e.repeat) return;
+      if (phase === "title") {
+        if (e.code === "Space") suppressSpaceUp = true;
+        newRun();
+        return;
+      }
+      if (phase === "between") {
+        if (e.code === "Space") suppressSpaceUp = true;
+        btnNext.click();
+        return;
+      }
+      if (phase === "end") {
+        if (e.code === "Space") suppressSpaceUp = true;
+        btnRetry.click();
+        return;
+      }
+      if (phase === "play" && e.code === "Space") {
+        holdSpace = true;
+        beginSweep();
+      }
+    });
+    document.addEventListener("keyup", function (e) {
+      if (e.code !== "Space") return;
+      e.preventDefault();
+      if (suppressSpaceUp) {
+        suppressSpaceUp = false;
+        holdSpace = false;
+        return;
+      }
+      holdSpace = false;
+      releaseSweep();
+    });
+
+    loadStore();
+    applyMute();
+    updateHearts(false);
+    updateHud();
+    refreshBest();
+    resize();
+    requestAnimationFrame(loop);
+
+    if (debugMode) {
+      window.__cake = {
+        judge: judge,
+        titleFor: titleFor,
+        outcomeCopy: outcomeCopy,
+        ROUNDS: ROUNDS,
+        MIN_SWEEP: MIN_SWEEP,
+        pause: function (on) { simPause = !!on; },
+        tick: function (dt) { update(dt); draw(); },
+        get: function () {
+          return {
+            phase: phase,
+            hearts: hearts,
+            roundIndex: roundIndex,
+            knife: knife,
+            cuts: cuts.slice(),
+            roundsCleared: roundsCleared,
+            say: sayText.textContent,
+            tol: tolLabel.textContent,
+            target: targetLabel.textContent,
+            note: noteEl.textContent,
+            hint: hintEl.textContent,
+            mood: mood,
+            armed: armed,
+            muted: muted,
+            avgTenths: avgTenthsNow()
+          };
+        },
+        newRun: newRun,
+        cutExact: function (angles) {
+          if (phase !== "play") return;
+          var i;
+          for (i = 0; i < angles.length; i++) pushCut(angles[i]);
+        }
+      };
+    }
+  })();
+  </script>
+</body>
+</html>
