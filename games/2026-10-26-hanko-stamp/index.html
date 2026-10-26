@@ -1,0 +1,1915 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#6a3b28">
+  <meta name="description" content="本格はんこ押し。ゲン師範の印を、枠の中の円へ押したまま押す。ずれ・傾き・インクの合格数字で判定。印の外とにじみは即失敗。">
+  <meta property="og:title" content="本格はんこ押し — Hanko Stamp">
+  <meta property="og:description" content="押したまま、緑の帯で離す。ずれ・傾き・インクで段位が決まる。">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://grokbot365game.github.io/daily-casual-games/games/2026-10-26-hanko-stamp/">
+  <title>本格はんこ押し</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='%23d7263d'/%3E%3Ccircle cx='8' cy='8' r='4.2' fill='none' stroke='%23fff6e8' stroke-width='1'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      --ink: #241816;
+      --muted: #7a5b4a;
+      --paper: #fbf6ea;
+      --line: rgba(36, 24, 22, .14);
+      --accent: #c4322e;
+      --gold: #c6a15a;
+      --good: #1b7a45;
+      --bad: #a3162a;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none; }
+    body {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      color: var(--ink);
+      background:
+        radial-gradient(70% 40% at 50% 0%, #8a5340 0%, transparent 60%),
+        linear-gradient(180deg, #4a2a1c 0%, #2a1610 100%);
+      font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Yu Gothic", "WenQuanYi Micro Hei", "Droid Sans Fallback", "Meiryo", sans-serif;
+      font-size: 16px;
+      line-height: 1.4;
+      -webkit-text-size-adjust: 100%;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: none;
+    }
+    [hidden] { display: none !important; }
+    button, a { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+    button:focus-visible, a:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+    .back, .mute {
+      position: fixed;
+      z-index: 70;
+      top: max(10px, env(safe-area-inset-top));
+      border: 0;
+      border-radius: 999px;
+      color: var(--ink);
+      background: rgba(251, 246, 234, .94);
+      box-shadow: inset 0 0 0 1px var(--line);
+      font-weight: 800;
+      text-decoration: none;
+    }
+    .back {
+      left: max(12px, env(safe-area-inset-left));
+      padding: 8px 14px;
+      min-height: 44px;
+      display: grid;
+      place-items: center;
+      font-size: .78rem;
+      letter-spacing: .04em;
+    }
+    .mute {
+      right: max(12px, env(safe-area-inset-right));
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+    }
+    .mute svg { width: 22px; height: 22px; display: block; }
+    .mute .slash { display: none; }
+    .mute.is-muted .slash { display: block; }
+    .shell {
+      height: 100%;
+      max-width: 520px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding:
+        calc(max(8px, env(safe-area-inset-top)) + 48px)
+        max(10px, env(safe-area-inset-right))
+        max(8px, env(safe-area-inset-bottom))
+        max(10px, env(safe-area-inset-left));
+      min-height: 0;
+    }
+    .hud {
+      flex: none;
+      border-radius: 16px;
+      padding: 7px 10px 8px;
+      background: rgba(251, 246, 234, .96);
+      box-shadow: inset 0 0 0 1px var(--line), 0 8px 18px rgba(36, 24, 22, .18);
+    }
+    .hud-top, .meter-row, .live-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .hud-top b { font-size: .95rem; letter-spacing: .04em; }
+    .round-label { font-size: .78rem; font-weight: 800; color: var(--muted); }
+    .say {
+      margin: 2px 0;
+      min-height: 1.3em;
+      font-size: .84rem;
+      font-weight: 900;
+      line-height: 1.35;
+    }
+    .say .who { color: var(--accent); margin-right: 4px; letter-spacing: .06em; font-size: .75rem; }
+    .tol {
+      margin: 0 0 4px;
+      font-size: .78rem;
+      font-weight: 900;
+      color: var(--bad);
+      line-height: 1.35;
+    }
+    .note {
+      margin: 4px 0 0;
+      font-size: .75rem;
+      font-weight: 800;
+      color: var(--ink);
+    }
+    .hearts { letter-spacing: .08em; font-size: 1rem; }
+    .hearts i { font-style: normal; color: #d7263d; }
+    .hearts i.off { color: #eadfd4; }
+    .hearts i.pop { display: inline-block; animation: heartpop .35s ease; }
+    @keyframes heartpop {
+      0% { transform: scale(1.45); }
+      100% { transform: scale(1); }
+    }
+    .meter-row { margin-top: 2px; }
+    .inkbar {
+      position: relative;
+      flex: 1;
+      height: 16px;
+      border-radius: 999px;
+      background: #efe4d2;
+      box-shadow: inset 0 0 0 1px rgba(36, 24, 22, .12);
+      overflow: hidden;
+    }
+    .inkbar.in-band { box-shadow: inset 0 0 0 2px var(--good); }
+    .inkbar.over { box-shadow: inset 0 0 0 2px var(--bad); }
+    .inkzone {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      background: #8dce67;
+    }
+    .inkmark {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      margin-left: -1.5px;
+      background: #241816;
+    }
+    .inkpct, .timelabel {
+      flex: none;
+      min-width: 52px;
+      font-size: .78rem;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+    .inkpct.ok { color: var(--good); }
+    .inkpct.bad { color: var(--bad); }
+    .timewrap { flex: none; width: 74px; }
+    .timebar {
+      height: 8px;
+      border-radius: 999px;
+      background: #efe4d2;
+      overflow: hidden;
+      box-shadow: inset 0 0 0 1px rgba(36, 24, 22, .1);
+    }
+    .timefill { height: 100%; width: 100%; background: #2a6f9a; }
+    .timebar.low .timefill { background: #d7263d; }
+    .timelabel { display: block; min-width: 0; text-align: right; color: var(--muted); }
+    .timelabel.stop { color: var(--good); }
+    .live-row {
+      margin-top: 3px;
+      font-size: .78rem;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+      justify-content: flex-start;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .live-row b.ok { color: var(--good); }
+    .live-row b.bad { color: var(--bad); }
+    .live-row b { font-weight: 900; }
+    .stage {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      border-radius: 22px;
+      overflow: hidden;
+      background: #5a341f;
+      touch-action: none;
+      box-shadow: inset 0 0 0 1px rgba(255, 236, 214, .16);
+    }
+    canvas#game {
+      width: 100%;
+      height: 100%;
+      display: block;
+      touch-action: none;
+      cursor: crosshair;
+    }
+    .hint {
+      flex: none;
+      margin: 0;
+      min-height: 1.35em;
+      text-align: center;
+      font-size: .84rem;
+      font-weight: 900;
+      color: #fbf6ea;
+    }
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding:
+        max(12px, env(safe-area-inset-top))
+        12px
+        max(12px, env(safe-area-inset-bottom));
+      background: rgba(28, 14, 10, .66);
+      overflow: hidden;
+    }
+    .card {
+      width: min(100%, 420px);
+      max-height: calc(100dvh - 24px);
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-y;
+      margin: 0 auto;
+      padding: 14px 14px 12px;
+      border-radius: 22px;
+      background: var(--paper);
+      box-shadow: 0 18px 48px rgba(28, 14, 10, .4);
+      text-align: center;
+    }
+    .card h1, .card h2 {
+      margin: 0;
+      font-size: 1.55rem;
+      letter-spacing: .06em;
+      line-height: 1.2;
+    }
+    .card h2.ok { color: var(--good); }
+    .card h2.bad { color: var(--bad); }
+    .en, .fine, .best {
+      margin: 3px 0;
+      color: var(--muted);
+      font-size: .75rem;
+      font-weight: 800;
+    }
+    .flavor { margin: 2px 0 6px; font-weight: 900; }
+    .rules {
+      margin: 8px 0;
+      padding: 8px 10px 8px 28px;
+      border-radius: 14px;
+      background: #f8efe3;
+      text-align: left;
+      font-weight: 900;
+      font-size: .88rem;
+      line-height: 1.45;
+    }
+    .rules li { margin: 4px 0; }
+    .go, .retry, .share, .ghost {
+      display: block;
+      width: 100%;
+      min-height: 48px;
+      margin-top: 8px;
+      border: 0;
+      border-radius: 14px;
+      font-weight: 900;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .go, .retry { background: var(--accent); color: white; }
+    .share { background: #1d4e89; color: white; text-align: center; line-height: 48px; }
+    .ghost { background: #fff; box-shadow: inset 0 0 0 1px var(--line); }
+    .fine a { color: var(--muted); font-weight: 900; }
+    .quote {
+      margin: 6px 0 2px;
+      font-size: 1.7rem;
+      font-weight: 900;
+      letter-spacing: .08em;
+    }
+    .res-score { margin: 2px 0; font-weight: 900; font-size: 1.02rem; }
+    .why { margin: 4px 0; font-weight: 900; font-size: .95rem; }
+    .why.ok { color: var(--good); }
+    .why.bad { color: var(--bad); }
+    .nums, .rounds {
+      list-style: none;
+      margin: 8px 0;
+      padding: 0;
+      text-align: left;
+    }
+    .nums li, .rounds li {
+      margin: 4px 0;
+      padding: 6px 8px;
+      border-radius: 10px;
+      background: #e7f6ee;
+      color: var(--good);
+      font-weight: 900;
+      font-size: .95rem;
+      font-variant-numeric: tabular-nums;
+    }
+    .nums li.bad, .rounds li.bad { background: #fde8ea; color: var(--bad); }
+    .nums li span, .rounds li small {
+      display: block;
+      font-size: .78rem;
+      font-weight: 800;
+      opacity: .9;
+    }
+    .owl-mini { width: 92px; height: 108px; margin: 0 auto; display: block; }
+    #shot {
+      width: 100%;
+      height: auto;
+      max-height: 280px;
+      object-fit: contain;
+      border-radius: 12px;
+      background: #fff;
+      box-shadow: inset 0 0 0 1px var(--line);
+    }
+    .live {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+    }
+    @media (max-height: 740px) {
+      .card { padding: 10px 12px; }
+      .card h1, .card h2 { font-size: 1.28rem; }
+      .rules { font-size: .78rem; margin: 6px 0; }
+      .say { font-size: .78rem; }
+      .quote { font-size: 1.35rem; }
+      .owl-mini { width: 72px; height: 86px; }
+      #shot { max-height: 180px; }
+      .hud { padding: 5px 8px 6px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .hearts i { animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <a class="back" href="../../index.html">ギャラリー</a>
+  <button type="button" class="mute is-muted" id="mute" aria-pressed="true" aria-label="音を出す">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="M4 9h4l5-4v14l-5-4H4z"/>
+      <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 9.5a4 4 0 0 1 0 5"/>
+      <path class="slash" fill="none" stroke="#c4322e" stroke-width="2.4" stroke-linecap="round" d="M6 5l13 14"/>
+    </svg>
+  </button>
+  <p class="live" id="live" aria-live="polite"></p>
+  <div class="shell">
+    <header class="hud">
+      <div class="hud-top">
+        <b>本格はんこ押し</b>
+        <span class="hearts" id="hearts" aria-label="ハート2"><i>♥</i><i>♥</i></span>
+      </div>
+      <div class="hud-top">
+        <p class="say" id="say"><span class="who">ゲン師範</span><span id="say-text">印は、押してからが本番じゃ。</span></p>
+        <span class="round-label" id="round-label">1/6 練習</span>
+      </div>
+      <p class="tol" id="tol">合格 ずれ≤11mm　傾きの差≤12°　インク 46〜96%</p>
+      <div class="meter-row">
+        <div class="inkbar" id="inkbar" aria-hidden="true">
+          <div class="inkzone" id="inkzone"></div>
+          <div class="inkmark" id="inkmark"></div>
+        </div>
+        <span class="inkpct" id="inkpct">0%</span>
+        <div class="timewrap">
+          <div class="timebar" id="timebar"><div class="timefill" id="timefill"></div></div>
+          <span class="timelabel" id="timelabel">10.0秒</span>
+        </div>
+      </div>
+      <div class="live-row" id="live-stats">ずれ —　傾き —　インク 0%</div>
+      <p class="note" id="note">練習。失敗してもハートは減らない。うすい十字が印の真ん中。</p>
+    </header>
+    <div class="stage" id="stage">
+      <canvas id="game" width="360" height="520" aria-label="本格はんこ押し。印の円を押したまま、緑の帯で離す"></canvas>
+    </div>
+    <p class="hint" id="hint">印の円を、押したまま</p>
+  </div>
+
+  <div class="overlay" id="title">
+    <div class="card">
+      <canvas class="owl-mini" id="owl-title" width="184" height="216" aria-hidden="true"></canvas>
+      <h1>本格はんこ押し</h1>
+      <p class="en">Hanko Stamp · Day 31</p>
+      <p class="flavor">ゲン師範の印を預かる。</p>
+      <ol class="rules">
+        <li>枠の中の円を押したまま、インクが緑の帯に入ったら離す。押すと時間は止まり、0の前に押しはじめる。</li>
+        <li>押したまま左右にずらすと傾く。緑の線が傾きの合格、白い円の外はにじみ。ゆれる回は書類がひとりで動き、押すと止まる。</li>
+        <li>画面の合格数字を全部満たすと成功。練習は減らない。本番の不合格はハート−1（2つ）、印の外とにじみは即失敗。</li>
+      </ol>
+      <p class="best" id="title-best" hidden></p>
+      <button type="button" class="go" id="btn-start">押しはじめる</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="between" hidden>
+    <div class="card" id="between-card">
+      <canvas class="owl-mini" id="owl-between" width="184" height="216" aria-hidden="true"></canvas>
+      <p class="en" id="between-kicker">ラウンド 1/6 練習</p>
+      <h2 id="between-title">合格</h2>
+      <p class="why" id="between-why"></p>
+      <ul class="nums" id="between-nums"></ul>
+      <p class="res-score" id="between-score">点数 0</p>
+      <button type="button" class="retry" id="btn-next">つぎへ</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="end" hidden>
+    <div class="card" id="end-card">
+      <canvas class="owl-mini" id="owl-end" width="184" height="216" aria-hidden="true"></canvas>
+      <p class="en">判定状 · 本格はんこ押し</p>
+      <p class="quote" id="end-rank">見習い</p>
+      <p class="res-score" id="end-score">合格 0/5</p>
+      <p class="why" id="end-comment"></p>
+      <canvas id="shot" width="720" height="960" aria-label="結果カード"></canvas>
+      <ul class="rounds" id="end-rounds"></ul>
+      <p class="best" id="end-best" hidden></p>
+      <button type="button" class="retry" id="btn-retry">すぐリトライ</button>
+      <a class="share" id="btn-share" href="https://x.com/intent/tweet" target="_blank" rel="noopener noreferrer">結果をXでシェア</a>
+      <button type="button" class="ghost" id="btn-save">カードを保存</button>
+      <p class="fine"><a href="../../index.html">ギャラリーへ</a></p>
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    var FONT = '"Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", "WenQuanYi Micro Hei", "Droid Sans Fallback", sans-serif';
+    var PLAY_URL = "https://grokbot365game.github.io/daily-casual-games/games/2026-10-26-hanko-stamp/";
+    var VW = 360;
+    var VH = 520;
+    var MM = 4;
+    var DEAD = 10;
+    var PX_PER_DEG = 2.4;
+    var INK_MS = 1500;
+    var STORE_KEY = "hanko31-best";
+    var RANK_INDEX = { "見習い": 0, "初段": 1, "二段": 2, "三段": 3, "四段": 4, "五段": 5, "範士": 6, "名人": 7 };
+
+    var ROUNDS = [
+      {
+        name: "練習", doc: "見習い届", practice: true, guide: true,
+        box: 116, offsetLimitMm: 11, tiltLimit: 12, ink: [46, 96],
+        paperAngle: 0, sway: 0, period: 2.8, time: 10, smear: 64, stampR: 34, wari: false,
+        note: "練習。失敗してもハートは減らない。うすい十字が印の真ん中。",
+        say: "練習じゃ。円の真ん中を押し、緑の帯で離すのだ。"
+      },
+      {
+        name: "本印", doc: "誓約書", practice: false, guide: false,
+        box: 92, offsetLimitMm: 6.5, tiltLimit: 6, ink: [64, 86],
+        paperAngle: 0, sway: 0, period: 2.8, time: 9, smear: 62, stampR: 30, wari: false,
+        note: "本印。左右にずらすと傾く。白い円の外はにじむ。",
+        say: "本印じゃ。緑の帯で離せ。ずらすと傾くぞ。"
+      },
+      {
+        name: "ゆれ紙", doc: "出張届", practice: false, guide: false,
+        box: 96, offsetLimitMm: 7.5, tiltLimit: 7, ink: [62, 88],
+        paperAngle: 0, sway: 50, period: 2.7, time: 9, smear: 62, stampR: 30, wari: false,
+        note: "書類がひとりで左右にゆれる。押した瞬間に止まる。",
+        say: "書類がひとりで動く。押した位置で止まるぞ。"
+      },
+      {
+        name: "斜め机", doc: "辞令", practice: false, guide: false,
+        box: 96, offsetLimitMm: 7.5, tiltLimit: 6, ink: [62, 88],
+        paperAngle: 16, sway: 0, period: 2.8, time: 9.5, smear: 96, stampR: 30, wari: false,
+        note: "机が右に16°。押したまま右へずらし、緑の線の16°に合わせる。",
+        say: "机は右に16°。はんこも右へ16°じゃ。"
+      },
+      {
+        name: "豆印", doc: "受領書", practice: false, guide: false,
+        box: 58, offsetLimitMm: 3.8, tiltLimit: 5, ink: [68, 84],
+        paperAngle: 0, sway: 0, period: 2.8, time: 8.5, smear: 58, stampR: 16, wari: false,
+        note: "豆印。枠が小さい。ずれ・傾き・緑の帯が細い。",
+        say: "豆印じゃ。小さい円の真ん中を、細い緑で押せ。"
+      },
+      {
+        name: "割印", doc: "契約書", practice: false, guide: false,
+        box: 104, offsetLimitMm: 5, tiltLimit: 6, ink: [64, 86],
+        paperAngle: 0, sway: 0, period: 2.8, time: 9, smear: 62, stampR: 30, wari: true, gap: 8,
+        note: "割印。二枚の境目が円の真ん中になるよう押す。",
+        say: "割印じゃ。境目の真ん中を押せ。"
+      }
+    ];
+
+    var canvas = document.getElementById("game");
+    var ctx = canvas.getContext("2d");
+    var stage = document.getElementById("stage");
+    var sayText = document.getElementById("say-text");
+    var roundLabel = document.getElementById("round-label");
+    var tolLabel = document.getElementById("tol");
+    var noteEl = document.getElementById("note");
+    var hintEl = document.getElementById("hint");
+    var heartsEl = document.getElementById("hearts");
+    var inkbar = document.getElementById("inkbar");
+    var inkzone = document.getElementById("inkzone");
+    var inkmark = document.getElementById("inkmark");
+    var inkpct = document.getElementById("inkpct");
+    var timebar = document.getElementById("timebar");
+    var timefill = document.getElementById("timefill");
+    var timelabel = document.getElementById("timelabel");
+    var liveStats = document.getElementById("live-stats");
+    var liveEl = document.getElementById("live");
+    var titleEl = document.getElementById("title");
+    var betweenEl = document.getElementById("between");
+    var betweenCard = document.getElementById("between-card");
+    var betweenKicker = document.getElementById("between-kicker");
+    var betweenTitle = document.getElementById("between-title");
+    var betweenWhy = document.getElementById("between-why");
+    var betweenNums = document.getElementById("between-nums");
+    var betweenScore = document.getElementById("between-score");
+    var endEl = document.getElementById("end");
+    var endCard = document.getElementById("end-card");
+    var endRank = document.getElementById("end-rank");
+    var endScore = document.getElementById("end-score");
+    var endComment = document.getElementById("end-comment");
+    var endRounds = document.getElementById("end-rounds");
+    var endBest = document.getElementById("end-best");
+    var shot = document.getElementById("shot");
+    var shotCtx = shot.getContext("2d");
+    var titleBest = document.getElementById("title-best");
+    var muteBtn = document.getElementById("mute");
+    var btnStart = document.getElementById("btn-start");
+    var btnNext = document.getElementById("btn-next");
+    var btnRetry = document.getElementById("btn-retry");
+    var btnShare = document.getElementById("btn-share");
+    var btnSave = document.getElementById("btn-save");
+
+    var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var dpr = 1;
+    var cssW = 360;
+    var cssH = 520;
+    var view = { s: 1, ox: 0, oy: 0 };
+    var phase = "title";
+    var roundIndex = 0;
+    var hearts = 2;
+    var log = [];
+    var elapsed = 0;
+    var holding = false;
+    var ptrId = null;
+    var pressX = 0;
+    var pressY = 0;
+    var holdDx = 0;
+    var holdDy = 0;
+    var ink = 0;
+    var holdStart = 0;
+    var paperLocked = false;
+    var lockedSway = 0;
+    var seal = null;
+    var lastResult = null;
+    var revealAt = 0;
+    var presented = false;
+    var bandTick = false;
+    var mood = "idle";
+    var sayCache = "";
+    var audioCtx = null;
+    var muted = true;
+    var bestRank = loadBest();
+    var lastTs = 0;
+    var animT = 0;
+
+    function current() { return ROUNDS[roundIndex]; }
+    function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+    function paperGeom(round) {
+      var paperW = 216, paperH = 284, cx = 180, cy = 186;
+      if (round.wari) { paperW = 232; paperH = 268; cy = 184; }
+      else if (round.paperAngle) { paperW = 196; paperH = 248; cy = 176; }
+      else if (round.sway) { paperW = 172; paperH = 248; cy = 180; }
+      return { paperW: paperW, paperH: paperH, cx: cx, cy: cy, gap: round.gap || 8 };
+    }
+    function swayAmp(round) {
+      if (!round.sway) return 0;
+      var g = paperGeom(round);
+      var left = g.cx - g.paperW / 2 - 8;
+      var right = VW - 8 - (g.cx + g.paperW / 2);
+      return Math.max(0, Math.min(round.sway, left, right));
+    }
+    function swayNow() {
+      var round = current();
+      if (paperLocked) return lockedSway;
+      if (phase !== "play" || !round.sway) return 0;
+      return Math.sin(elapsed * Math.PI * 2 / round.period) * swayAmp(round);
+    }
+    function toLocal(x, y, geom, sway, angleDeg) {
+      var dx = x - geom.cx;
+      var dy = y - geom.cy;
+      var a = angleDeg * Math.PI / 180;
+      var cos = Math.cos(a);
+      var sin = Math.sin(a);
+      return { x: dx * cos + dy * sin - sway, y: -dx * sin + dy * cos };
+    }
+    function tiltOf(dx) {
+      var ax = Math.abs(dx);
+      if (ax <= DEAD) return 0;
+      var signed = dx - Math.sign(dx) * DEAD;
+      var deg = signed / PX_PER_DEG;
+      return clamp(deg, -42, 42);
+    }
+    function dxForTilt(tilt) {
+      if (Math.abs(tilt) < 0.001) return 0;
+      return Math.sign(tilt) * (DEAD + Math.abs(tilt) * PX_PER_DEG);
+    }
+    function timeLeft() { return Math.max(0, current().time - elapsed); }
+
+    function metric(value, limit) {
+      var t = limit <= 0 ? (value <= 0 ? 0 : 2) : value / limit;
+      var s = 100 - t * 30;
+      if (t > 1) s = 70 - (t - 1) * 80;
+      return clamp(s, 0, 100);
+    }
+    function measureAt(x, y, dx, inkValue, round, sway) {
+      var geom = paperGeom(round);
+      var local = toLocal(x, y, geom, sway, round.paperAngle);
+      var offsetPx = Math.hypot(local.x, local.y);
+      var offsetShow = Math.round(offsetPx / MM * 10) / 10;
+      var half = round.box / 2;
+      var outside = Math.abs(local.x) > half || Math.abs(local.y) > half;
+      var stampDeg = tiltOf(dx);
+      var tiltShow = Math.round(Math.abs(stampDeg - round.paperAngle));
+      var inkShow = Math.round(inkValue);
+      var offOk = offsetShow <= round.offsetLimitMm;
+      var tiltOk = tiltShow <= round.tiltLimit;
+      var inkOk = inkShow >= round.ink[0] && inkShow <= round.ink[1];
+      var pass = !outside && offOk && tiltOk && inkOk;
+      var halfBand = (round.ink[1] - round.ink[0]) / 2;
+      var center = (round.ink[1] + round.ink[0]) / 2;
+      var o = metric(offsetShow, round.offsetLimitMm);
+      var t = metric(tiltShow, round.tiltLimit);
+      var i = metric(Math.abs(inkShow - center), halfBand);
+      var raw = Math.round(0.42 * o + 0.28 * t + 0.30 * i);
+      var score;
+      if (!pass) score = Math.round(clamp(Math.min(raw, o, t, i, 59), 0, 59));
+      else score = Math.round(clamp(Math.max(70, raw), 70, 100));
+      var bits = [];
+      if (!offOk) bits.push("ずれ");
+      if (!tiltOk) bits.push("傾き");
+      if (!inkOk) bits.push("インク");
+      var reason = bits.length ? bits.join("・") + "が合格の外" : "合格数字を全部満たした";
+      var big = null;
+      if (outside) {
+        big = "outside";
+        reason = "印の枠の外です";
+        pass = false;
+        score = 0;
+      }
+      return {
+        name: round.name,
+        practice: round.practice,
+        pass: pass,
+        score: score,
+        big: big,
+        timeout: false,
+        offsetShow: offsetShow,
+        offsetLimit: round.offsetLimitMm,
+        offOk: offOk && !outside,
+        tiltShow: tiltShow,
+        tiltLimit: round.tiltLimit,
+        tiltOk: tiltOk,
+        stampDeg: Math.round(stampDeg),
+        targetDeg: round.paperAngle,
+        inkShow: inkShow,
+        inkLo: round.ink[0],
+        inkHi: round.ink[1],
+        inkOk: inkOk,
+        reason: reason,
+        localX: local.x,
+        localY: local.y,
+        stampRot: stampDeg
+      };
+    }
+    function measureNow() {
+      var round = current();
+      return measureAt(pressX, pressY, holdDx, ink, round, swayNow());
+    }
+    function blankTimeout(round) {
+      return {
+        name: round.name,
+        practice: round.practice,
+        pass: false,
+        score: 0,
+        big: null,
+        timeout: true,
+        offsetShow: null,
+        offsetLimit: round.offsetLimitMm,
+        offOk: false,
+        tiltShow: null,
+        tiltLimit: round.tiltLimit,
+        tiltOk: false,
+        stampDeg: null,
+        targetDeg: round.paperAngle,
+        inkShow: null,
+        inkLo: round.ink[0],
+        inkHi: round.ink[1],
+        inkOk: false,
+        reason: "時間切れ",
+        localX: 0,
+        localY: 0,
+        stampRot: 0
+      };
+    }
+
+    function loadBest() {
+      try {
+        var raw = localStorage.getItem(STORE_KEY);
+        if (!raw) return null;
+        var n = JSON.parse(raw);
+        if (!n || typeof n.rank !== "string") return null;
+        return n;
+      } catch (err) { return null; }
+    }
+    function saveBest(rank, passes) {
+      var prev = RANK_INDEX[bestRank && bestRank.rank] || -1;
+      var next = RANK_INDEX[rank] || 0;
+      if (next < prev) return false;
+      if (next === prev && bestRank && passes <= bestRank.passes) return false;
+      bestRank = { rank: rank, passes: passes };
+      try { localStorage.setItem(STORE_KEY, JSON.stringify(bestRank)); } catch (err) {}
+      return true;
+    }
+    function refreshBest() {
+      if (!bestRank) { titleBest.hidden = true; return; }
+      titleBest.hidden = false;
+      titleBest.textContent = "ベスト段位 " + bestRank.rank;
+    }
+
+    function ensureAudio() {
+      if (muted) return null;
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      if (!audioCtx) audioCtx = new AC();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      return audioCtx;
+    }
+    function blip(freq, dur, type, gain) {
+      var ac = ensureAudio();
+      if (!ac) return;
+      var o = ac.createOscillator();
+      var g = ac.createGain();
+      o.type = type || "sine";
+      o.frequency.value = freq;
+      g.gain.value = gain == null ? 0.05 : gain;
+      o.connect(g);
+      g.connect(ac.destination);
+      var t0 = ac.currentTime;
+      g.gain.setValueAtTime(g.gain.value, t0);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.start(t0);
+      o.stop(t0 + dur + 0.02);
+    }
+    function stampNoise() {
+      var ac = ensureAudio();
+      if (!ac) return;
+      var n = Math.floor(ac.sampleRate * 0.09);
+      var buf = ac.createBuffer(1, n, ac.sampleRate);
+      var data = buf.getChannelData(0);
+      var i;
+      for (i = 0; i < n; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / n);
+      var src = ac.createBufferSource();
+      src.buffer = buf;
+      var filter = ac.createBiquadFilter();
+      filter.type = "lowpass";
+      filter.frequency.value = 420;
+      var g = ac.createGain();
+      g.gain.value = 0.22;
+      src.connect(filter);
+      filter.connect(g);
+      g.connect(ac.destination);
+      src.start();
+      blip(180, 0.08, "triangle", 0.04);
+    }
+    function applyMute() {
+      muteBtn.classList.toggle("is-muted", muted);
+      muteBtn.setAttribute("aria-pressed", muted ? "true" : "false");
+      muteBtn.setAttribute("aria-label", muted ? "音を出す" : "音を消す");
+    }
+    function setMood(next) { mood = next; }
+    function setSay(text) {
+      if (text === sayCache) return;
+      sayCache = text;
+      sayText.textContent = text;
+    }
+    function announce(text) { liveEl.textContent = text; }
+    function updateHearts(pop) {
+      var h = "";
+      h += '<i class="' + (hearts >= 1 ? "" : "off") + (pop && hearts === 0 ? " pop" : "") + '">♥</i>';
+      h += '<i class="' + (hearts >= 2 ? "" : "off") + (pop && hearts === 1 ? " pop" : "") + '">♥</i>';
+      heartsEl.innerHTML = h;
+      heartsEl.setAttribute("aria-label", "ハート" + hearts);
+    }
+    function thresholdText(round) {
+      var s = "合格 ずれ≤" + round.offsetLimitMm + "mm　傾きの差≤" + round.tiltLimit + "°　インク " + round.ink[0] + "〜" + round.ink[1] + "%";
+      if (round.paperAngle) s += "　目標 " + round.paperAngle + "°";
+      return s;
+    }
+    function paintInkZone(round) {
+      inkzone.style.left = round.ink[0] + "%";
+      inkzone.style.width = (round.ink[1] - round.ink[0]) + "%";
+    }
+    function fmtNum(v, unit) {
+      if (v == null) return "—";
+      return v + unit;
+    }
+    function setLive(m, pressed) {
+      if (!pressed) {
+        var round = current();
+        liveStats.innerHTML = "ずれ —　傾きの差 —　目標 " + round.paperAngle + "°　インク 0%";
+        return;
+      }
+      var oc = m.offOk ? "ok" : "bad";
+      var tc = m.tiltOk ? "ok" : "bad";
+      var ic = m.inkOk ? "ok" : "bad";
+      liveStats.innerHTML =
+        '<b class="' + oc + '">ずれ ' + m.offsetShow.toFixed(1) + "mm</b>" +
+        '<b class="' + tc + '">傾きの差 ' + m.tiltShow + "°</b>" +
+        '<b class="' + ic + '">インク ' + m.inkShow + "%</b>";
+    }
+    function coachLine() {
+      var round = current();
+      if (!holding) {
+        if (timeLeft() <= 3) return "残りが少ない。0の前に押すのだ。";
+        return round.say;
+      }
+      var dist = Math.hypot(holdDx, holdDy);
+      if (dist >= round.smear * 0.8) return "白い円のふちじゃ。それ以上動かすな。";
+      var m = measureNow();
+      if (m.big === "outside") {
+        return round.practice ? "枠の外じゃ。練習なのでハートは減らない。" : "枠の外じゃ。離すと即失敗じゃ。";
+      }
+      if (m.inkShow > round.ink[1]) {
+        if (!m.offOk && !m.tiltOk) return "濃すぎる。ずれも傾きも外じゃ。";
+        if (!m.offOk) return "濃すぎる。ずれも外じゃ。";
+        if (!m.tiltOk) return "濃すぎる。傾きも外じゃ。";
+        return "緑の帯を過ぎた。濃すぎるぞ。";
+      }
+      var inkLow = m.inkShow < round.ink[0];
+      if (!m.offOk && !m.tiltOk && inkLow) return "ずれも傾きも外。インクはまだ薄い。";
+      if (!m.offOk && !m.tiltOk) return "ずれも傾きも、合格の外じゃ。";
+      if (!m.offOk && inkLow) return "ずれが外じゃ。インクはまだ薄い。";
+      if (!m.offOk) return "ずれが合格の外。位置は押し始めのまま。";
+      if (!m.tiltOk && inkLow) return "傾きが外じゃ。インクはまだ薄い。";
+      if (!m.tiltOk) return "インクは帯の中。傾きを左右で合わせろ。";
+      if (inkLow) return "ずれも傾きも範囲内。緑まで押せ。";
+      return "範囲内じゃ。離すのだ。";
+    }
+
+    function outcomeSay(result, round) {
+      if (result.timeout) {
+        if (round.practice) return "時間切れじゃ。練習なのでハートは減らない。";
+        if (hearts <= 0) return "時間切れじゃ。ハートが0。";
+        return "時間切れじゃ。ハートがあと" + hearts + "つ。";
+      }
+      if (result.big === "smear") {
+        return round.practice ? "にじんだ。練習なのでハートは減らない。" : "にじんだ。即失敗じゃ。";
+      }
+      if (result.big === "outside") {
+        return round.practice ? "枠の外じゃ。練習なのでハートは減らない。" : "枠の外じゃ。即失敗じゃ。";
+      }
+      if (result.pass) {
+        return round.practice ? "練習は合格。ハートは減らない。" : "合格じゃ。";
+      }
+      if (round.practice) return "練習は不合格。ハートは減らない。";
+      if (hearts <= 0) return "不合格。ハートが0じゃ。";
+      return "不合格。ハートがあと" + hearts + "つ。";
+    }
+
+    function scoredStats(list) {
+      var passes = 0;
+      var sum = 0;
+      var n = 0;
+      var i;
+      for (i = 0; i < list.length; i++) {
+        if (list[i].practice) continue;
+        n++;
+        sum += list[i].score;
+        if (list[i].pass) passes++;
+      }
+      return { passes: passes, n: n, avg: n ? sum / n : 0 };
+    }
+    function computeRank(list) {
+      var st = scoredStats(list);
+      var practicePass = list.length && list[0].practice && list[0].pass;
+      var full = st.passes === 5;
+      var rank = "見習い";
+      if (st.passes >= 1) rank = "初段";
+      if (st.passes >= 2) rank = "二段";
+      if (st.passes >= 3) rank = "三段";
+      if (st.passes >= 4) rank = "四段";
+      if (full && st.avg < 78) rank = "五段";
+      if (full && st.avg >= 78) rank = "範士";
+      if (full && st.avg >= 86 && practicePass) rank = "名人";
+      return { rank: rank, passes: st.passes, avg: st.avg, practicePass: !!practicePass, full: full };
+    }
+    function senseiComment(info, list) {
+      var last = list[list.length - 1];
+      if (last && last.big === "smear" && !last.practice) return "白い円の外は、にじみじゃ。即失格。";
+      if (last && last.big === "outside" && !last.practice) return "枠の外は、ハートが残っていても終わりじゃ。";
+      if (hearts <= 0 && last && !last.pass) return "ハートが尽きた。合格の数字を見て押せ。";
+      if (info.rank === "名人") return "これぞ本格。印に魂が乗っておる。";
+      if (info.rank === "範士" && !info.practicePass && info.avg >= 86) return "本番五枚は合格。練習が落ちたので範士じゃ。";
+      if (info.rank === "範士") return "本番五枚は合格。名人まであと少しじゃ。";
+      if (info.rank === "五段") return "本番五枚は合格。まだ点数が若い。";
+      if (info.rank === "四段") return "合格が四つ。良い腕じゃ。";
+      if (info.rank === "三段") return "合格が三つ。形になってきた。";
+      if (info.rank === "二段") return "合格が二つ。まだ道の途中じゃ。";
+      if (info.rank === "初段") return "合格が一つ。入口に立ったぞ。";
+      return "緑の帯で離す。まずはそこからじゃ。";
+    }
+
+    function startRound(index) {
+      roundIndex = index;
+      phase = "play";
+      holding = false;
+      ptrId = null;
+      paperLocked = false;
+      lockedSway = 0;
+      elapsed = 0;
+      ink = 0;
+      holdDx = 0;
+      holdDy = 0;
+      seal = null;
+      lastResult = null;
+      presented = false;
+      bandTick = false;
+      var round = current();
+      setMood("idle");
+      setSay(round.say);
+      roundLabel.textContent = (index + 1) + "/" + ROUNDS.length + " " + round.name;
+      tolLabel.textContent = thresholdText(round);
+      noteEl.textContent = round.note;
+      hintEl.textContent = round.paperAngle ? "押したまま、右の16°へ" : "印の円を、押したまま";
+      paintInkZone(round);
+      inkmark.style.left = "0%";
+      inkpct.textContent = "0%";
+      inkpct.className = "inkpct";
+      inkbar.className = "inkbar";
+      updateHearts(false);
+      setLive(null, false);
+      titleEl.hidden = true;
+      betweenEl.hidden = true;
+      endEl.hidden = true;
+      announce(round.name + "。" + round.note + thresholdText(round));
+    }
+
+    function newRun() {
+      hearts = 2;
+      log = [];
+      updateHearts(false);
+      startRound(0);
+    }
+
+    function commit(result) {
+      if (phase !== "play") return;
+      phase = "reveal";
+      holding = false;
+      ptrId = null;
+      revealAt = performance.now();
+      presented = false;
+      lastResult = result;
+      var round = current();
+      if (!round.practice && !result.pass && !result.big) {
+        hearts -= 1;
+        updateHearts(true);
+      }
+      if (result.pass) {
+        setMood("happy");
+        blip(660, 0.08, "sine", 0.05);
+        blip(880, 0.1, "sine", 0.04);
+      } else {
+        setMood("bad");
+        blip(140, 0.18, "triangle", 0.05);
+      }
+      if (!result.timeout && result.big !== "smear") stampNoise();
+      setSay(outcomeSay(result, round));
+      if (result.timeout) liveStats.innerHTML = "ずれ —　傾き —　インク —";
+      else setLive(result, true);
+      var detail = result.timeout ? "時間切れ" : ("ずれ " + result.offsetShow.toFixed(1) + "mm 傾きの差 " + result.tiltShow + "° インク " + result.inkShow + "% " + result.reason);
+      announce(outcomeSay(result, round) + " " + detail);
+      if (navigator.vibrate) {
+        try { navigator.vibrate(result.pass ? 18 : [24, 30, 24]); } catch (err) {}
+      }
+    }
+
+    function canContinue(result, round) {
+      if (roundIndex >= ROUNDS.length - 1) return false;
+      if (round.practice) return true;
+      if (result.big) return false;
+      if (!result.pass && hearts <= 0) return false;
+      return true;
+    }
+
+    function numItem(ok, title, sub) {
+      return '<li class="' + (ok ? "ok" : "bad") + '">' + title + "<span>" + sub + "</span></li>";
+    }
+    function fillNums(el, result) {
+      if (result.timeout) {
+        el.innerHTML =
+          numItem(false, "時間切れ", "0の前に押しはじめる") +
+          numItem(false, "ずれ —（≤" + result.offsetLimit + "mm）", "押していない") +
+          numItem(false, "傾きの差 —（≤" + result.tiltLimit + "°）", "目標 " + result.targetDeg + "°") +
+          numItem(false, "インク —（" + result.inkLo + "〜" + result.inkHi + "%）", "押していない");
+        return;
+      }
+      el.innerHTML =
+        numItem(result.offOk, "ずれ " + result.offsetShow.toFixed(1) + "mm（≤" + result.offsetLimit + "mm）", result.big === "outside" ? "印の枠の外" : "印の中心からの距離") +
+        numItem(result.tiltOk, "傾きの差 " + result.tiltShow + "°（≤" + result.tiltLimit + "°）", "角度 " + result.stampDeg + "° / 目標 " + result.targetDeg + "°") +
+        numItem(result.inkOk, "インク " + result.inkShow + "%（" + result.inkLo + "〜" + result.inkHi + "%）", "緑の帯の中で離す");
+    }
+
+    function presentResult() {
+      if (presented) return;
+      presented = true;
+      var result = lastResult;
+      var round = current();
+      log.push(result);
+      if (canContinue(result, round)) openBetween(result, round);
+      else openEnd();
+    }
+
+    function openBetween(result, round) {
+      phase = "between";
+      var title = "不合格";
+      var ok = false;
+      if (result.timeout) title = round.practice ? "練習・時間切れ" : "時間切れ";
+      else if (result.big) title = round.practice ? "練習不合格" : "即失敗";
+      else if (result.pass) { title = round.practice ? "練習合格" : "合格"; ok = true; }
+      else title = round.practice ? "練習不合格" : "不合格";
+      betweenKicker.textContent = "ラウンド " + (roundIndex + 1) + "/" + ROUNDS.length + " " + round.name;
+      betweenTitle.textContent = title;
+      betweenTitle.className = ok ? "ok" : "bad";
+      betweenWhy.textContent = result.reason + (round.practice ? "（練習なのでハートは減らない）" : (!ok && !result.big && hearts > 0 ? "（ハート−1）" : ""));
+      betweenWhy.className = "why " + (ok ? "ok" : "bad");
+      fillNums(betweenNums, result);
+      betweenScore.textContent = "点数 " + result.score;
+      paintMascot(document.getElementById("owl-between"), ok ? "happy" : "bad");
+      betweenCard.scrollTop = 0;
+      betweenEl.hidden = false;
+      hintEl.textContent = ok ? "合格" : result.reason;
+    }
+
+    function roundRow(result) {
+      var head = result.name + "　" + result.score + "点　" + (result.pass ? "合格" : "不合格");
+      var sub;
+      if (result.timeout) sub = "時間切れ";
+      else sub = "ずれ " + result.offsetShow.toFixed(1) + "/" + result.offsetLimit + "mm　傾き " + result.tiltShow + "/" + result.tiltLimit + "°　インク " + result.inkShow + "%（" + result.inkLo + "〜" + result.inkHi + "）";
+      if (result.big === "outside") sub = "印の枠の外です　" + sub;
+      if (result.big === "smear") sub = "インクがにじみました　" + sub;
+      return '<li class="' + (result.pass ? "ok" : "bad") + '">' + head + "<small>" + sub + "</small></li>";
+    }
+
+    function openEnd() {
+      phase = "end";
+      var info = computeRank(log);
+      var comment = senseiComment(info, log);
+      var improved = saveBest(info.rank, info.passes);
+      endRank.textContent = info.rank;
+      endScore.textContent = "合格 " + info.passes + "/5　平均 " + Math.round(info.avg) + "点";
+      endComment.textContent = "ゲン師範「" + comment + "」";
+      endComment.className = "why " + (info.full ? "ok" : "bad");
+      var html = "";
+      var i;
+      for (i = 0; i < log.length; i++) html += roundRow(log[i]);
+      endRounds.innerHTML = html;
+      if (bestRank) {
+        endBest.hidden = false;
+        endBest.textContent = improved ? ("ベスト更新　" + bestRank.rank) : ("ベスト段位 " + bestRank.rank);
+      }
+      refreshBest();
+      drawShare(info, comment);
+      shot.setAttribute("aria-label", "結果カード 段位" + info.rank + " 合格" + info.passes + "/5");
+      var shareLines = ["本格はんこ押し Day31", "段位 " + info.rank + "（合格 " + info.passes + "/5）"];
+      for (i = 0; i < log.length; i++) shareLines.push(log[i].name + " " + log[i].score);
+      shareLines.push("ゲン師範「" + comment + "」");
+      shareLines.push(PLAY_URL);
+      btnShare.href = "https://x.com/intent/tweet?text=" + encodeURIComponent(shareLines.join("\n"));
+      var face = "bad";
+      if (info.rank === "名人" || info.rank === "範士" || info.rank === "五段") face = "happy";
+      else if (info.rank === "四段" || info.rank === "三段" || info.rank === "二段") face = "idle";
+      var last = log[log.length - 1];
+      if (last && last.big && !last.practice) face = "bad";
+      paintMascot(document.getElementById("owl-end"), face);
+      endCard.scrollTop = 0;
+      endEl.hidden = false;
+      betweenEl.hidden = true;
+      hintEl.textContent = "段位 " + info.rank;
+      announce("段位 " + info.rank + "。合格 " + info.passes + "/5。" + comment);
+    }
+
+    function drawShare(info, comment) {
+      var c = shotCtx;
+      var w = shot.width;
+      var h = shot.height;
+      c.setTransform(1, 0, 0, 1, 0, 0);
+      c.fillStyle = "#fbf6ea";
+      c.fillRect(0, 0, w, h);
+      c.strokeStyle = "#c4322e";
+      c.lineWidth = 10;
+      c.strokeRect(28, 28, w - 56, h - 56);
+      c.lineWidth = 2;
+      c.strokeRect(42, 42, w - 84, h - 84);
+      c.fillStyle = "#241816";
+      c.textAlign = "center";
+      c.font = "700 26px " + FONT;
+      c.fillText("印鑑道場", w / 2, 92);
+      c.font = "900 46px " + FONT;
+      c.fillText("本格はんこ押し", w / 2, 150);
+      c.fillStyle = "#7a5b4a";
+      c.font = "700 24px " + FONT;
+      c.fillText("判定状", w / 2, 188);
+      c.fillStyle = "#c4322e";
+      c.font = "900 78px " + FONT;
+      c.fillText(info.rank, w / 2, 286);
+      c.fillStyle = "#241816";
+      c.font = "800 28px " + FONT;
+      c.fillText("合格 " + info.passes + "/5　平均 " + Math.round(info.avg) + "点", w / 2, 336);
+      var y = 392;
+      var i;
+      for (i = 0; i < log.length; i++) {
+        var r = log[i];
+        c.fillStyle = r.pass ? "#e7f6ee" : "#fde8ea";
+        roundRect(c, 78, y - 28, w - 156, 46, 12);
+        c.fill();
+        c.fillStyle = r.pass ? "#1b7a45" : "#a3162a";
+        c.font = "800 26px " + FONT;
+        c.textAlign = "left";
+        c.fillText(r.name, 100, y);
+        c.textAlign = "right";
+        c.fillText(r.score + "点 " + (r.pass ? "合格" : "不合格"), w - 100, y);
+        c.textAlign = "center";
+        y += 56;
+      }
+      c.fillStyle = "#f8efe3";
+      roundRect(c, 78, y, w - 156, 108, 14);
+      c.fill();
+      c.fillStyle = "#241816";
+      c.font = "800 24px " + FONT;
+      wrapText(c, "ゲン師範「" + comment + "」", w / 2, y + 48, w - 200, 32);
+      c.fillStyle = "#7a5b4a";
+      c.font = "700 22px " + FONT;
+      c.fillText("Day 31 · 2026-10-26", w / 2, h - 78);
+    }
+    function wrapText(c, text, x, y, maxW, lh) {
+      var chars = text.split("");
+      var line = "";
+      var lines = [];
+      var i;
+      for (i = 0; i < chars.length; i++) {
+        var test = line + chars[i];
+        if (c.measureText(test).width > maxW && line) {
+          lines.push(line);
+          line = chars[i];
+        } else line = test;
+      }
+      if (line) lines.push(line);
+      var start = y - ((lines.length - 1) * lh) / 2;
+      for (i = 0; i < lines.length; i++) c.fillText(lines[i], x, start + i * lh);
+    }
+
+    function roundRect(c, x, y, w, h, r) {
+      var rr = Math.min(r, w / 2, h / 2);
+      c.beginPath();
+      c.moveTo(x + rr, y);
+      c.arcTo(x + w, y, x + w, y + h, rr);
+      c.arcTo(x + w, y + h, x, y + h, rr);
+      c.arcTo(x, y + h, x, y, rr);
+      c.arcTo(x, y, x + w, y, rr);
+      c.closePath();
+    }
+
+    function resize() {
+      var rect = stage.getBoundingClientRect();
+      cssW = Math.max(1, rect.width);
+      cssH = Math.max(1, rect.height);
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.max(1, Math.round(cssW * dpr));
+      canvas.height = Math.max(1, Math.round(cssH * dpr));
+      var s = Math.min(cssW / VW, cssH / VH);
+      view.s = s;
+      view.ox = (cssW - VW * s) / 2;
+      view.oy = (cssH - VH * s) / 2;
+    }
+    function pointerPos(e) {
+      var rect = canvas.getBoundingClientRect();
+      var x = (e.clientX - rect.left) * (cssW / rect.width);
+      var y = (e.clientY - rect.top) * (cssH / rect.height);
+      return { x: (x - view.ox) / view.s, y: (y - view.oy) / view.s };
+    }
+
+    function onPointerDown(e) {
+      if (phase !== "play" || holding) return;
+      if (e.button != null && e.button !== 0) return;
+      var p = pointerPos(e);
+      ptrId = e.pointerId;
+      try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+      e.preventDefault();
+      holding = true;
+      pressX = p.x;
+      pressY = p.y;
+      holdDx = 0;
+      holdDy = 0;
+      ink = 0;
+      holdStart = performance.now();
+      bandTick = false;
+      paperLocked = true;
+      lockedSway = Math.sin(elapsed * Math.PI * 2 / current().period) * swayAmp(current());
+      setMood("focus");
+      blip(240, 0.04, "triangle", 0.03);
+    }
+    function placeSeal(result, smear) {
+      var round = current();
+      var geom = paperGeom(round);
+      var local = toLocal(pressX, pressY, geom, lockedSway, round.paperAngle);
+      seal = {
+        x: pressX,
+        y: pressY,
+        localX: local.x,
+        localY: local.y,
+        rot: result.stampRot,
+        r: round.stampR,
+        smear: !!smear,
+        dx: holdDx,
+        dy: holdDy
+      };
+    }
+    function onPointerMove(e) {
+      if (!holding || phase !== "play") return;
+      if (e.pointerId != null && ptrId != null && e.pointerId !== ptrId) return;
+      var p = pointerPos(e);
+      holdDx = p.x - pressX;
+      holdDy = p.y - pressY;
+      var round = current();
+      if (Math.hypot(holdDx, holdDy) >= round.smear) {
+        var result = measureNow();
+        result.big = "smear";
+        result.pass = false;
+        result.score = 0;
+        result.reason = "インクがにじみました";
+        placeSeal(result, true);
+        commit(result);
+      }
+    }
+    function onPointerUp(e) {
+      if (!holding) return;
+      if (e && e.pointerId != null && ptrId != null && e.pointerId !== ptrId) return;
+      if (phase !== "play") {
+        holding = false;
+        ptrId = null;
+        return;
+      }
+      var result = measureNow();
+      placeSeal(result, false);
+      commit(result);
+    }
+
+    function drawOwl(c, moodName, t, pupil) {
+      var bob = 0;
+      if (!reduceMotion && moodName !== "focus") bob = Math.sin(t * 2.2) * 1.6;
+      c.save();
+      if (moodName === "bad" && !reduceMotion) c.translate(Math.sin(t * 26) * 1.2, bob);
+      else c.translate(0, bob);
+      c.fillStyle = "rgba(40,18,10,.18)";
+      c.beginPath();
+      c.ellipse(60, 154, 34, 6, 0, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = "#1c2744";
+      c.beginPath();
+      c.moveTo(30, 88);
+      c.lineTo(90, 88);
+      c.lineTo(102, 146);
+      c.lineTo(18, 146);
+      c.closePath();
+      c.fill();
+      c.strokeStyle = "rgba(255,255,255,.2)";
+      c.lineWidth = 1.3;
+      c.beginPath();
+      c.moveTo(46, 92); c.lineTo(42, 144);
+      c.moveTo(60, 90); c.lineTo(60, 146);
+      c.moveTo(74, 92); c.lineTo(78, 144);
+      c.stroke();
+      c.fillStyle = "#f4efe4";
+      c.beginPath();
+      c.ellipse(40, 146, 10, 5, 0, 0, Math.PI * 2);
+      c.ellipse(80, 146, 10, 5, 0, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = "#3a2418";
+      c.beginPath();
+      c.moveTo(34, 74);
+      c.quadraticCurveTo(60, 66, 86, 74);
+      c.lineTo(92, 104);
+      c.quadraticCurveTo(60, 112, 28, 104);
+      c.closePath();
+      c.fill();
+      c.fillStyle = "#4a2e1e";
+      c.beginPath();
+      c.ellipse(26, 96, 13, 9, 0.5, 0, Math.PI * 2);
+      c.ellipse(94, 96, 13, 9, -0.5, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = "#f7f1e4";
+      c.beginPath();
+      c.moveTo(48, 74);
+      c.lineTo(60, 98);
+      c.lineTo(72, 74);
+      c.closePath();
+      c.fill();
+      c.fillStyle = "#c6a15a";
+      c.fillRect(32, 100, 56, 8);
+      c.fillStyle = "#8d6a2f";
+      c.fillRect(54, 100, 12, 8);
+      c.fillStyle = "#8d5a32";
+      c.beginPath();
+      c.ellipse(60, 48, 32, 28, 0, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = "#6e4324";
+      c.beginPath();
+      c.moveTo(34, 36);
+      c.lineTo(24, 8);
+      c.lineTo(48, 30);
+      c.closePath();
+      c.moveTo(86, 36);
+      c.lineTo(96, 8);
+      c.lineTo(72, 30);
+      c.closePath();
+      c.fill();
+      c.fillStyle = "#f3e2c4";
+      c.beginPath();
+      c.ellipse(60, 52, 22, 18, 0, 0, Math.PI * 2);
+      c.fill();
+      c.strokeStyle = "#5a341f";
+      c.lineWidth = 2.4;
+      c.lineCap = "round";
+      c.beginPath();
+      if (moodName === "happy") {
+        c.moveTo(40, 40); c.quadraticCurveTo(48, 36, 54, 42);
+        c.moveTo(66, 42); c.quadraticCurveTo(74, 36, 82, 40);
+      } else if (moodName === "bad") {
+        c.moveTo(40, 38); c.lineTo(54, 44);
+        c.moveTo(80, 38); c.lineTo(66, 44);
+      } else if (moodName === "focus") {
+        c.moveTo(40, 40); c.lineTo(54, 42);
+        c.moveTo(80, 40); c.lineTo(66, 42);
+      } else {
+        c.moveTo(40, 40); c.lineTo(53, 44);
+        c.moveTo(80, 40); c.lineTo(67, 44);
+      }
+      c.stroke();
+      var px = clamp(pupil || 0, -1, 1) * 1.6;
+      if (moodName === "happy") {
+        c.beginPath();
+        c.moveTo(44, 52); c.quadraticCurveTo(50, 46, 56, 52);
+        c.moveTo(64, 52); c.quadraticCurveTo(70, 46, 76, 52);
+        c.stroke();
+      } else if (moodName === "focus") {
+        c.fillStyle = "#241816";
+        c.beginPath();
+        c.ellipse(49 + px, 53, 4.2, 2.2, 0, 0, Math.PI * 2);
+        c.ellipse(71 + px, 53, 4.2, 2.2, 0, 0, Math.PI * 2);
+        c.fill();
+      } else {
+        c.fillStyle = "#fffdf8";
+        c.beginPath();
+        c.ellipse(49, 53, 6.2, moodName === "bad" ? 7.2 : 6.4, 0, 0, Math.PI * 2);
+        c.ellipse(71, 53, 6.2, moodName === "bad" ? 7.2 : 6.4, 0, 0, Math.PI * 2);
+        c.fill();
+        c.fillStyle = "#241816";
+        c.beginPath();
+        c.arc(50 + px, 53.5, moodName === "bad" ? 2.8 : 2.5, 0, Math.PI * 2);
+        c.arc(72 + px, 53.5, moodName === "bad" ? 2.8 : 2.5, 0, Math.PI * 2);
+        c.fill();
+        c.fillStyle = "#fff";
+        c.beginPath();
+        c.arc(51.2 + px, 52.4, 1, 0, Math.PI * 2);
+        c.arc(73.2 + px, 52.4, 1, 0, Math.PI * 2);
+        c.fill();
+      }
+      c.fillStyle = "#e2a322";
+      c.beginPath();
+      if (moodName === "bad") {
+        c.moveTo(60, 58);
+        c.lineTo(56, 66);
+        c.lineTo(64, 66);
+        c.closePath();
+        c.fill();
+        c.fillStyle = "#241816";
+        c.beginPath();
+        c.ellipse(60, 70, 3.2, 2.4, 0, 0, Math.PI * 2);
+        c.fill();
+      } else if (moodName === "happy") {
+        c.moveTo(54, 62);
+        c.lineTo(60, 68);
+        c.lineTo(66, 62);
+        c.closePath();
+        c.fill();
+      } else {
+        c.moveTo(55, 62);
+        c.lineTo(60, 67);
+        c.lineTo(65, 62);
+        c.closePath();
+        c.fill();
+      }
+      c.restore();
+    }
+    function paintMascot(node, moodName) {
+      var mctx = node.getContext("2d");
+      mctx.setTransform(node.width / 120, 0, 0, node.height / 160, 0, 0);
+      mctx.clearRect(0, 0, 120, 160);
+      drawOwl(mctx, moodName, animT, 0.2);
+    }
+
+    function drawDesk(c) {
+      c.fillStyle = "#6a3d28";
+      c.fillRect(0, 0, VW, VH);
+      c.strokeStyle = "rgba(255,220,180,.06)";
+      c.lineWidth = 2;
+      var i;
+      for (i = 0; i < 16; i++) {
+        c.beginPath();
+        c.moveTo(0, 18 + i * 32);
+        c.bezierCurveTo(90, 8 + i * 32, 200, 36 + i * 32, 360, 16 + i * 32);
+        c.stroke();
+      }
+      c.fillStyle = "rgba(0,0,0,.12)";
+      c.fillRect(0, 0, VW, 8);
+    }
+    function drawPaper(c, round, sway) {
+      var g = paperGeom(round);
+      c.save();
+      c.translate(g.cx + 5, g.cy + 7);
+      c.rotate(round.paperAngle * Math.PI / 180);
+      c.translate(sway, 0);
+      c.fillStyle = "rgba(40,18,10,.22)";
+      roundRect(c, -g.paperW / 2, -g.paperH / 2, g.paperW, g.paperH, 3);
+      c.fill();
+      c.restore();
+
+      c.save();
+      c.translate(g.cx, g.cy);
+      c.rotate(round.paperAngle * Math.PI / 180);
+      c.translate(sway, 0);
+      if (round.wari) {
+        var gap = g.gap;
+        c.fillStyle = "#fffaf0";
+        c.strokeStyle = "rgba(50,32,24,.28)";
+        c.lineWidth = 1.4;
+        roundRect(c, -g.paperW / 2, -g.paperH / 2, g.paperW / 2 - gap / 2, g.paperH, 3);
+        c.fill(); c.stroke();
+        roundRect(c, gap / 2, -g.paperH / 2, g.paperW / 2 - gap / 2, g.paperH, 3);
+        c.fill(); c.stroke();
+        c.fillStyle = "#a3162a";
+        c.font = "800 13px " + FONT;
+        c.textAlign = "center";
+        c.fillText("甲", -g.paperW / 4, -g.paperH / 2 + 22);
+        c.fillText("乙", g.paperW / 4, -g.paperH / 2 + 22);
+        c.fillText("割印", 0, -round.box / 2 - 22);
+      } else {
+        c.fillStyle = "#fffaf0";
+        c.strokeStyle = "rgba(50,32,24,.28)";
+        c.lineWidth = 1.4;
+        roundRect(c, -g.paperW / 2, -g.paperH / 2, g.paperW, g.paperH, 3);
+        c.fill();
+        c.stroke();
+      }
+      c.fillStyle = "#241816";
+      c.textAlign = "center";
+      c.font = "800 18px " + FONT;
+      c.fillText(round.doc, 0, -g.paperH / 2 + (round.wari ? 42 : 28));
+      c.strokeStyle = "rgba(60,40,30,.16)";
+      c.lineWidth = 1;
+      var lines = round.wari ? 4 : 5;
+      var i;
+      for (i = 0; i < lines; i++) {
+        var ly = -g.paperH / 2 + (round.wari ? 58 : 46) + i * 13;
+        if (ly > -round.box / 2 - 18) break;
+        c.beginPath();
+        c.moveTo(-g.paperW / 2 + 16, ly);
+        c.lineTo(g.paperW / 2 - 16, ly);
+        c.stroke();
+      }
+      c.fillStyle = "#7a5b4a";
+      c.font = "700 11px " + FONT;
+      c.textAlign = "left";
+      c.fillText("2026-10-26", -g.paperW / 2 + 14, g.paperH / 2 - 14);
+
+      var box = round.box;
+      c.strokeStyle = "#241816";
+      c.lineWidth = 2;
+      c.strokeRect(-box / 2, -box / 2, box, box);
+      c.fillStyle = "#241816";
+      c.font = "800 12px " + FONT;
+      c.textAlign = "center";
+      c.fillText("印", 0, -box / 2 - 6);
+
+      var rad = round.offsetLimitMm * MM;
+      c.save();
+      c.beginPath();
+      c.rect(-box / 2, -box / 2, box, box);
+      c.clip();
+      c.strokeStyle = "rgba(27,122,69,.9)";
+      c.lineWidth = 2;
+      c.setLineDash([5, 4]);
+      c.beginPath();
+      c.arc(0, 0, rad, 0, Math.PI * 2);
+      c.stroke();
+      c.setLineDash([]);
+      c.fillStyle = "rgba(27,122,69,.85)";
+      c.beginPath();
+      c.arc(0, 0, 2.2, 0, Math.PI * 2);
+      c.fill();
+      if (round.guide) {
+        c.strokeStyle = "rgba(36,24,22,.35)";
+        c.lineWidth = 1;
+        c.beginPath();
+        c.moveTo(-8, 0); c.lineTo(8, 0);
+        c.moveTo(0, -8); c.lineTo(0, 8);
+        c.stroke();
+      }
+      c.restore();
+
+      if (seal && !seal.smear) {
+        drawImpression(c, seal.localX, seal.localY, seal.rot - round.paperAngle, seal.r);
+      }
+      c.restore();
+    }
+    function drawImpression(c, x, y, rot, r) {
+      c.save();
+      c.translate(x, y);
+      c.rotate(rot * Math.PI / 180);
+      c.globalAlpha = 0.94;
+      c.fillStyle = "#e23a32";
+      c.beginPath();
+      c.arc(0, 0, r, 0, Math.PI * 2);
+      c.fill();
+      c.strokeStyle = "rgba(255,244,230,.85)";
+      c.lineWidth = Math.max(1.5, r * 0.06);
+      c.beginPath();
+      c.arc(0, 0, r * 0.78, 0, Math.PI * 2);
+      c.stroke();
+      c.fillStyle = "rgba(255,244,230,.95)";
+      c.font = "900 " + Math.round(r * 0.78) + "px " + FONT;
+      c.textAlign = "center";
+      c.textBaseline = "middle";
+      c.fillText("厳", 0, r * 0.04);
+      c.restore();
+      c.globalAlpha = 1;
+      c.textBaseline = "alphabetic";
+    }
+    function drawSmear(c, s) {
+      c.save();
+      var len = Math.hypot(s.dx, s.dy) || 1;
+      var ux = s.dx / len;
+      var uy = s.dy / len;
+      var i;
+      for (i = 0; i < 10; i++) {
+        var t = i / 9;
+        c.globalAlpha = 0.22 + t * 0.5;
+        c.fillStyle = i % 2 ? "#8e1524" : "#e23a32";
+        c.beginPath();
+        c.ellipse(
+          s.x + ux * len * t,
+          s.y + uy * len * t,
+          s.r * (0.5 + t * 0.85),
+          s.r * (0.36 + (i % 3) * 0.08),
+          Math.atan2(uy, ux) + (i - 5) * 0.18,
+          0,
+          Math.PI * 2
+        );
+        c.fill();
+      }
+      c.globalAlpha = 1;
+      inkLabel(c, "にじみ", s.x - 28, s.y - s.r - 8, "900 20px " + FONT);
+      c.restore();
+    }
+    function inkLabel(c, text, x, y, font) {
+      c.font = font;
+      c.textAlign = "left";
+      c.lineWidth = 4;
+      c.strokeStyle = "#fffaf0";
+      c.lineJoin = "round";
+      c.strokeText(text, x, y);
+      c.fillStyle = "#241816";
+      c.fillText(text, x, y);
+    }
+    function drawHankoTool(c, x, y, rot, r, showMark) {
+      c.save();
+      c.translate(x, y);
+      c.rotate(rot * Math.PI / 180);
+      c.fillStyle = "rgba(40,18,10,.2)";
+      c.beginPath();
+      c.ellipse(4, r * 0.2, r * 0.7, r * 0.28, 0, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = "#c48a52";
+      roundRect(c, -r * 0.26, -r * 1.85, r * 0.52, r * 1.2, r * 0.18);
+      c.fill();
+      c.fillStyle = "#8a5a32";
+      c.fillRect(-r * 0.26, -r * 1.85, r * 0.52, r * 0.16);
+      c.fillStyle = "#d7263d";
+      c.fillRect(-r * 0.32, -r * 0.7, r * 0.64, r * 0.14);
+      c.fillStyle = "#c4322e";
+      c.beginPath();
+      c.arc(0, 0, r, 0, Math.PI * 2);
+      c.fill();
+      c.strokeStyle = "rgba(255,244,224,.55)";
+      c.lineWidth = 2;
+      c.beginPath();
+      c.arc(0, 0, r * 0.75, 0, Math.PI * 2);
+      c.stroke();
+      if (showMark) {
+        c.strokeStyle = "#ffe7a3";
+        c.lineWidth = 3;
+        c.beginPath();
+        c.moveTo(0, -r * 0.2);
+        c.lineTo(0, -r * 0.92);
+        c.stroke();
+      }
+      c.fillStyle = "#fff6e4";
+      c.font = "900 " + Math.round(r * 0.7) + "px " + FONT;
+      c.textAlign = "center";
+      c.textBaseline = "middle";
+      c.fillText("厳", 0, r * 0.06);
+      c.restore();
+      c.textBaseline = "alphabetic";
+    }
+    function drawAim(c, round) {
+      var dist = Math.hypot(holdDx, holdDy);
+      var hot = dist >= round.smear * 0.8;
+      c.save();
+      c.translate(pressX, pressY);
+      c.beginPath();
+      c.arc(0, 0, round.smear, 0, Math.PI * 2);
+      c.lineWidth = 5;
+      c.strokeStyle = hot ? "#a3162a" : "#241816";
+      c.stroke();
+      c.lineWidth = 2.4;
+      c.strokeStyle = hot ? "#ffd0d4" : "#fff";
+      c.stroke();
+      c.setLineDash([3, 3]);
+      c.strokeStyle = "rgba(36,24,22,.55)";
+      c.lineWidth = 1.4;
+      c.beginPath();
+      c.arc(0, 0, DEAD, 0, Math.PI * 2);
+      c.stroke();
+      c.setLineDash([]);
+      c.strokeStyle = "rgba(36,24,22,.35)";
+      c.lineWidth = 1.5;
+      c.beginPath();
+      c.moveTo(-round.smear, 0);
+      c.lineTo(round.smear, 0);
+      c.stroke();
+      var lo = round.paperAngle - round.tiltLimit;
+      var hi = round.paperAngle + round.tiltLimit;
+      var x0 = dxForTilt(lo);
+      var x1 = dxForTilt(hi);
+      c.strokeStyle = "#1f8a4d";
+      c.lineWidth = 7;
+      c.lineCap = "round";
+      c.beginPath();
+      c.moveTo(x0, 0);
+      c.lineTo(x1, 0);
+      c.stroke();
+      var tx = dxForTilt(round.paperAngle);
+      c.fillStyle = "#241816";
+      c.beginPath();
+      c.arc(tx, 0, 6, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = "#f0d48a";
+      c.beginPath();
+      c.arc(tx, 0, 3.5, 0, Math.PI * 2);
+      c.fill();
+      if (round.paperAngle) {
+        c.textAlign = "center";
+        inkLabel(c, "目標" + round.paperAngle + "°", tx - 22, -16, "800 13px " + FONT);
+      }
+      c.strokeStyle = "#241816";
+      c.lineWidth = 1;
+      c.beginPath();
+      c.moveTo(holdDx, holdDy);
+      c.lineTo(holdDx, 0);
+      c.stroke();
+      c.fillStyle = "#d7263d";
+      c.beginPath();
+      c.arc(holdDx, holdDy, 6, 0, Math.PI * 2);
+      c.fill();
+      c.strokeStyle = "#fff";
+      c.lineWidth = 2;
+      c.stroke();
+      c.restore();
+      var diff = Math.round(Math.abs(tiltOf(holdDx) - round.paperAngle));
+      inkLabel(c, "差 " + diff + "°", pressX + round.stampR + 8, pressY - 6, "900 16px " + FONT);
+    }
+    function drawGuide(c, round, sway) {
+      if (!round.guide || phase !== "play" || holding || seal) return;
+      var g = paperGeom(round);
+      var a = round.paperAngle * Math.PI / 180;
+      var x = g.cx + sway * Math.cos(a);
+      var y = g.cy + sway * Math.sin(a);
+      var pulse = reduceMotion ? 0 : (Math.sin(animT * 4) * 0.5 + 0.5);
+      c.save();
+      c.strokeStyle = "rgba(198,161,90," + (0.45 + pulse * 0.4) + ")";
+      c.lineWidth = 3;
+      c.beginPath();
+      c.arc(x, y, 22 + pulse * 8, 0, Math.PI * 2);
+      c.stroke();
+      c.fillStyle = "#241816";
+      c.font = "800 13px " + FONT;
+      c.textAlign = "center";
+      c.fillText("ここに押したまま", x, y - round.box / 2 - 22);
+      c.restore();
+    }
+    function drawProtractor(c, round) {
+      if (!round.paperAngle) return;
+      var x = 292;
+      var y = 378;
+      c.save();
+      c.translate(x, y);
+      c.strokeStyle = "rgba(255,244,224,.8)";
+      c.lineWidth = 2;
+      c.beginPath();
+      c.moveTo(-28, 0);
+      c.lineTo(36, 0);
+      c.stroke();
+      var a = round.paperAngle * Math.PI / 180;
+      c.strokeStyle = "#f0d48a";
+      c.beginPath();
+      c.moveTo(0, 0);
+      c.lineTo(Math.sin(a) * 34, -Math.cos(a) * 34);
+      c.stroke();
+      c.fillStyle = "#fff6e4";
+      c.font = "800 12px " + FONT;
+      c.textAlign = "left";
+      c.fillText("机 " + round.paperAngle + "°", -6, 18);
+      c.restore();
+    }
+    function drawWorld(c) {
+      var round = current();
+      var sway = swayNow();
+      drawDesk(c);
+      drawProtractor(c, round);
+      if (round.sway && phase === "play" && !paperLocked) {
+        var g = paperGeom(round);
+        c.fillStyle = "rgba(255,244,224,.85)";
+        c.font = "800 13px " + FONT;
+        c.textAlign = "center";
+        c.fillText("← 書類が動く →", g.cx, 28);
+      }
+      drawPaper(c, round, sway);
+      if (seal && seal.smear) drawSmear(c, seal);
+      c.save();
+      c.translate(18, 356);
+      c.scale(0.92, 0.92);
+      var pupil = 0.35;
+      if (holding) pupil = clamp((pressX - 70) / 160, -1, 1);
+      drawOwl(c, mood, animT, pupil);
+      c.restore();
+      c.fillStyle = "#fff6e4";
+      c.font = "800 12px " + FONT;
+      c.textAlign = "center";
+      c.fillText("ゲン師範", 70, 508);
+
+      if (!holding && !(seal && !seal.smear)) {
+        c.fillStyle = "#8e1d24";
+        c.beginPath();
+        c.ellipse(292, 456, 28, 16, 0, 0, Math.PI * 2);
+        c.fill();
+        c.fillStyle = "#c4322e";
+        c.beginPath();
+        c.ellipse(292, 452, 26, 14, 0, 0, Math.PI * 2);
+        c.fill();
+        drawHankoTool(c, 292, 430, 0, 18, false);
+      }
+      if (holding && phase === "play") {
+        drawAim(c, round);
+        drawHankoTool(c, pressX, pressY, tiltOf(holdDx), round.stampR, true);
+      }
+      drawGuide(c, round, sway);
+      if (phase === "reveal" && lastResult && lastResult.big) {
+        c.fillStyle = "rgba(36,12,14,.78)";
+        roundRect(c, 36, 214, 288, 52, 14);
+        c.fill();
+        c.fillStyle = "#fff";
+        c.font = "900 22px " + FONT;
+        c.textAlign = "center";
+        c.fillText(lastResult.reason, VW / 2, 247);
+      }
+    }
+
+    function updateHud(now) {
+      var round = current();
+      var left = timeLeft();
+      var pct = round.time <= 0 ? 0 : left / round.time;
+      timefill.style.width = (pct * 100) + "%";
+      timebar.classList.toggle("low", !holding && phase === "play" && left <= 3);
+      if (phase === "play" && holding) {
+        timelabel.textContent = "停止";
+        timelabel.className = "timelabel stop";
+      } else {
+        timelabel.textContent = left.toFixed(1) + "秒";
+        timelabel.className = "timelabel";
+      }
+      var shownInk = 0;
+      if (phase === "play" && holding) shownInk = ink;
+      else if (lastResult && !lastResult.timeout && phase !== "play") shownInk = lastResult.inkShow;
+      inkmark.style.left = clamp(shownInk, 0, 100) + "%";
+      inkpct.textContent = Math.round(shownInk) + "%";
+      var inBand = shownInk >= round.ink[0] && shownInk <= round.ink[1] && ((phase === "play" && holding) || (lastResult && lastResult.inkOk));
+      var over = shownInk > round.ink[1] && ((phase === "play" && holding) || (lastResult && !lastResult.timeout));
+      inkbar.className = "inkbar" + (inBand ? " in-band" : over ? " over" : "");
+      inkpct.className = "inkpct" + (inBand ? " ok" : (phase === "play" && holding && (shownInk > round.ink[1] || (shownInk > 0 && shownInk < round.ink[0] && ink > round.ink[0] - 0.01))) ? "" : "");
+      if (phase === "play" && holding) {
+        var m = measureNow();
+        setLive(m, true);
+        inkpct.className = "inkpct " + (m.inkOk ? "ok" : "bad");
+        if (!bandTick && m.inkOk) {
+          bandTick = true;
+          blip(920, 0.04, "sine", 0.03);
+        }
+        setSay(coachLine());
+        hintEl.textContent = m.inkOk && m.tiltOk && m.offOk ? "範囲内。離す" : "押したまま";
+      } else if (phase === "play") {
+        setLive(null, false);
+        inkpct.className = "inkpct";
+        setSay(coachLine());
+      }
+    }
+
+    function frame(now) {
+      if (!lastTs) lastTs = now;
+      var dt = Math.min(0.05, (now - lastTs) / 1000);
+      lastTs = now;
+      animT += dt;
+      if (phase === "play") {
+        if (holding) {
+          ink = clamp((now - holdStart) / INK_MS * 100, 0, 100);
+        } else {
+          elapsed += dt;
+          if (elapsed >= current().time) {
+            paperLocked = true;
+            lockedSway = Math.sin(elapsed * Math.PI * 2 / current().period) * swayAmp(current());
+            commit(blankTimeout(current()));
+          }
+        }
+      } else if (phase === "reveal" && now - revealAt > 420) {
+        presentResult();
+      }
+      updateHud(now);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, cssW, cssH);
+      ctx.fillStyle = "#5a341f";
+      ctx.fillRect(0, 0, cssW, cssH);
+      ctx.save();
+      ctx.translate(view.ox, view.oy);
+      ctx.scale(view.s, view.s);
+      drawWorld(ctx);
+      ctx.restore();
+      requestAnimationFrame(frame);
+    }
+
+    canvas.addEventListener("pointerdown", onPointerDown);
+    canvas.addEventListener("pointermove", onPointerMove);
+    canvas.addEventListener("pointerup", onPointerUp);
+    canvas.addEventListener("pointercancel", onPointerUp);
+    canvas.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+    window.addEventListener("pointerup", onPointerUp);
+    btnStart.addEventListener("click", function () { newRun(); });
+    btnNext.addEventListener("click", function () {
+      betweenEl.hidden = true;
+      startRound(roundIndex + 1);
+    });
+    btnRetry.addEventListener("click", function () { newRun(); });
+    btnSave.addEventListener("click", function () {
+      shot.toBlob(function (blob) {
+        if (!blob) return;
+        var a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "hanko-stamp-2026-10-26.png";
+        a.click();
+        setTimeout(function () { URL.revokeObjectURL(a.href); }, 1500);
+      });
+    });
+    muteBtn.addEventListener("click", function () {
+      muted = !muted;
+      applyMute();
+      if (!muted) {
+        var ac = ensureAudio();
+        if (ac && ac.state === "suspended") ac.resume();
+        blip(520, 0.05, "sine", 0.04);
+      }
+    });
+    window.addEventListener("resize", resize);
+    if (window.ResizeObserver) new ResizeObserver(resize).observe(stage);
+
+    refreshBest();
+    paintInkZone(current());
+    updateHearts(false);
+    resize();
+    paintMascot(document.getElementById("owl-title"), "idle");
+    requestAnimationFrame(frame);
+  })();
+  </script>
+</body>
+</html>
