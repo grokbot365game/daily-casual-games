@@ -1,0 +1,2069 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#e39a55">
+  <meta name="description" content="グリーンピースはじき。ピー太の弁当から、緑のピースだけを指ではじいて出す。">
+  <meta property="og:title" content="グリーンピースはじき — Pea Flick">
+  <meta property="og:description" content="緑のピースだけを指ではじく。ほかの具を落とすとハートが減る。">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://grokbot365game.github.io/daily-casual-games/games/2026-10-27-pea-flick/">
+  <title>グリーンピースはじき</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6.5' fill='%233ecf55' stroke='%231f7a32' stroke-width='1'/%3E%3Ccircle cx='6' cy='6' r='1.4' fill='%23fff'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      --ink: #2c241c;
+      --muted: #6e5b48;
+      --paper: #fffaf2;
+      --accent: #e25b3a;
+      --good: #1f8a3d;
+      --bad: #d0122d;
+      --line: rgba(44, 36, 28, .14);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none; }
+    body {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      color: var(--ink);
+      background: #e39a55;
+      font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Yu Gothic", "WenQuanYi Micro Hei", "Droid Sans Fallback", "Meiryo", sans-serif;
+      font-size: 16px;
+      line-height: 1.35;
+      -webkit-text-size-adjust: 100%;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: none;
+    }
+    [hidden] { display: none !important; }
+    button, a { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+    button:focus-visible, a:focus-visible { outline: 3px solid #ffe08a; outline-offset: 2px; }
+    .back, .mute {
+      position: fixed;
+      z-index: 80;
+      top: max(8px, env(safe-area-inset-top));
+      border: 0;
+      border-radius: 999px;
+      color: var(--ink);
+      background: rgba(255, 250, 242, .96);
+      box-shadow: inset 0 0 0 1px var(--line);
+      font-weight: 800;
+    }
+    .back {
+      left: max(10px, env(safe-area-inset-left));
+      min-height: 44px;
+      padding: 8px 14px;
+      display: grid;
+      place-items: center;
+      font-size: .78rem;
+      letter-spacing: .04em;
+      text-decoration: none;
+    }
+    .mute {
+      right: max(10px, env(safe-area-inset-right));
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+    }
+    .mute svg { width: 22px; height: 22px; display: block; }
+    .mute .slash { display: none; }
+    .mute.is-muted .slash { display: block; }
+    .live {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+    }
+    .shell {
+      height: 100%;
+      max-width: 520px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding:
+        calc(max(6px, env(safe-area-inset-top)) + 48px)
+        max(8px, env(safe-area-inset-right))
+        max(6px, env(safe-area-inset-bottom))
+        max(8px, env(safe-area-inset-left));
+      min-height: 0;
+    }
+    .hud {
+      flex: none;
+      border-radius: 16px;
+      padding: 6px 10px 7px;
+      background: rgba(255, 250, 242, .96);
+      box-shadow: inset 0 0 0 1px var(--line);
+    }
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .hud b { font-size: .92rem; letter-spacing: .04em; }
+    .round-label { font-size: .78rem; font-weight: 800; color: var(--muted); }
+    .say { margin: 1px 0; min-height: 1.25em; font-size: .84rem; font-weight: 900; }
+    .say .who { color: var(--accent); margin-right: 4px; font-size: .75rem; letter-spacing: .06em; }
+    .hearts { letter-spacing: .08em; font-size: 1.05rem; }
+    .hearts i { font-style: normal; color: #e0233a; }
+    .hearts i.off { color: #eadfd4; }
+    .hearts i.pop { display: inline-block; animation: heartpop .35s ease; }
+    @keyframes heartpop { 0% { transform: scale(1.45); } 100% { transform: scale(1); } }
+    .count-row { margin-top: 1px; }
+    .nums, .left { margin: 0; font-weight: 900; font-variant-numeric: tabular-nums; }
+    .nums { font-size: .95rem; }
+    .left { font-size: .86rem; color: var(--good); }
+    .time-row { margin-top: 3px; gap: 8px; }
+    .timebar {
+      position: relative;
+      flex: 1;
+      height: 14px;
+      border-radius: 999px;
+      background: #efe4d2;
+      box-shadow: inset 0 0 0 1px rgba(44, 36, 28, .12);
+      overflow: hidden;
+    }
+    .timefill { height: 100%; width: 0; background: #2f9e4a; border-radius: inherit; }
+    .timebar.urgent { background: #ffd0d4; box-shadow: inset 0 0 0 2px #e0233a; }
+    .timebar.urgent .timefill { background: #e0233a; }
+    .timebar.urgent.tick .timefill { filter: brightness(1.45); }
+    .time-label { flex: none; min-width: 52px; text-align: right; font-size: .8rem; font-weight: 900; font-variant-numeric: tabular-nums; color: var(--muted); }
+    .time-label.urgent { color: var(--bad); }
+    .time-label.urgent::after { content: " ・"; }
+    .time-label.urgent.beat::after { content: " ●"; }
+    .note { margin: 2px 0 0; min-height: 1.15em; font-size: .75rem; font-weight: 800; }
+    .stage {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      border-radius: 22px;
+      overflow: hidden;
+      background: #e39a55;
+      touch-action: none;
+      box-shadow: inset 0 0 0 1px rgba(255, 244, 220, .35);
+    }
+    canvas#game { width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+    .flash { position: absolute; inset: 0; background: #ff2a2a; opacity: 0; pointer-events: none; }
+    .flash.on { animation: flash .45s ease; }
+    @keyframes flash { 0% { opacity: .55; } 100% { opacity: 0; } }
+    .hint {
+      flex: none;
+      margin: 0;
+      min-height: 1.3em;
+      text-align: center;
+      font-size: .84rem;
+      font-weight: 900;
+      color: #fffaf2;
+      text-shadow: 0 1px 0 rgba(80, 40, 10, .25);
+    }
+    .hint.bad { color: #ffe1e4; }
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding:
+        calc(max(8px, env(safe-area-inset-top)) + 50px)
+        12px
+        max(8px, env(safe-area-inset-bottom));
+      background: rgba(48, 28, 18, .74);
+      overflow: hidden;
+    }
+    .card {
+      width: min(100%, 420px);
+      max-height: 100%;
+      overflow: hidden;
+      margin: 0 auto;
+      padding: 10px 12px 12px;
+      border-radius: 22px;
+      background: var(--paper);
+      box-shadow: 0 18px 48px rgba(48, 28, 18, .4);
+      text-align: center;
+    }
+    .card h1, .quote {
+      margin: 0;
+      font-size: 1.45rem;
+      letter-spacing: .06em;
+      line-height: 1.2;
+      font-weight: 900;
+    }
+    .en, .fine { margin: 2px 0; color: var(--muted); font-size: .72rem; font-weight: 800; }
+    .flavor { margin: 2px 0 4px; font-weight: 900; font-size: .88rem; }
+    .rules {
+      margin: 6px 0;
+      padding: 6px 8px 6px 26px;
+      border-radius: 14px;
+      background: #fff1df;
+      text-align: left;
+      font-weight: 900;
+      font-size: .86rem;
+      line-height: 1.4;
+    }
+    .rules li { margin: 3px 0; }
+    .life { margin: 0; letter-spacing: .12em; font-size: 1.15rem; color: #e0233a; }
+    .go, .retry, .share {
+      display: block;
+      width: 100%;
+      min-height: 48px;
+      margin-top: 8px;
+      border: 0;
+      border-radius: 14px;
+      font-weight: 900;
+      text-decoration: none;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .go, .retry { background: var(--accent); color: white; }
+    .share { background: #1d4e89; color: white; text-align: center; line-height: 48px; }
+    .fine a { color: var(--muted); font-weight: 900; }
+    .res { margin: 1px 0; font-weight: 900; font-size: .95rem; }
+    .why { margin: 3px 0; font-weight: 900; color: var(--bad); }
+    .reaction { margin: 3px 0; font-weight: 900; font-size: .92rem; }
+    .rank-line { margin: 4px 0 2px; font-size: .68rem; font-weight: 800; line-height: 1.35; color: var(--muted); }
+    .mini { width: 108px; height: 92px; margin: 0 auto; display: block; }
+    .dock {
+      position: fixed;
+      z-index: 45;
+      left: 50%;
+      bottom: 0;
+      transform: translateX(-50%);
+      width: min(100%, 520px);
+      padding: 8px 12px max(8px, env(safe-area-inset-bottom));
+      background: rgba(255, 250, 242, .97);
+      box-shadow: 0 -8px 24px rgba(48, 28, 18, .18);
+    }
+    .dock p { margin: 0; text-align: center; font-weight: 900; }
+    .dock .sub { color: var(--muted); font-size: .8rem; margin-top: 2px; }
+    @media (max-height: 700px) {
+      .mini { width: 78px; height: 68px; }
+      .card { padding: 8px 10px; }
+      .card h1, .quote { font-size: 1.22rem; }
+      .rules { font-size: .78rem; margin: 4px 0; }
+      .flavor { font-size: .8rem; }
+      .share, .go, .retry { min-height: 44px; margin-top: 6px; }
+      .share { line-height: 44px; }
+      .hud { padding: 4px 8px 5px; }
+      .say, .nums { font-size: .78rem; }
+    }
+    @media (max-height: 430px) {
+      .overlay { padding-top: calc(max(4px, env(safe-area-inset-top)) + 46px); }
+      .mini { width: 64px; height: 52px; }
+      .flavor, .en { display: none; }
+      .life { margin: 0; font-size: .95rem; }
+      .card { padding: 6px 8px; }
+      .card h1, .quote { font-size: 1.05rem; }
+      .rules { margin: 2px 0; padding: 3px 6px 3px 22px; font-size: .74rem; }
+      .rules li { margin: 1px 0; }
+      .go, .retry, .share { min-height: 44px; margin-top: 4px; }
+      .share { line-height: 44px; }
+      .rank-line { margin: 2px 0; }
+      .res, .reaction, .why { margin: 0; }
+    }
+    @media (min-height: 820px) {
+      .mini { width: 128px; height: 110px; }
+      .card h1, .quote { font-size: 1.65rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .hearts i, .flash.on, .timebar.urgent.tick .timefill { animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <a class="back" href="../../index.html">ギャラリー</a>
+  <button type="button" class="mute" id="mute" aria-pressed="false" aria-label="音を消す">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="M4 9h4l5-4v14l-5-4H4z"/>
+      <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 9.5a4 4 0 0 1 0 5"/>
+      <path class="slash" fill="none" stroke="#c4322e" stroke-width="2.4" stroke-linecap="round" d="M6 5l13 14"/>
+    </svg>
+  </button>
+  <p class="live" id="live" aria-live="polite"></p>
+  <div class="shell">
+    <header class="hud">
+      <div class="row">
+        <b>グリーンピースはじき</b>
+        <span class="hearts" id="hearts" aria-label="ハート2"><i>♥</i><i>♥</i></span>
+      </div>
+      <div class="row">
+        <p class="say" id="say"><span class="who">ピー太</span><span id="say-text">緑の豆が残ってると、食べられない。</span></p>
+        <span class="round-label" id="round-label"></span>
+      </div>
+      <div class="row count-row">
+        <p class="nums" id="nums"></p>
+        <p class="left" id="left"></p>
+      </div>
+      <div class="row time-row">
+        <div class="timebar" id="timebar"><div class="timefill" id="timefill"></div></div>
+        <span class="time-label" id="time-label">—</span>
+      </div>
+      <p class="note" id="note"></p>
+    </header>
+    <div class="stage" id="stage">
+      <canvas id="game" width="360" height="480" aria-label="グリーンピースはじき。緑の丸を指ではじく"></canvas>
+      <div class="flash" id="flash"></div>
+    </div>
+    <p class="hint" id="hint"></p>
+  </div>
+
+  <div class="overlay" id="title">
+    <div class="card" id="title-card">
+      <canvas class="mini" id="title-dragon" width="240" height="210" aria-hidden="true"></canvas>
+      <h1>グリーンピースはじき</h1>
+      <p class="en">Pea Flick · Day 32</p>
+      <p class="flavor">ピー太は、グリーンピースが全部なくなるまで弁当を食べない。</p>
+      <ol class="rules" id="rules">
+        <li>グリーンピースだけを指ではじき出せ</li>
+        <li>ほかの具を落とすと♥が減る</li>
+        <li>時間切れでも♥が減る</li>
+      </ol>
+      <p class="life" aria-hidden="true">♥♥</p>
+      <button type="button" class="go" id="btn-start">はじめる</button>
+    </div>
+  </div>
+
+  <div class="dock" id="fail" hidden>
+    <p id="fail-text"></p>
+    <p class="sub" id="fail-sub"></p>
+    <button type="button" class="retry" id="btn-fail">もういちど</button>
+  </div>
+
+  <div class="overlay" id="end" hidden>
+    <div class="card" id="end-card">
+      <canvas class="mini" id="end-dragon" width="240" height="210" aria-hidden="true"></canvas>
+      <p class="en">結果カード · グリーンピースはじき</p>
+      <p class="quote" id="end-rank"></p>
+      <p class="res" id="end-cleared"></p>
+      <p class="res" id="end-miss"></p>
+      <p class="res" id="end-where"></p>
+      <p class="why" id="end-cause" hidden></p>
+      <p class="reaction" id="end-reaction"></p>
+      <p class="rank-line" id="end-rule"></p>
+      <button type="button" class="retry" id="btn-retry">すぐリトライ</button>
+      <a class="share" id="btn-share" href="https://x.com/intent/tweet" target="_blank" rel="noopener noreferrer">結果をXでシェア</a>
+      <p class="fine"><a href="../../index.html">ギャラリーへ</a></p>
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    "use strict";
+    var FONT = '"Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", "WenQuanYi Micro Hei", "Droid Sans Fallback", sans-serif';
+    var PLAY_URL = "https://grokbot365game.github.io/daily-casual-games/games/2026-10-27-pea-flick/";
+    var RANK_LINE = "ノーミス全クリ=ピース名人 / 全クリ=はじき上手 / R4以上=見習い / それ以下=まだ食べられない";
+    var FLICK_WINDOW = 150;
+    var FLICK_MIN_DIST = 20;
+    var FLICK_MIN_SPEED = 280;
+    var FLICK_SCALE = 720;
+    var DETACH_SPEED = 150;
+    var STOP_SPEED = 36;
+    var DAMP = 2.4;
+    var HIT_SLOP = 10;
+    var SAMPLE_BOX = { cx: 180, cy: 260, hw: 130, hh: 96, rim: 12 };
+
+    var FOOD_NAME = {
+      corn: "コーン",
+      rice: "ごはん",
+      carrot: "にんじん",
+      egg: "卵焼き",
+      edamame: "枝豆",
+      mint: "ミント"
+    };
+
+    // Time is stored in tenths of a second so the slope check stays exact.
+    // Each round's slowest time is still shorter than the previous round's fastest.
+    var ROUNDS = [
+      { id: 1, practice: true, peas: [2, 2], foodCount: [0, 0], foodKinds: [], decoyCount: [0, 0], decoyKinds: [], time: [68, 70], fit: 0.92, motion: null },
+      { id: 2, practice: false, peas: [3, 3], foodCount: [5, 5], foodKinds: ["corn", "rice", "carrot", "egg"], decoyCount: [0, 0], decoyKinds: [], time: [62, 65], fit: 0.90, motion: null },
+      { id: 3, practice: false, peas: [2, 2], foodCount: [1, 1], foodKinds: ["rice", "corn"], decoyCount: [3, 4], decoyKinds: ["edamame"], time: [56, 59], fit: 0.90, motion: null },
+      { id: 4, practice: false, peas: [4, 4], foodCount: [5, 5], foodKinds: ["corn", "rice", "carrot", "egg"], decoyCount: [3, 5], decoyKinds: ["edamame", "mint"], time: [50, 53], fit: 0.88, motion: null },
+      { id: 5, practice: false, peas: [3, 3], foodCount: [2, 2], foodKinds: ["corn", "rice", "carrot"], decoyCount: [2, 2], decoyKinds: ["edamame", "mint"], time: [44, 46], fit: 0.76, motion: { slide: [55, 80], rot: [6, 9], freq: [85, 105] } },
+      { id: 6, practice: false, peas: [5, 6], foodCount: [6, 6], foodKinds: ["corn", "rice", "carrot", "egg"], decoyCount: [4, 5], decoyKinds: ["edamame", "mint"], time: [40, 42], fit: 0.70, motion: { slide: [90, 100], rot: [12, 18], freq: [130, 165] } }
+    ];
+
+    var titleEl = document.getElementById("title");
+    var endEl = document.getElementById("end");
+    var dock = document.getElementById("fail");
+    var failText = document.getElementById("fail-text");
+    var failSub = document.getElementById("fail-sub");
+    var sayText = document.getElementById("say-text");
+    var roundLabelEl = document.getElementById("round-label");
+    var numsEl = document.getElementById("nums");
+    var leftEl = document.getElementById("left");
+    var noteEl = document.getElementById("note");
+    var timebar = document.getElementById("timebar");
+    var timefill = document.getElementById("timefill");
+    var timeLabel = document.getElementById("time-label");
+    var heartsEl = document.getElementById("hearts");
+    var hintEl = document.getElementById("hint");
+    var flashEl = document.getElementById("flash");
+    var liveEl = document.getElementById("live");
+    var stage = document.getElementById("stage");
+    var canvas = document.getElementById("game");
+    var ctx = canvas.getContext("2d");
+    var titleDragon = document.getElementById("title-dragon");
+    var endDragon = document.getElementById("end-dragon");
+    var muteBtn = document.getElementById("mute");
+    var endRank = document.getElementById("end-rank");
+    var endCleared = document.getElementById("end-cleared");
+    var endMiss = document.getElementById("end-miss");
+    var endWhere = document.getElementById("end-where");
+    var endCauseEl = document.getElementById("end-cause");
+    var endReaction = document.getElementById("end-reaction");
+    var endRule = document.getElementById("end-rule");
+    var shareBtn = document.getElementById("btn-share");
+
+    var phase = "title";
+    var mood = "worried";
+    var sayCache = "";
+    var hearts = 2;
+    var misses = 0;
+    var cleared = 0;
+    var reached = 0;
+    var roundIndex = 0;
+    var retries = 0;
+    var runSeed = 1;
+    var current = null;
+    var items = [];
+    var motion = null;
+    var timeLeft = 0;
+    var timeMax = 0;
+    var t = 0;
+    var animT = 0;
+    var pause = 0;
+    var tickBucket = 999;
+    var saidCount = -1;
+    var cueLog = [];
+    var sparkles = [];
+    var endCause = "";
+    var failIsPractice = false;
+    var drag = null;
+    var manual = false;
+    var audioCtx = null;
+    var muted = false;
+    var view = { w: 360, h: 520, dpr: 1 };
+    var box = { cx: 180, cy: 300, hw: 140, hh: 100, rim: 12 };
+    var roomX = 20;
+    var roomY = 12;
+    var layoutDragon = { x: 180, y: 120, s: 1 };
+    var lastNow = 0;
+
+    function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+    function randInt(rng, a, b) { return a + Math.floor(rng() * (b - a + 1)); }
+    function mulberry32(seed) {
+      var a = seed >>> 0;
+      return function () {
+        a |= 0;
+        a = (a + 0x6D2B79F5) | 0;
+        var t0 = Math.imul(a ^ (a >>> 15), 1 | a);
+        t0 = (t0 + Math.imul(t0 ^ (t0 >>> 7), 61 | t0)) ^ t0;
+        return ((t0 ^ (t0 >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+    function shuffle(rng, arr) {
+      for (var i = arr.length - 1; i > 0; i--) {
+        var j = Math.floor(rng() * (i + 1));
+        var tmp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = tmp;
+      }
+      return arr;
+    }
+    function cue(type) { cueLog.push(type); }
+    function peasLeft() {
+      var n = 0;
+      for (var i = 0; i < items.length; i++) if (items[i].kind === "pea" && !items[i].out) n++;
+      return n;
+    }
+    function findId(id) {
+      for (var i = 0; i < items.length; i++) if (items[i].id === id) return items[i];
+      return null;
+    }
+    function hasLooseNonPea() {
+      for (var i = 0; i < items.length; i++) {
+        var it = items[i];
+        if (it.kind !== "pea" && it.loose && !it.out) return true;
+      }
+      return false;
+    }
+    function anyBadOut() {
+      for (var i = 0; i < items.length; i++) if (items[i].out && items[i].kind !== "pea") return true;
+      return false;
+    }
+
+    function rankFor(clearedN, missN, reachedN) {
+      if (clearedN >= 6 && missN === 0) return "ピース名人";
+      if (clearedN >= 6) return "はじき上手";
+      if (reachedN >= 4) return "見習い";
+      return "まだ食べられない";
+    }
+    function reactionFor(rank) {
+      if (rank === "ピース名人") return { mood: "cheering", line: "全部なくなった！いま食べる！" };
+      if (rank === "はじき上手") return { mood: "relieved", line: "全部出せた。ちょっと失敗しちゃった" };
+      if (rank === "見習い") return { mood: "worried", line: "最後まで出せなかった…" };
+      return { mood: "crying", line: "豆が残ってて、食べられない" };
+    }
+    function introLine(spec, peas) {
+      if (spec.practice) return "練習だよ。ピース" + peas + "個";
+      if (spec.id === 2) return "具がたくさん。ピース" + peas + "個";
+      if (spec.id === 3) return "枝豆はピースじゃない。ピース" + peas + "個";
+      if (spec.id === 4) return "まざってる。緑の丸が" + peas + "個";
+      if (spec.id === 5) return "お弁当が動く。ピース" + peas + "個";
+      return "最後。ピース" + peas + "個、全部出して";
+    }
+    function noteLine(spec) {
+      if (spec.practice) return "練習：♥は減らない";
+      if (spec.id === 2) return "ほかの具は落とさない";
+      if (spec.id === 3) return "枝豆はグリーンピースに似ている";
+      if (spec.id === 4) return "緑の丸だけをはじく";
+      if (spec.id === 5) return "お弁当がゆっくり動く";
+      return "具も枝豆も、動くお弁当";
+    }
+
+    function setMood(m) {
+      var n = peasLeft();
+      if (m === "cheering") {
+        var perfect = phase === "end" && cleared >= 6 && misses === 0;
+        if (!perfect || n > 0) m = n > 0 ? "worried" : "relieved";
+      }
+      if (m === "relieved" && n > 0 && phase !== "end") m = "worried";
+      mood = m;
+      document.body.setAttribute("data-mood", m);
+    }
+    function announce(text) { liveEl.textContent = text; }
+    function setSay(text) {
+      var n = peasLeft();
+      if (n > 0 && (phase === "play" || phase === "clear") && /なくなった|食べる|名人|上手/.test(text)) {
+        text = "あと" + n + "個。緑の丸だけ";
+      }
+      if (text === sayCache) return;
+      sayCache = text;
+      sayText.textContent = text;
+      announce(text);
+    }
+    function updateHearts(pop) {
+      var html = "";
+      html += '<i class="' + (hearts >= 1 ? "" : "off") + (pop && hearts === 0 ? " pop" : "") + '">♥</i>';
+      html += '<i class="' + (hearts >= 2 ? "" : "off") + (pop && hearts === 1 ? " pop" : "") + '">♥</i>';
+      heartsEl.innerHTML = html;
+      heartsEl.setAttribute("aria-label", "ハート" + hearts);
+    }
+    function syncLiveNumbers() {
+      var n = peasLeft();
+      leftEl.textContent = "残り " + n;
+      var pct = timeMax > 0 ? Math.max(0, timeLeft / timeMax) : 0;
+      timefill.style.width = (pct * 100) + "%";
+      timeLabel.textContent = Math.max(0, timeLeft).toFixed(1) + "秒";
+    }
+
+    function extremes(spec) {
+      var ps = [spec.peas[0], spec.peas[1]];
+      var fs = [spec.foodCount[0], spec.foodCount[1]];
+      var ds = [spec.decoyCount[0], spec.decoyCount[1]];
+      var ts = [spec.time[0], spec.time[1]];
+      var out = [];
+      var seen = {};
+      ps.forEach(function (p) {
+        fs.forEach(function (f) {
+          ds.forEach(function (d) {
+            ts.forEach(function (tt) {
+              var key = p + "," + f + "," + d + "," + tt;
+              if (seen[key]) return;
+              seen[key] = 1;
+              out.push({ peas: p, foods: f, decoys: d, time: tt, crowd: p + f + d });
+            });
+          });
+        });
+      });
+      return out;
+    }
+    function audit() {
+      var problems = [];
+      var i, ai, bi;
+      if (ROUNDS.length !== 6) problems.push("round count");
+      for (i = 0; i < ROUNDS.length - 1; i++) {
+        if (!(ROUNDS[i + 1].time[1] < ROUNDS[i].time[0])) problems.push("time slope " + i);
+        var A = extremes(ROUNDS[i]);
+        var B = extremes(ROUNDS[i + 1]);
+        for (ai = 0; ai < A.length; ai++) {
+          for (bi = 0; bi < B.length; bi++) {
+            var a = A[ai], b = B[bi];
+            if (!(b.peas > a.peas || b.time < a.time || b.crowd > a.crowd)) {
+              problems.push("pair " + i);
+            }
+          }
+        }
+      }
+      if (!ROUNDS[0].practice) problems.push("r1 practice");
+      if (ROUNDS[0].foodCount[1] !== 0 || ROUNDS[0].decoyCount[1] !== 0) problems.push("r1 empty");
+      if (!(ROUNDS[2].peas[1] < ROUNDS[1].peas[0])) problems.push("r3 fewer peas");
+      if (ROUNDS[2].decoyKinds.join(",") !== "edamame") problems.push("r3 edamame only");
+      if (ROUNDS[1].decoyCount[1] !== 0) problems.push("r2 no decoy");
+      if (ROUNDS[1].foodCount[0] < 4) problems.push("r2 crowd");
+      var c4min = ROUNDS[3].peas[0] + ROUNDS[3].foodCount[0] + ROUNDS[3].decoyCount[0];
+      var c4max = ROUNDS[3].peas[1] + ROUNDS[3].foodCount[1] + ROUNDS[3].decoyCount[1];
+      var c5max = ROUNDS[4].peas[1] + ROUNDS[4].foodCount[1] + ROUNDS[4].decoyCount[1];
+      var c6min = ROUNDS[5].peas[0] + ROUNDS[5].foodCount[0] + ROUNDS[5].decoyCount[0];
+      if (!(c5max < c4min)) problems.push("r5 fewer items");
+      if (ROUNDS[3].motion || !ROUNDS[4].motion || !ROUNDS[5].motion) problems.push("motion intro");
+      if (!(ROUNDS[5].motion.freq[0] > ROUNDS[4].motion.freq[1])) problems.push("r6 faster");
+      if (!(ROUNDS[5].motion.slide[0] > ROUNDS[4].motion.slide[1])) problems.push("r6 bigger slide");
+      if (!(ROUNDS[5].motion.rot[0] > ROUNDS[4].motion.rot[1])) problems.push("r6 bigger rot");
+      if (!(c6min > c4max)) problems.push("r6 most crowded");
+      for (i = 0; i < 5; i++) {
+        if (!(ROUNDS[5].time[1] < ROUNDS[i].time[0])) problems.push("r6 time vs " + i);
+        if (ROUNDS[i].motion && i < 4) problems.push("early motion " + i);
+      }
+      if (ROUNDS[3].decoyKinds.indexOf("edamame") < 0 || ROUNDS[3].decoyKinds.indexOf("mint") < 0) problems.push("r4 both decoys");
+      return { ok: problems.length === 0, problems: problems };
+    }
+
+    function pickKinds(rng, kinds, count) {
+      var out = [];
+      if (!kinds.length || count <= 0) return out;
+      for (var i = 0; i < count; i++) out.push(kinds[Math.floor(rng() * kinds.length)]);
+      return out;
+    }
+    function placeKinds(rng, kinds, b) {
+      var n = Math.max(1, kinds.length);
+      var area = Math.max(40, (b.hw - b.rim) * 2) * Math.max(40, (b.hh - b.rim) * 2);
+      var ideal = Math.sqrt(area / (n * 7.2));
+      ideal = clamp(ideal, 13, 22);
+      var r, placed;
+      for (r = ideal; r >= 12; r -= 1) {
+        placed = relax(rng, kinds, b, r);
+        if (placed) return placed;
+      }
+      return forceGrid(kinds, b, 13);
+    }
+    function relax(rng, kinds, b, r) {
+      var innerX = b.hw - b.rim - r - 3;
+      var innerY = b.hh - b.rim - r - 3;
+      if (innerX < 8 || innerY < 8) return null;
+      var pts = kinds.map(function (k) {
+        return { kind: k, nx: rng() * 2 - 1, ny: rng() * 2 - 1, r: r, spin: rng() * Math.PI * 2 };
+      });
+      var iter, i, j, ok;
+      for (iter = 0; iter < 70; iter++) {
+        ok = true;
+        for (i = 0; i < pts.length; i++) {
+          for (j = i + 1; j < pts.length; j++) {
+            var dx = (pts[j].nx - pts[i].nx) * innerX;
+            var dy = (pts[j].ny - pts[i].ny) * innerY;
+            var dist = Math.hypot(dx, dy) || 0.001;
+            var min = pts[i].r + pts[j].r + 2;
+            if (dist < min) {
+              ok = false;
+              var push = (min - dist) / 2;
+              var nx = dx / dist;
+              var ny = dy / dist;
+              pts[i].nx -= (nx * push) / innerX;
+              pts[i].ny -= (ny * push) / innerY;
+              pts[j].nx += (nx * push) / innerX;
+              pts[j].ny += (ny * push) / innerY;
+            }
+          }
+          pts[i].nx = clamp(pts[i].nx, -1, 1);
+          pts[i].ny = clamp(pts[i].ny, -1, 1);
+        }
+        if (ok && iter > 10) return pts;
+      }
+      for (i = 0; i < pts.length; i++) {
+        for (j = i + 1; j < pts.length; j++) {
+          var ddx = (pts[j].nx - pts[i].nx) * innerX;
+          var ddy = (pts[j].ny - pts[i].ny) * innerY;
+          if (Math.hypot(ddx, ddy) < pts[i].r + pts[j].r - 0.5) return null;
+        }
+      }
+      return pts;
+    }
+    function forceGrid(kinds, b, r) {
+      var cols = Math.ceil(Math.sqrt(kinds.length));
+      var rows = Math.ceil(kinds.length / cols);
+      return kinds.map(function (k, i) {
+        var c = i % cols;
+        var row = Math.floor(i / cols);
+        return {
+          kind: k,
+          nx: cols === 1 ? 0 : (c / (cols - 1)) * 2 - 1,
+          ny: rows === 1 ? 0 : (row / (rows - 1)) * 2 - 1,
+          r: r,
+          spin: 0
+        };
+      });
+    }
+    function build(spec, rng, b) {
+      var peas = randInt(rng, spec.peas[0], spec.peas[1]);
+      var foodN = randInt(rng, spec.foodCount[0], spec.foodCount[1]);
+      var decoyN = randInt(rng, spec.decoyCount[0], spec.decoyCount[1]);
+      var tenths = randInt(rng, spec.time[0], spec.time[1]);
+      var foods = pickKinds(rng, spec.foodKinds, foodN);
+      var decoys = pickKinds(rng, spec.decoyKinds, decoyN);
+      var kinds = [];
+      var i;
+      for (i = 0; i < peas; i++) kinds.push("pea");
+      for (i = 0; i < foods.length; i++) kinds.push(foods[i]);
+      for (i = 0; i < decoys.length; i++) kinds.push(decoys[i]);
+      shuffle(rng, kinds);
+      var motionOut = null;
+      if (spec.motion) {
+        motionOut = {
+          slide: randInt(rng, spec.motion.slide[0], spec.motion.slide[1]) / 100,
+          rot: randInt(rng, spec.motion.rot[0], spec.motion.rot[1]) / 100,
+          freq: randInt(rng, spec.motion.freq[0], spec.motion.freq[1]) / 100,
+          dir: rng() < 0.5 ? -1 : 1,
+          phase: rng() * Math.PI * 2,
+          phaseY: rng() * Math.PI * 2,
+          phaseR: rng() * Math.PI * 2
+        };
+      }
+      return {
+        peas: peas,
+        foods: foods.slice(),
+        decoys: decoys.slice(),
+        time: tenths / 10,
+        timeTenths: tenths,
+        crowd: kinds.length,
+        motion: motionOut,
+        items: placeKinds(rng, kinds, b)
+      };
+    }
+
+    function ensureLayout() {
+      var rect = stage.getBoundingClientRect();
+      var w = rect.width;
+      var h = rect.height;
+      if (w < 20 || h < 20) { w = 360; h = 520; }
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      view.w = w;
+      view.h = h;
+      view.dpr = dpr;
+      canvas.width = Math.max(1, Math.round(w * dpr));
+      canvas.height = Math.max(1, Math.round(h * dpr));
+      var fit = current && current.fit ? current.fit : 0.9;
+      var geom = computeLayout(w, h, fit);
+      box = geom.box;
+      layoutDragon = geom.dragon;
+      roomX = Math.max(0, Math.min(box.cx - box.hw - 4, w - (box.cx + box.hw) - 4));
+      roomY = Math.max(0, Math.min(box.cy - box.hh - 4, h - (box.cy + box.hh) - 4));
+    }
+    function computeLayout(w, h, fit) {
+      var rim = 12;
+      var landscape = w > h * 1.2;
+      if (landscape) {
+        var dw = Math.min(w * 0.32, 210);
+        var maxW = (w - dw - 18) * Math.min(1, fit + 0.08);
+        var maxH = (h - 8) * Math.min(1, fit + 0.12);
+        var boxW = Math.min(maxW, maxH * 1.4);
+        var boxH = Math.min(maxH, boxW / 1.08);
+        var cx = dw + 12 + boxW / 2;
+        var cy = h / 2;
+        var sL = clamp((h - 10) / 158, 0.42, 0.78);
+        var dragonY = 6 + 142 * sL;
+        return {
+          dragon: { x: Math.max(40, dw * 0.46), y: dragonY, s: sL },
+          box: { cx: cx, cy: cy, hw: boxW / 2, hh: boxH / 2, rim: rim }
+        };
+      }
+      var dragonBudget = clamp(h * 0.28, 78, 150);
+      var availH = Math.max(120, h - dragonBudget + 8);
+      var boxW = Math.min((w - 16) * fit, availH * 1.35);
+      var boxH = Math.min(availH * 0.92, boxW / 1.25);
+      var cxp = w / 2;
+      var cyp = dragonBudget + (h - dragonBudget) * 0.52;
+      cyp = clamp(cyp, boxH / 2 + 4, h - boxH / 2 - 4);
+      var boxTop = cyp - boxH / 2;
+      var s = clamp(Math.min((boxTop - 8) / 130, boxW / 240), 0.55, 1.12);
+      var dragonY = boxTop + 6;
+      if (dragonY - 142 * s < 2) s = Math.max(0.48, (dragonY - 2) / 142);
+      return {
+        dragon: { x: w * 0.5, y: dragonY, s: s },
+        box: { cx: cxp, cy: cyp, hw: boxW / 2, hh: boxH / 2, rim: rim }
+      };
+    }
+
+    function currentPose() {
+      if (!motion) return { ox: 0, oy: 0, rot: 0 };
+      var ampX = roomX * motion.slide;
+      var ampY = roomY * motion.slide * 0.65;
+      var ox = Math.sin(t * motion.freq + motion.phase) * ampX * motion.dir;
+      var oy = Math.cos(t * motion.freq * 0.73 + motion.phaseY) * ampY;
+      var rot = Math.sin(t * motion.freq * 0.81 + motion.phaseR) * motion.rot * motion.dir;
+      return { ox: ox, oy: oy, rot: rot };
+    }
+    function localToWorld(lx, ly, pose, b) {
+      var c = Math.cos(pose.rot);
+      var s = Math.sin(pose.rot);
+      return { x: b.cx + pose.ox + lx * c - ly * s, y: b.cy + pose.oy + lx * s + ly * c };
+    }
+    function worldToLocal(x, y, pose, b) {
+      var dx = x - (b.cx + pose.ox);
+      var dy = y - (b.cy + pose.oy);
+      var c = Math.cos(pose.rot);
+      var s = Math.sin(pose.rot);
+      return { x: dx * c + dy * s, y: -dx * s + dy * c };
+    }
+    function innerLimits(it) {
+      return {
+        x: Math.max(6, box.hw - box.rim - it.r - 2),
+        y: Math.max(6, box.hh - box.rim - it.r - 2)
+      };
+    }
+    function applyLocal(it) {
+      var lim = innerLimits(it);
+      it.lx = it.nx * lim.x;
+      it.ly = it.ny * lim.y;
+    }
+    function syncResting() {
+      var pose = currentPose();
+      for (var i = 0; i < items.length; i++) {
+        var it = items[i];
+        if (it.loose || it.out) continue;
+        applyLocal(it);
+        var w = localToWorld(it.lx, it.ly, pose, box);
+        it.x = w.x;
+        it.y = w.y;
+        it.vx = 0;
+        it.vy = 0;
+      }
+    }
+    function isOutside(it, pose) {
+      var loc = worldToLocal(it.x, it.y, pose, box);
+      return Math.abs(loc.x) > box.hw - box.rim || Math.abs(loc.y) > box.hh - box.rim;
+    }
+    function reattach(it, pose) {
+      var loc = worldToLocal(it.x, it.y, pose, box);
+      var lim = innerLimits(it);
+      it.nx = clamp(loc.x / lim.x, -1, 1);
+      it.ny = clamp(loc.y / lim.y, -1, 1);
+      it.loose = false;
+      it.vx = 0;
+      it.vy = 0;
+      applyLocal(it);
+    }
+
+    function collide(a, b) {
+      if (a.out || b.out) return;
+      if (!a.loose && !b.loose) return;
+      var dx = b.x - a.x;
+      var dy = b.y - a.y;
+      var dist = Math.hypot(dx, dy) || 0.0001;
+      var min = a.r + b.r;
+      if (dist >= min) return;
+      var nx = dx / dist;
+      var ny = dy / dist;
+      if (a.loose && b.loose) {
+        var overlap = min - dist;
+        a.x -= nx * overlap * 0.5;
+        a.y -= ny * overlap * 0.5;
+        b.x += nx * overlap * 0.5;
+        b.y += ny * overlap * 0.5;
+        var rel = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
+        if (rel < 0) return;
+        var impulse = rel * 0.86;
+        a.vx -= impulse * nx;
+        a.vy -= impulse * ny;
+        b.vx += impulse * nx;
+        b.vy += impulse * ny;
+        return;
+      }
+      var loose = a.loose ? a : b;
+      var rest = a.loose ? b : a;
+      var lx = rest.x - loose.x;
+      var ly = rest.y - loose.y;
+      var ld = Math.hypot(lx, ly) || 0.0001;
+      var nnx = lx / ld;
+      var nny = ly / ld;
+      var lov = (loose.r + rest.r) - ld;
+      if (lov > 0) {
+        loose.x -= nnx * lov;
+        loose.y -= nny * lov;
+      }
+      var approach = loose.vx * nnx + loose.vy * nny;
+      if (approach > DETACH_SPEED) {
+        var knock = approach * 0.82;
+        loose.vx -= knock * nnx;
+        loose.vy -= knock * nny;
+        rest.loose = true;
+        rest.vx = knock * 0.78 * nnx;
+        rest.vy = knock * 0.78 * nny;
+      }
+    }
+    function physics(dt) {
+      t += dt;
+      var pose = currentPose();
+      var i, j, it;
+      for (i = 0; i < items.length; i++) {
+        it = items[i];
+        if (it.out || it.loose) continue;
+        applyLocal(it);
+        var w = localToWorld(it.lx, it.ly, pose, box);
+        it.x = w.x;
+        it.y = w.y;
+        it.vx = 0;
+        it.vy = 0;
+      }
+      var damp = Math.exp(-DAMP * dt);
+      for (i = 0; i < items.length; i++) {
+        it = items[i];
+        if (!it.loose || it.out) continue;
+        it.vx *= damp;
+        it.vy *= damp;
+        it.x += it.vx * dt;
+        it.y += it.vy * dt;
+      }
+      for (i = 0; i < items.length; i++) {
+        for (j = i + 1; j < items.length; j++) collide(items[i], items[j]);
+      }
+      for (i = 0; i < items.length; i++) {
+        it = items[i];
+        if (!it.loose || it.out) continue;
+        if (isOutside(it, pose)) {
+          it.out = true;
+          it.justOut = true;
+          it.fade = it.kind === "pea" ? 0.5 : 999;
+        } else if (Math.hypot(it.vx, it.vy) < STOP_SPEED) {
+          reattach(it, pose);
+        }
+      }
+    }
+
+    function burst(x, y) {
+      for (var i = 0; i < 12; i++) {
+        var a = (Math.PI * 2 * i) / 12 + Math.random() * 0.2;
+        var sp = 80 + Math.random() * 110;
+        sparkles.push({
+          x: x, y: y,
+          vx: Math.cos(a) * sp,
+          vy: Math.sin(a) * sp,
+          life: 0.45,
+          max: 0.45,
+          color: i % 2 ? "#fff6b0" : "#c8ff7a",
+          rot: Math.random() * 6
+        });
+      }
+    }
+    function flash() {
+      flashEl.classList.remove("on");
+      void flashEl.offsetWidth;
+      flashEl.classList.add("on");
+    }
+    function decayVisuals(dt) {
+      var i;
+      for (i = 0; i < items.length; i++) {
+        var it = items[i];
+        if (it.highlight > 0 && it.highlight < 100) it.highlight -= dt;
+        if (it.mark > 0 && it.mark < 100) it.mark -= dt;
+        if (it.fade > 0 && it.fade < 100) {
+          it.fade -= dt;
+          it.x += it.vx * dt * 0.35;
+          it.y += it.vy * dt * 0.35;
+        }
+      }
+      for (i = 0; i < sparkles.length; i++) {
+        var s = sparkles[i];
+        s.life -= dt;
+        s.x += s.vx * dt;
+        s.y += s.vy * dt;
+        s.vy += 30 * dt;
+      }
+      sparkles = sparkles.filter(function (s) { return s.life > 0; });
+    }
+    function updateUrgency() {
+      var urgent = phase === "play" && timeLeft > 0 && timeLeft <= 1.5 && peasLeft() > 0;
+      timebar.classList.toggle("urgent", urgent);
+      timeLabel.classList.toggle("urgent", urgent);
+      if (!urgent) {
+        tickBucket = 999;
+        timeLabel.classList.remove("beat");
+        timebar.classList.remove("tick");
+        return;
+      }
+      var b = Math.ceil(timeLeft / 0.25);
+      if (b !== tickBucket) {
+        tickBucket = b;
+        cue("tick");
+        tickSound();
+        timeLabel.classList.toggle("beat");
+        timebar.classList.remove("tick");
+        void timebar.offsetWidth;
+        timebar.classList.add("tick");
+      }
+    }
+    function maybeRefreshSay() {
+      if (phase !== "play") return;
+      var n = peasLeft();
+      if (n <= 0) return;
+      var urgent = timeLeft <= 1.5;
+      if (urgent && saidCount !== -2) {
+        if (n !== saidCount || !saidUrgent()) {
+          saidCount = n;
+          markUrgent();
+          setSay("急いで！あと" + n + "個");
+        }
+        return;
+      }
+      if (n !== saidCount) {
+        saidCount = n;
+        setSay("あと" + n + "個。緑の丸だけ");
+      }
+    }
+    var urgentSaid = false;
+    function saidUrgent() { return urgentSaid; }
+    function markUrgent() { urgentSaid = true; }
+
+    function failRound(text) {
+      if (phase !== "play") return;
+      var practice = !!(current && current.practice);
+      failIsPractice = practice;
+      endCause = text;
+      if (!practice) {
+        hearts -= 1;
+        misses += 1;
+        updateHearts(true);
+        setMood("crying");
+      } else {
+        setMood("worried");
+      }
+      setSay(text);
+      hintEl.textContent = text;
+      hintEl.classList.add("bad");
+      phase = "failflash";
+      pause = 0.6;
+    }
+    function winRound() {
+      if (peasLeft() !== 0 || anyBadOut()) return;
+      phase = "clear";
+      pause = 0.7;
+      cleared += 1;
+      setMood("relieved");
+      setSay("豆がなくなった！");
+      hintEl.classList.remove("bad");
+      hintEl.textContent = "きれいになった";
+    }
+    function resolveFrame() {
+      var bad = null;
+      var i;
+      for (i = 0; i < items.length; i++) {
+        var it = items[i];
+        if (!it.justOut) continue;
+        it.justOut = false;
+        if (it.kind === "pea") {
+          cue("pop");
+          cue("sparkle");
+          burst(it.x, it.y);
+          popSound();
+        } else {
+          it.highlight = 999;
+          if (!bad) bad = it;
+        }
+      }
+      if (bad) {
+        cue("buzz");
+        cue("flash");
+        cue("highlight");
+        flash();
+        buzzSound();
+        try { navigator.vibrate(40); } catch (err) {}
+        failRound(FOOD_NAME[bad.kind] + "が落ちた！");
+        return;
+      }
+      if (peasLeft() === 0 && !hasLooseNonPea() && !anyBadOut()) {
+        winRound();
+        return;
+      }
+      if (timeLeft <= 0 && peasLeft() > 0) {
+        var n = peasLeft();
+        for (i = 0; i < items.length; i++) {
+          if (items[i].kind === "pea" && !items[i].out) items[i].mark = 999;
+        }
+        cue("timeout");
+        cue("flash");
+        flash();
+        timeUpSound();
+        failRound("時間切れ、ピース" + n + "個残り");
+      }
+    }
+    function openFailUI() {
+      if (hearts <= 0) {
+        showEnd();
+        return;
+      }
+      phase = "fail";
+      failText.textContent = endCause;
+      failSub.textContent = failIsPractice ? "練習なので♥は減らない" : ("♥があと" + hearts + "つ");
+      dock.hidden = false;
+      var btn = document.getElementById("btn-fail");
+      btn.focus({ preventScroll: true });
+    }
+    function advanceRound() {
+      if (roundIndex >= ROUNDS.length - 1) {
+        endCause = "";
+        showEnd();
+      } else {
+        roundIndex += 1;
+        retries = 0;
+        startRound();
+      }
+    }
+    function showEnd() {
+      phase = "end";
+      dock.hidden = true;
+      var rank = rankFor(cleared, misses, reached);
+      var react = reactionFor(rank);
+      setMood(react.mood);
+      setSay(react.line);
+      endRank.textContent = rank;
+      endCleared.textContent = "クリア " + cleared + "/6";
+      endMiss.textContent = "ミス " + misses;
+      endWhere.textContent = cleared >= 6 ? "6ラウンド全クリア" : ("第" + reached + "ラウンドで終了");
+      if (endCause && cleared < 6) {
+        endCauseEl.hidden = false;
+        endCauseEl.textContent = endCause;
+      } else {
+        endCauseEl.hidden = true;
+        endCauseEl.textContent = "";
+      }
+      endReaction.textContent = "ピー太「" + react.line + "」";
+      endRule.textContent = RANK_LINE;
+      var tweet = "グリーンピースはじき「" + rank + "」クリア" + cleared + "/6。緑ピースだけ指ではじく";
+      shareBtn.href = "https://x.com/intent/tweet?text=" + encodeURIComponent(tweet) + "&url=" + encodeURIComponent(PLAY_URL);
+      endEl.hidden = false;
+      document.getElementById("btn-retry").focus({ preventScroll: true });
+    }
+
+    function tick(dt) {
+      if (phase === "clear") {
+        pause -= dt;
+        decayVisuals(dt);
+        if (pause <= 0) advanceRound();
+        return;
+      }
+      if (phase === "failflash") {
+        pause -= dt;
+        decayVisuals(dt);
+        if (pause <= 0) openFailUI();
+        return;
+      }
+      if (phase !== "play") {
+        decayVisuals(dt);
+        return;
+      }
+      timeLeft -= dt;
+      if (timeLeft < 0) timeLeft = 0;
+      physics(dt);
+      decayVisuals(dt);
+      syncLiveNumbers();
+      resolveFrame();
+      if (phase === "play" && peasLeft() === 0 && hasLooseNonPea()) {
+        setMood("worried");
+        setSay("ピースは出た。具がまだ動いてる");
+      }
+      updateUrgency();
+      maybeRefreshSay();
+    }
+    function advance(dt) {
+      if (dt < 0) dt = 0;
+      var left = dt;
+      var guard = 0;
+      while (left > 0 && guard++ < 900) {
+        var h = Math.min(left, 1 / 120);
+        var before = phase;
+        tick(h);
+        left -= h;
+        if (phase !== before) break;
+      }
+    }
+
+    function startRound() {
+      var spec = ROUNDS[roundIndex];
+      current = spec;
+      ensureLayout();
+      reached = roundIndex + 1;
+      var roundSeed = (runSeed + reached * 9973 + retries * 131) >>> 0;
+      var built = build(spec, mulberry32(roundSeed), box);
+      timeMax = built.time;
+      timeLeft = timeMax;
+      t = 0;
+      motion = built.motion;
+      urgentSaid = false;
+      items = built.items.map(function (src, idx) {
+        return {
+          id: idx + 1,
+          kind: src.kind,
+          r: src.r,
+          nx: src.nx,
+          ny: src.ny,
+          lx: 0, ly: 0, x: 0, y: 0, vx: 0, vy: 0,
+          spin: src.spin,
+          loose: false,
+          out: false,
+          justOut: false,
+          highlight: 0,
+          mark: 0,
+          fade: 0
+        };
+      });
+      syncResting();
+      phase = "play";
+      cueLog = [];
+      sparkles = [];
+      tickBucket = 999;
+      saidCount = built.peas;
+      drag = null;
+      titleEl.hidden = true;
+      endEl.hidden = true;
+      dock.hidden = true;
+      hintEl.classList.remove("bad");
+      hintEl.textContent = "緑の丸を、指ではじく";
+      roundLabelEl.textContent = reached + "/6" + (spec.practice ? " 練習" : "");
+      numsEl.textContent = "ピース" + built.peas + "個・" + built.time.toFixed(1) + "秒";
+      noteEl.textContent = noteLine(spec);
+      timebar.classList.remove("urgent", "tick");
+      timeLabel.classList.remove("urgent", "beat");
+      setMood("worried");
+      sayCache = "";
+      setSay(introLine(spec, built.peas));
+      syncLiveNumbers();
+    }
+    function newRun(seed) {
+      runSeed = seed == null ? ((Date.now() ^ (Math.random() * 0x100000000)) >>> 0) : (seed >>> 0);
+      hearts = 2;
+      misses = 0;
+      cleared = 0;
+      reached = 0;
+      retries = 0;
+      roundIndex = 0;
+      endCause = "";
+      updateHearts(false);
+      titleEl.hidden = true;
+      endEl.hidden = true;
+      dock.hidden = true;
+      startRound();
+    }
+    function continueAfterFail() {
+      if (phase !== "fail") return;
+      retries += 1;
+      dock.hidden = true;
+      startRound();
+    }
+    function loadRound(index, seed) {
+      if (seed != null) runSeed = seed >>> 0;
+      if (!current) {
+        hearts = 2;
+        misses = 0;
+        cleared = 0;
+      }
+      roundIndex = index;
+      retries = 0;
+      titleEl.hidden = true;
+      endEl.hidden = true;
+      dock.hidden = true;
+      startRound();
+    }
+
+    // Swipe-flick: direction and speed come from the last 150ms of the drag.
+    // How long the finger was held down is never read and never decides success.
+    function flickVector(samples) {
+      if (!samples || samples.length < 2) return null;
+      var last = samples[samples.length - 1];
+      var t0 = last.t - FLICK_WINDOW;
+      var ax = samples[0].x;
+      var ay = samples[0].y;
+      var at = samples[0].t;
+      var i;
+      for (i = samples.length - 1; i >= 1; i--) {
+        var prev = samples[i - 1];
+        var curr = samples[i];
+        if (prev.t <= t0 && curr.t >= t0) {
+          var span = curr.t - prev.t || 1;
+          var u = clamp((t0 - prev.t) / span, 0, 1);
+          ax = prev.x + (curr.x - prev.x) * u;
+          ay = prev.y + (curr.y - prev.y) * u;
+          at = t0;
+          break;
+        }
+      }
+      var dt = (last.t - at) / 1000;
+      if (dt < 0.016) dt = 0.016;
+      var dx = last.x - ax;
+      var dy = last.y - ay;
+      var dist = Math.hypot(dx, dy);
+      if (dist < FLICK_MIN_DIST) return null;
+      var speed = dist / dt;
+      if (speed < FLICK_MIN_SPEED) return null;
+      var power = clamp(speed / 650, 0.65, 1.65);
+      return {
+        vx: (dx / dist) * power * FLICK_SCALE,
+        vy: (dy / dist) * power * FLICK_SCALE,
+        speed: speed,
+        dist: dist
+      };
+    }
+    function hitTest(x, y) {
+      var best = null;
+      var bestY = -1e9;
+      for (var i = 0; i < items.length; i++) {
+        var it = items[i];
+        if (it.out) continue;
+        if (Math.hypot(it.x - x, it.y - y) <= it.r + HIT_SLOP && it.y >= bestY) {
+          best = it;
+          bestY = it.y;
+        }
+      }
+      return best;
+    }
+    function launch(it, vx, vy) {
+      if (!it || it.out || phase !== "play") return;
+      it.loose = true;
+      it.vx = vx;
+      it.vy = vy;
+      whoosh();
+    }
+    function applyGesture(points) {
+      if (!points || !points.length) return { hit: false, vec: null };
+      var hit = hitTest(points[0].x, points[0].y);
+      var vec = flickVector(points);
+      if (!hit || !vec) return { hit: !!hit, vec: vec, kind: hit ? hit.kind : null };
+      launch(hit, vec.vx, vec.vy);
+      return { hit: true, vec: vec, kind: hit.kind };
+    }
+    function pointerPos(e) {
+      var r = canvas.getBoundingClientRect();
+      var rw = r.width || view.w;
+      var rh = r.height || view.h;
+      return {
+        x: (e.clientX - r.left) * (view.w / rw),
+        y: (e.clientY - r.top) * (view.h / rh)
+      };
+    }
+    function onDown(e) {
+      if (phase !== "play") return;
+      if (drag) return;
+      e.preventDefault();
+      ensureAudio();
+      var p = pointerPos(e);
+      var hit = hitTest(p.x, p.y);
+      if (!hit) return;
+      drag = { id: hit.id, pointerId: e.pointerId, samples: [{ x: p.x, y: p.y, t: e.timeStamp }], preview: null };
+      try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+    }
+    function onMove(e) {
+      if (!drag || e.pointerId !== drag.pointerId) return;
+      e.preventDefault();
+      var p = pointerPos(e);
+      drag.samples.push({ x: p.x, y: p.y, t: e.timeStamp });
+      if (drag.samples.length > 40) drag.samples.shift();
+      drag.preview = flickVector(drag.samples);
+    }
+    function onUp(e) {
+      if (!drag || e.pointerId !== drag.pointerId) return;
+      var p = pointerPos(e);
+      drag.samples.push({ x: p.x, y: p.y, t: e.timeStamp });
+      var vec = flickVector(drag.samples);
+      var item = findId(drag.id);
+      drag = null;
+      if (vec && item) launch(item, vec.vx, vec.vy);
+    }
+
+    function ensureAudio() {
+      if (muted) return null;
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      if (!audioCtx) audioCtx = new AC();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      return audioCtx;
+    }
+    function tone(freq, dur, type, gain, slide) {
+      try {
+        var ac = ensureAudio();
+        if (!ac) return;
+        var o = ac.createOscillator();
+        var g = ac.createGain();
+        o.type = type || "sine";
+        o.frequency.setValueAtTime(freq, ac.currentTime);
+        if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, slide), ac.currentTime + dur);
+        g.gain.setValueAtTime(gain == null ? 0.05 : gain, ac.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + dur);
+        o.connect(g);
+        g.connect(ac.destination);
+        o.start();
+        o.stop(ac.currentTime + dur + 0.02);
+      } catch (err) {}
+    }
+    function popSound() {
+      tone(680, 0.07, "sine", 0.06, 980);
+      tone(480, 0.05, "triangle", 0.03, 720);
+    }
+    function buzzSound() {
+      tone(150, 0.16, "sawtooth", 0.045, 70);
+      tone(90, 0.18, "square", 0.02, 50);
+    }
+    function tickSound() { tone(920, 0.03, "square", 0.028); }
+    function timeUpSound() { tone(320, 0.14, "triangle", 0.05, 110); }
+    function whoosh() { tone(420, 0.06, "sine", 0.03, 760); }
+    function applyMute() {
+      muteBtn.classList.toggle("is-muted", muted);
+      muteBtn.setAttribute("aria-pressed", muted ? "true" : "false");
+      muteBtn.setAttribute("aria-label", muted ? "音を出す" : "音を消す");
+    }
+
+    function roundRect(c, x, y, w, h, r) {
+      var rr = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+      c.beginPath();
+      c.moveTo(x + rr, y);
+      c.arcTo(x + w, y, x + w, y + h, rr);
+      c.arcTo(x + w, y + h, x, y + h, rr);
+      c.arcTo(x, y + h, x, y, rr);
+      c.arcTo(x, y, x + w, y, rr);
+      c.closePath();
+    }
+    function drawTable(c) {
+      var g = c.createLinearGradient(0, 0, 0, view.h);
+      g.addColorStop(0, "#f6d7a4");
+      g.addColorStop(1, "#e39a55");
+      c.fillStyle = g;
+      c.fillRect(0, 0, view.w, view.h);
+      c.strokeStyle = "rgba(255,255,255,.18)";
+      c.lineWidth = 2;
+      for (var y = 10; y < view.h; y += 16) {
+        c.beginPath();
+        c.moveTo(0, y);
+        c.bezierCurveTo(view.w * 0.3, y + 3, view.w * 0.65, y - 3, view.w, y + 1);
+        c.stroke();
+      }
+    }
+    function drawPlacemat(c) {
+      var extraX = motion ? roomX + 10 : 16;
+      var extraY = motion ? roomY + 8 : 12;
+      c.fillStyle = motion ? "rgba(255,248,236,.62)" : "rgba(255,248,236,.38)";
+      roundRect(c, box.cx - box.hw - extraX, box.cy - box.hh - extraY, box.hw * 2 + extraX * 2, box.hh * 2 + extraY * 2, 26);
+      c.fill();
+    }
+    function drawBento(c, pose, closed) {
+      c.save();
+      c.translate(box.cx + pose.ox + 3, box.cy + pose.oy + 8);
+      c.rotate(pose.rot);
+      c.fillStyle = "rgba(80,40,10,.18)";
+      roundRect(c, -box.hw, -box.hh, box.hw * 2, box.hh * 2, 18);
+      c.fill();
+      c.restore();
+      c.save();
+      c.translate(box.cx + pose.ox, box.cy + pose.oy);
+      c.rotate(pose.rot);
+      var x = -box.hw, y = -box.hh, w = box.hw * 2, h = box.hh * 2;
+      roundRect(c, x, y, w, h, 18);
+      c.fillStyle = "#8d3328";
+      c.fill();
+      c.strokeStyle = "#5c1d16";
+      c.lineWidth = 3;
+      c.stroke();
+      if (!closed) {
+        roundRect(c, x + box.rim, y + box.rim, w - box.rim * 2, h - box.rim * 2, 12);
+        c.fillStyle = "#f7e7c8";
+        c.fill();
+        c.strokeStyle = "rgba(170,120,70,.45)";
+        c.lineWidth = 2;
+        c.beginPath();
+        c.moveTo(0, y + box.rim + 6);
+        c.lineTo(0, y + h - box.rim - 6);
+        c.moveTo(x + box.rim + 6, 0);
+        c.lineTo(x + w - box.rim - 6, 0);
+        c.stroke();
+      } else {
+        roundRect(c, x + 8, y + 8, w - 16, h - 16, 14);
+        c.fillStyle = "#a84538";
+        c.fill();
+        c.fillStyle = "#f0d48a";
+        c.beginPath();
+        c.arc(0, 0, 8, 0, Math.PI * 2);
+        c.fill();
+        c.strokeStyle = "#8d3328";
+        c.lineWidth = 2;
+        c.stroke();
+      }
+      c.restore();
+    }
+
+    function drawDragon(c, x, y, s, m, time) {
+      c.save();
+      c.translate(x, y);
+      var bob = m === "cheering" ? Math.sin(time * 9) * 5 : m === "crying" ? 3 : Math.sin(time * 2) * 1.4;
+      c.translate(0, bob);
+      if (m === "worried") c.rotate(Math.sin(time * 2.4) * 0.05);
+      c.scale(s, s);
+      var ink = "#24425c";
+      c.lineJoin = "round";
+      c.lineCap = "round";
+      c.strokeStyle = ink;
+      c.lineWidth = 3;
+      c.fillStyle = "#6ec0ea";
+      c.beginPath();
+      c.moveTo(-16, -30);
+      c.quadraticCurveTo(-58, -40, -68, -10);
+      c.quadraticCurveTo(-74, 10, -50, 6);
+      c.quadraticCurveTo(-36, -8, -14, -16);
+      c.closePath();
+      c.fill();
+      c.stroke();
+      c.beginPath();
+      c.moveTo(-66, -8);
+      c.lineTo(-86, -20);
+      c.lineTo(-76, 0);
+      c.lineTo(-90, 14);
+      c.lineTo(-62, 8);
+      c.closePath();
+      c.fill();
+      c.stroke();
+      function wing(sx) {
+        c.fillStyle = "#b9e6fb";
+        c.beginPath();
+        c.moveTo(sx * 18, -58);
+        c.quadraticCurveTo(sx * 48, -78, sx * 54, -48);
+        c.quadraticCurveTo(sx * 40, -40, sx * 20, -42);
+        c.closePath();
+        c.fill();
+        c.stroke();
+      }
+      wing(-1);
+      wing(1);
+      function foot(fx) {
+        c.fillStyle = "#fff6ea";
+        c.beginPath();
+        c.ellipse(fx, -2, 10, 6, 0, 0, Math.PI * 2);
+        c.fill();
+        c.stroke();
+      }
+      foot(-16);
+      foot(14);
+      c.fillStyle = "#7ecaf2";
+      c.beginPath();
+      c.ellipse(0, -40, 36, 28, 0, 0, Math.PI * 2);
+      c.fill();
+      c.stroke();
+      c.fillStyle = "#fff6ea";
+      c.beginPath();
+      c.ellipse(2, -36, 22, 18, 0, 0, Math.PI * 2);
+      c.fill();
+      function arm(x0, y0, x1, y1) {
+        c.strokeStyle = ink;
+        c.lineWidth = 8;
+        c.beginPath();
+        c.moveTo(x0, y0);
+        c.quadraticCurveTo((x0 + x1) / 2, (y0 + y1) / 2 + 8, x1, y1);
+        c.stroke();
+        c.fillStyle = "#fff6ea";
+        c.lineWidth = 3;
+        c.beginPath();
+        c.arc(x1, y1, 7, 0, Math.PI * 2);
+        c.fill();
+        c.stroke();
+      }
+      if (m === "cheering") { arm(-28, -52, -46, -92); arm(28, -52, 46, -92); }
+      else if (m === "crying") { arm(-24, -50, -14, -72); arm(24, -50, 14, -72); }
+      else if (m === "worried") { arm(-26, -48, -46, -74); arm(26, -48, 46, -74); }
+      else { arm(-22, -38, -40, -22); arm(22, -38, 40, -22); }
+      c.fillStyle = "#8fd4f8";
+      c.beginPath();
+      c.arc(0, -86, 34, 0, Math.PI * 2);
+      c.fill();
+      c.stroke();
+      function horn(x0, y0, x1, y1) {
+        c.fillStyle = "#f3d48a";
+        c.beginPath();
+        c.moveTo(x0 - 5, y0);
+        c.lineTo(x1, y1);
+        c.lineTo(x0 + 5, y0);
+        c.closePath();
+        c.fill();
+        c.stroke();
+      }
+      horn(-14, -112, -22, -136);
+      horn(14, -112, 22, -136);
+      c.fillStyle = "#f7b3c4";
+      for (var fi = -2; fi <= 2; fi++) {
+        c.beginPath();
+        c.ellipse(fi * 10, -116, 6, 8, fi * 0.15, 0, Math.PI * 2);
+        c.fill();
+        c.stroke();
+      }
+      c.fillStyle = "rgba(255,150,170,.9)";
+      c.beginPath();
+      c.ellipse(-22, -76, 7, 4.5, 0, 0, Math.PI * 2);
+      c.ellipse(22, -76, 7, 4.5, 0, 0, Math.PI * 2);
+      c.fill();
+      var blink = (time % 3.6) < 0.12 && m !== "crying";
+      function brow(sign, inner, outer) {
+        c.strokeStyle = ink;
+        c.lineWidth = 3;
+        c.beginPath();
+        c.moveTo(sign * 8, -100 + inner);
+        c.lineTo(sign * 24, -100 + outer);
+        c.stroke();
+      }
+      if (m === "worried") { brow(-1, -6, 2); brow(1, -6, 2); }
+      else if (m === "crying") { brow(-1, -8, 4); brow(1, -8, 4); }
+      else if (m === "cheering") { brow(-1, 2, -4); brow(1, 2, -4); }
+      function eyeOpen(ex) {
+        c.fillStyle = "#fff";
+        c.beginPath();
+        c.ellipse(ex, -88, 8, 9, 0, 0, Math.PI * 2);
+        c.fill();
+        c.stroke();
+        c.fillStyle = "#24384a";
+        c.beginPath();
+        c.arc(ex + (m === "worried" ? 0 : 0), -87, 3.3, 0, Math.PI * 2);
+        c.fill();
+        c.fillStyle = "#fff";
+        c.beginPath();
+        c.arc(ex - 1.5, -89, 1.3, 0, Math.PI * 2);
+        c.fill();
+      }
+      function eyeShut(ex, happy) {
+        c.strokeStyle = ink;
+        c.lineWidth = 3;
+        c.beginPath();
+        if (happy) {
+          c.arc(ex, -86, 7, Math.PI * 1.15, Math.PI * 1.85);
+        } else {
+          c.moveTo(ex - 7, -90);
+          c.lineTo(ex + 7, -84);
+          c.moveTo(ex - 7, -84);
+          c.lineTo(ex + 7, -90);
+        }
+        c.stroke();
+      }
+      if (m === "crying" || blink) {
+        eyeShut(-13, m !== "crying" && m !== "worried");
+        eyeShut(13, m !== "crying" && m !== "worried");
+      } else if (m === "relieved") {
+        eyeShut(-13, true);
+        eyeShut(13, true);
+      } else if (m === "cheering") {
+        starEye(c, -13, -88);
+        starEye(c, 13, -88);
+      } else {
+        eyeOpen(-13);
+        eyeOpen(13);
+      }
+      c.fillStyle = ink;
+      c.beginPath();
+      c.ellipse(-4, -74, 2.2, 1.6, 0.2, 0, Math.PI * 2);
+      c.ellipse(4, -74, 2.2, 1.6, -0.2, 0, Math.PI * 2);
+      c.fill();
+      c.strokeStyle = ink;
+      c.lineWidth = 3;
+      c.beginPath();
+      if (m === "crying") {
+        c.arc(0, -54, 9, Math.PI * 1.05, Math.PI * 1.95);
+        c.stroke();
+      } else if (m === "worried") {
+        c.arc(0, -56, 7, Math.PI * 1.12, Math.PI * 1.88);
+        c.stroke();
+      } else {
+        c.arc(0, -68, 10, Math.PI * 0.12, Math.PI * 0.88);
+        c.stroke();
+        if (m === "cheering" || m === "relieved") {
+          c.fillStyle = "#ff8b9a";
+          c.beginPath();
+          c.arc(0, -64, 5, 0, Math.PI);
+          c.fill();
+        }
+      }
+      if (m === "worried") {
+        c.fillStyle = "#bfe9ff";
+        c.beginPath();
+        c.ellipse(32, -98 + Math.sin(time * 4) * 2, 4, 6, 0.5, 0, Math.PI * 2);
+        c.fill();
+        c.stroke();
+      }
+      if (m === "crying") {
+        var ty = (time * 36) % 20;
+        c.fillStyle = "#8fd4ff";
+        c.beginPath();
+        c.ellipse(-18, -68 + ty, 4.5, 7, 0, 0, Math.PI * 2);
+        c.ellipse(20, -64 + ((time * 36 + 9) % 20), 4.5, 7, 0, 0, Math.PI * 2);
+        c.fill();
+      }
+      c.restore();
+    }
+    function starEye(c, x, y) {
+      c.save();
+      c.translate(x, y);
+      c.fillStyle = "#ffe56b";
+      c.strokeStyle = "#24425c";
+      c.lineWidth = 2;
+      c.beginPath();
+      for (var i = 0; i < 5; i++) {
+        var a = -Math.PI / 2 + i * Math.PI * 2 / 5;
+        var b = a + Math.PI / 5;
+        c.lineTo(Math.cos(a) * 9, Math.sin(a) * 9);
+        c.lineTo(Math.cos(b) * 3.6, Math.sin(b) * 3.6);
+      }
+      c.closePath();
+      c.fill();
+      c.stroke();
+      c.restore();
+    }
+    function drawItem(c, it) {
+      c.save();
+      c.translate(it.x, it.y);
+      c.rotate(it.spin || 0);
+      var r = it.r;
+      if (it.kind === "pea") {
+        c.fillStyle = "#2f9e3a";
+        c.beginPath();
+        c.arc(0, 0, r, 0, Math.PI * 2);
+        c.fill();
+        c.fillStyle = "#5ee06a";
+        c.beginPath();
+        c.arc(-r * 0.08, -r * 0.06, r * 0.72, 0, Math.PI * 2);
+        c.fill();
+        c.fillStyle = "rgba(255,255,255,.9)";
+        c.beginPath();
+        c.arc(-r * 0.32, -r * 0.36, r * 0.22, 0, Math.PI * 2);
+        c.fill();
+        c.strokeStyle = "#1c7a30";
+        c.lineWidth = Math.max(1.2, r * 0.1);
+        c.beginPath();
+        c.arc(0, 0, r * 0.42, 0.2, 1.5);
+        c.stroke();
+      } else if (it.kind === "edamame") {
+        c.fillStyle = "#6f8f2e";
+        c.beginPath();
+        c.ellipse(-r * 0.32, 0, r * 0.55, r * 0.42, -0.2, 0, Math.PI * 2);
+        c.ellipse(r * 0.32, 0, r * 0.55, r * 0.42, 0.2, 0, Math.PI * 2);
+        c.fill();
+        c.strokeStyle = "#3d5a18";
+        c.lineWidth = 2;
+        c.stroke();
+        c.strokeStyle = "#dfe8b0";
+        c.beginPath();
+        c.moveTo(-r * 0.7, 0);
+        c.quadraticCurveTo(0, -r * 0.2, r * 0.7, 0);
+        c.stroke();
+        c.strokeStyle = "#3d5a18";
+        c.beginPath();
+        c.moveTo(r * 0.7, 0);
+        c.lineTo(r * 1.05, -r * 0.35);
+        c.stroke();
+      } else if (it.kind === "mint") {
+        c.fillStyle = "#14b39a";
+        roundRect(c, -r * 0.82, -r * 0.82, r * 1.64, r * 1.64, r * 0.28);
+        c.fill();
+        c.strokeStyle = "#0c6d62";
+        c.lineWidth = 2;
+        c.stroke();
+        c.strokeStyle = "rgba(255,255,255,.85)";
+        c.lineWidth = Math.max(2, r * 0.16);
+        c.beginPath();
+        c.arc(0, 0, r * 0.28, 0.4, 4.2);
+        c.stroke();
+        c.fillStyle = "rgba(255,255,255,.35)";
+        c.beginPath();
+        c.moveTo(-r * 0.82, -r * 0.1);
+        c.lineTo(-r * 1.15, -r * 0.35);
+        c.lineTo(-r * 1.15, r * 0.2);
+        c.closePath();
+        c.fill();
+      } else if (it.kind === "corn") {
+        c.fillStyle = "#f2c230";
+        roundRect(c, -r * 0.7, -r * 0.85, r * 1.4, r * 1.7, r * 0.4);
+        c.fill();
+        c.fillStyle = "#ffe27a";
+        for (var cy = -1; cy <= 1; cy++) {
+          for (var cx = -1; cx <= 1; cx++) {
+            c.beginPath();
+            c.arc(cx * r * 0.32, cy * r * 0.38, r * 0.16, 0, Math.PI * 2);
+            c.fill();
+          }
+        }
+      } else if (it.kind === "rice") {
+        c.fillStyle = "#fffaf2";
+        c.strokeStyle = "#e4d3b4";
+        c.lineWidth = 1.5;
+        c.beginPath();
+        c.ellipse(0, 0, r * 0.55, r * 0.38, 0.4, 0, Math.PI * 2);
+        c.ellipse(-r * 0.4, r * 0.15, r * 0.48, r * 0.32, -0.4, 0, Math.PI * 2);
+        c.ellipse(r * 0.38, r * 0.2, r * 0.46, r * 0.3, 0.2, 0, Math.PI * 2);
+        c.fill();
+        c.stroke();
+      } else if (it.kind === "carrot") {
+        c.fillStyle = "#f07a22";
+        c.beginPath();
+        c.moveTo(0, -r);
+        c.lineTo(r * 0.7, r * 0.75);
+        c.lineTo(-r * 0.7, r * 0.75);
+        c.closePath();
+        c.fill();
+        c.fillStyle = "#3aaa4a";
+        c.beginPath();
+        c.moveTo(0, -r);
+        c.lineTo(-r * 0.45, -r * 1.15);
+        c.lineTo(0, -r * 0.7);
+        c.lineTo(r * 0.4, -r * 1.2);
+        c.closePath();
+        c.fill();
+      } else if (it.kind === "egg") {
+        c.fillStyle = "#f6d35b";
+        roundRect(c, -r, -r * 0.7, r * 2, r * 1.4, r * 0.3);
+        c.fill();
+        c.fillStyle = "#e7b53a";
+        c.fillRect(-r, -r * 0.15, r * 2, r * 0.28);
+        c.fillRect(-r, r * 0.28, r * 2, r * 0.22);
+      }
+      c.restore();
+      if (it.highlight > 0) {
+        var pulse = 1 + Math.sin(animT * 16) * 0.08;
+        c.strokeStyle = "#ff2a2a";
+        c.lineWidth = 4;
+        c.beginPath();
+        c.arc(it.x, it.y, (it.r + 6) * pulse, 0, Math.PI * 2);
+        c.stroke();
+      } else if (it.mark > 0) {
+        c.strokeStyle = "#e6a100";
+        c.lineWidth = 3;
+        c.beginPath();
+        c.arc(it.x, it.y, it.r + 5, 0, Math.PI * 2);
+        c.stroke();
+      }
+    }
+    function drawSparkles(c) {
+      for (var i = 0; i < sparkles.length; i++) {
+        var s = sparkles[i];
+        c.globalAlpha = Math.max(0, s.life / s.max);
+        c.fillStyle = s.color;
+        c.save();
+        c.translate(s.x, s.y);
+        c.rotate(s.rot + animT * 6);
+        c.beginPath();
+        c.moveTo(0, -6);
+        c.lineTo(2, -2);
+        c.lineTo(6, 0);
+        c.lineTo(2, 2);
+        c.lineTo(0, 6);
+        c.lineTo(-2, 2);
+        c.lineTo(-6, 0);
+        c.lineTo(-2, -2);
+        c.closePath();
+        c.fill();
+        c.restore();
+        c.globalAlpha = 1;
+      }
+    }
+    function drawArrow(c) {
+      if (!drag) return;
+      var it = findId(drag.id);
+      if (!it) return;
+      var last = drag.samples[drag.samples.length - 1];
+      var dx = last.x - it.x;
+      var dy = last.y - it.y;
+      var dist = Math.hypot(dx, dy) || 1;
+      var len = drag.preview ? clamp(drag.preview.speed / 12, 36, 90) : clamp(dist, 12, 36);
+      var ok = !!drag.preview;
+      c.strokeStyle = ok ? "#1f8a3d" : "rgba(80,60,40,.45)";
+      c.fillStyle = c.strokeStyle;
+      c.lineWidth = ok ? 4 : 2;
+      c.beginPath();
+      c.moveTo(it.x, it.y);
+      c.lineTo(it.x + (dx / dist) * len, it.y + (dy / dist) * len);
+      c.stroke();
+    }
+    function drawScene(closed) {
+      var pose = currentPose();
+      drawTable(ctx);
+      drawDragon(ctx, layoutDragon.x, layoutDragon.y, layoutDragon.s, mood, animT);
+      drawPlacemat(ctx);
+      drawBento(ctx, pose, closed);
+      if (!closed) {
+        var list = items.filter(function (it) { return !it.out || it.fade > 0 || it.highlight > 0; });
+        list.sort(function (a, b) { return a.y - b.y; });
+        for (var i = 0; i < list.length; i++) {
+          ctx.save();
+          ctx.globalAlpha = list[i].out && list[i].fade < 100 ? Math.max(0.25, list[i].fade / 0.5) : 1;
+          ctx.fillStyle = "rgba(80,40,10,.16)";
+          ctx.beginPath();
+          ctx.ellipse(list[i].x, list[i].y + list[i].r * 0.7, list[i].r * 0.7, list[i].r * 0.25, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+          drawItem(ctx, list[i]);
+        }
+        drawSparkles(ctx);
+        drawArrow(ctx);
+      }
+    }
+    function drawMini(el, m) {
+      if (!el) return;
+      var overlay = el.closest(".overlay");
+      if (overlay && overlay.hidden) return;
+      var w = el.clientWidth;
+      var h = el.clientHeight;
+      if (w < 4 || h < 4) return;
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      var c = el.getContext("2d");
+      if (el.width !== Math.round(w * dpr) || el.height !== Math.round(h * dpr)) {
+        el.width = Math.round(w * dpr);
+        el.height = Math.round(h * dpr);
+      }
+      c.setTransform(dpr, 0, 0, dpr, 0, 0);
+      c.clearRect(0, 0, w, h);
+      drawDragon(c, w / 2, h * 0.95, Math.min(w / 140, h / 120), m, animT);
+    }
+    function draw() {
+      ensureLayout();
+      ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
+      ctx.clearRect(0, 0, view.w, view.h);
+      if (phase === "title") drawScene(true);
+      else drawScene(false);
+      drawMini(titleDragon, "worried");
+      if (!endEl.hidden) drawMini(endDragon, mood);
+    }
+    function frame(now) {
+      if (!lastNow) lastNow = now;
+      var dt = Math.min(0.05, (now - lastNow) / 1000);
+      lastNow = now;
+      animT += dt;
+      if (!manual && phase !== "title") advance(dt);
+      if ((phase === "play" || phase === "clear" || phase === "failflash") && items.length) syncRestingIdle();
+      draw();
+      requestAnimationFrame(frame);
+    }
+    function syncRestingIdle() {
+      if (phase === "play") return;
+      syncResting();
+    }
+
+    function place(list) {
+      ensureLayout();
+      var pose = currentPose();
+      items = list.map(function (src, i) {
+        var r = src.r || 16;
+        var limX = Math.max(6, box.hw - box.rim - r - 2);
+        var limY = Math.max(6, box.hh - box.rim - r - 2);
+        var loc = worldToLocal(src.x, src.y, pose, box);
+        var it = {
+          id: i + 1,
+          kind: src.kind,
+          r: r,
+          nx: loc.x / limX,
+          ny: loc.y / limY,
+          lx: 0, ly: 0,
+          x: src.x, y: src.y,
+          vx: src.vx || 0,
+          vy: src.vy || 0,
+          spin: src.spin || 0,
+          loose: !!src.loose,
+          out: false,
+          justOut: false,
+          highlight: 0,
+          mark: 0,
+          fade: 0
+        };
+        if (!it.loose) {
+          applyLocal(it);
+          var w = localToWorld(it.lx, it.ly, pose, box);
+          it.x = w.x;
+          it.y = w.y;
+        }
+        return it;
+      });
+    }
+    function snapshot() {
+      return {
+        phase: phase,
+        hearts: hearts,
+        misses: misses,
+        cleared: cleared,
+        reached: reached,
+        round: roundIndex + 1,
+        roundId: current ? current.id : 0,
+        practice: !!(current && current.practice),
+        peas: peasLeft(),
+        timeLeft: timeLeft,
+        timeMax: timeMax,
+        mood: mood,
+        say: sayText.textContent,
+        nums: numsEl.textContent,
+        left: leftEl.textContent,
+        note: noteEl.textContent,
+        roundLabel: roundLabelEl.textContent,
+        cues: cueLog.slice(),
+        sparkles: sparkles.length,
+        flash: flashEl.classList.contains("on"),
+        urgent: timebar.classList.contains("urgent"),
+        items: items.map(function (it) {
+          return { id: it.id, kind: it.kind, x: it.x, y: it.y, r: it.r, out: it.out, loose: it.loose, highlight: it.highlight, nx: it.nx, ny: it.ny };
+        }),
+        box: { cx: box.cx, cy: box.cy, hw: box.hw, hh: box.hh, rim: box.rim },
+        motion: motion ? { slide: motion.slide, rot: motion.rot, freq: motion.freq, dir: motion.dir, phase: motion.phase } : null,
+        rank: rankFor(cleared, misses, reached),
+        cause: endCause,
+        failText: failText.textContent,
+        failSub: failSub.textContent,
+        titleOpen: !titleEl.hidden,
+        endOpen: !endEl.hidden
+      };
+    }
+
+    document.getElementById("btn-start").addEventListener("click", function () {
+      ensureAudio();
+      newRun();
+    });
+    document.getElementById("btn-fail").addEventListener("click", function () {
+      ensureAudio();
+      continueAfterFail();
+    });
+    document.getElementById("btn-retry").addEventListener("click", function () {
+      ensureAudio();
+      newRun();
+    });
+    muteBtn.addEventListener("click", function () {
+      muted = !muted;
+      applyMute();
+      if (!muted) ensureAudio();
+    });
+    canvas.addEventListener("pointerdown", onDown, { passive: false });
+    canvas.addEventListener("pointermove", onMove, { passive: false });
+    canvas.addEventListener("pointerup", onUp);
+    canvas.addEventListener("pointercancel", onUp);
+    canvas.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+    window.addEventListener("resize", function () {
+      ensureLayout();
+      if (phase === "play" || phase === "clear" || phase === "failflash") syncResting();
+    });
+    window.addEventListener("keydown", function (e) {
+      if (e.code === "Space") e.preventDefault();
+    });
+
+    updateHearts(false);
+    setMood("worried");
+    setSay("緑の豆が残ってると、食べられない。");
+    applyMute();
+    window.__pea = {
+      audit: audit,
+      sample: function (i, seed) { return build(ROUNDS[i], mulberry32(seed >>> 0), SAMPLE_BOX); },
+      newRun: newRun,
+      loadRound: loadRound,
+      setManual: function (v) { manual = !!v; },
+      step: function (sec) { advance(sec); },
+      state: snapshot,
+      place: place,
+      flick: function (index, vx, vy) { launch(items[index], vx, vy); },
+      gesture: flickVector,
+      applyGesture: applyGesture,
+      setTime: function (sec) { timeLeft = sec; },
+      continueFail: continueAfterFail,
+      rankFor: rankFor,
+      RANK_LINE: RANK_LINE
+    };
+    requestAnimationFrame(frame);
+  })();
+  </script>
+</body>
+</html>
