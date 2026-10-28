@@ -1,0 +1,1128 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#e7b15a">
+  <meta name="description" content="プリン消失事件。ハム警部と、3つの質問をタップして犯人を当てる。ハート2つ、全6件。練習はノーカウント。">
+  <meta property="og:title" content="プリン消失事件 — Pudding Culprit">
+  <meta property="og:description" content="3つの質問をタップして聞きこむ。まちがいと時間切れでハートが減る。練習はノーカウント。">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://grokbot365game.github.io/daily-casual-games/games/2026-10-28-pudding-culprit/">
+  <title>プリン消失事件</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%23f6c445'/%3E%3Cpath d='M3 6h10v2H3z' fill='%23c47a2a'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      --ink: #3a2418;
+      --muted: #7a5b48;
+      --paper: #fff8ee;
+      --line: rgba(58, 36, 24, .14);
+      --accent: #e25d33;
+      --good: #1f8a4c;
+      --bad: #d0122d;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none; }
+    body {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      color: var(--ink);
+      background:
+        radial-gradient(90px 60px at 50% 0%, rgba(255, 255, 255, .7), transparent 70%),
+        linear-gradient(180deg, #b9dfea 0 22%, #e7f5f8 22% 48%, #f3e4cf 48% 100%);
+      font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Yu Gothic", "WenQuanYi Micro Hei", "Droid Sans Fallback", "Meiryo", sans-serif;
+      font-size: 16px;
+      line-height: 1.35;
+      -webkit-text-size-adjust: 100%;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none;
+      user-select: none;
+      touch-action: manipulation;
+    }
+    [hidden] { display: none !important; }
+    button, a { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+    button:focus-visible, a:focus-visible { outline: 3px solid #f0c14a; outline-offset: 2px; }
+    .back, .mute {
+      position: fixed;
+      z-index: 80;
+      top: max(8px, env(safe-area-inset-top));
+      border: 0;
+      border-radius: 999px;
+      color: var(--ink);
+      background: rgba(255, 248, 238, .96);
+      box-shadow: inset 0 0 0 1px var(--line);
+      font-weight: 800;
+    }
+    .back {
+      left: max(10px, env(safe-area-inset-left));
+      min-height: 44px;
+      padding: 8px 14px;
+      display: grid;
+      place-items: center;
+      font-size: .78rem;
+      letter-spacing: .04em;
+      text-decoration: none;
+    }
+    .mute {
+      right: max(10px, env(safe-area-inset-right));
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+    }
+    .mute svg { width: 22px; height: 22px; display: block; }
+    .mute .slash { display: none; }
+    .mute.is-muted .slash { display: block; }
+    .live {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+    }
+    .shell {
+      height: 100%;
+      max-width: 480px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding:
+        calc(max(6px, env(safe-area-inset-top)) + 48px)
+        max(8px, env(safe-area-inset-right))
+        max(8px, env(safe-area-inset-bottom))
+        max(8px, env(safe-area-inset-left));
+      min-height: 0;
+    }
+    .hud {
+      flex: none;
+      border-radius: 16px;
+      padding: 8px 10px 8px;
+      background: rgba(255, 248, 238, .96);
+      box-shadow: inset 0 0 0 1px var(--line);
+    }
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .hud b.logo { font-size: .95rem; letter-spacing: .04em; }
+    .round-label { flex: none; white-space: nowrap; font-size: .78rem; font-weight: 800; color: var(--muted); }
+    .say-row { align-items: center; margin-top: 4px; }
+    .ham-slot { width: 58px; height: 52px; flex: none; }
+    .ham-slot svg { width: 58px; height: 52px; display: block; }
+    .say { margin: 0; flex: 1; min-width: 0; min-height: 2.6em; font-size: .86rem; font-weight: 900; line-height: 1.35; }
+    .say .who { display: block; color: var(--accent); font-size: .72rem; letter-spacing: .06em; }
+    .hearts { letter-spacing: .06em; font-size: 1.05rem; }
+    .hearts i { font-style: normal; color: #e0233a; }
+    .hearts i.off { color: #eadfd4; }
+    .hearts i.pop { display: inline-block; animation: heartpop .35s ease; }
+    @keyframes heartpop { 0% { transform: scale(1.45); } 100% { transform: scale(1); } }
+    .meter { margin-top: 4px; gap: 8px; }
+    .qleft { margin: 0; min-width: 92px; font-weight: 900; font-variant-numeric: tabular-nums; }
+    .qleft span { display: block; font-size: .68rem; color: var(--muted); letter-spacing: .06em; }
+    .qleft b { font-size: 1.15rem; }
+    .timewrap { flex: 1; min-width: 0; }
+    .timebar {
+      height: 10px;
+      border-radius: 999px;
+      background: #efe4d2;
+      box-shadow: inset 0 0 0 1px rgba(58, 36, 24, .1);
+      overflow: hidden;
+    }
+    .timefill { height: 100%; width: 100%; background: #3aa56a; border-radius: inherit; }
+    .timebar.low .timefill { background: #e0a030; }
+    .time-num { display: block; margin-top: 2px; text-align: right; font-size: .78rem; font-weight: 900; font-variant-numeric: tabular-nums; color: var(--muted); }
+    .time-num.low { color: #a15c10; }
+    .board {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 8px;
+      border-radius: 18px;
+      background:
+        linear-gradient(#ffffff, #ffffff) 12px 46% / 8px 42% no-repeat,
+        linear-gradient(180deg, #f4fbfe 0%, #e7f4f8 100%);
+      box-shadow: inset 0 0 0 3px #d3e6ee;
+    }
+    .board > * { flex-shrink: 0; }
+    .label { margin: 0; font-size: .72rem; font-weight: 900; letter-spacing: .08em; color: var(--muted); }
+    .evs { display: flex; flex-wrap: wrap; gap: 6px; min-height: 38px; }
+    .ev {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      max-width: 100%;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: #fff;
+      font-size: .84rem;
+      font-weight: 900;
+      box-shadow: inset 0 0 0 1px var(--line);
+    }
+    .people {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      align-content: start;
+    }
+    .person {
+      position: relative;
+      border: 0;
+      border-radius: 16px;
+      padding: 8px 4px 8px;
+      background: #fffdf9;
+      box-shadow: inset 0 0 0 1px var(--line);
+      text-align: center;
+      min-height: 108px;
+    }
+    .person.is-selected { box-shadow: inset 0 0 0 3px var(--accent); background: #fff3e4; }
+    .person .art { height: 68px; display: grid; place-items: center; }
+    .person .art svg { width: 68px; height: 68px; display: block; }
+    .person .name { display: block; font-weight: 900; font-size: .78rem; line-height: 1.2; }
+    .facts { display: flex; flex-direction: column; gap: 2px; margin-top: 3px; text-align: left; }
+    .fact { font-size: .62rem; font-weight: 800; line-height: 1.3; color: #4e382c; }
+    .fact s { color: #a89890; font-weight: 700; }
+    .fact .truth { color: var(--good); }
+    .fact.hot { color: var(--bad); }
+    .liebadge, .sweat { position: absolute; z-index: 2; }
+    .stamp, .liebadge, .ribbon { display: none; }
+    .stamp, .ribbon {
+      position: static;
+      margin: 2px auto 0;
+      padding: 1px 7px;
+      border-radius: 999px;
+      font-size: .68rem;
+      font-weight: 900;
+    }
+    .stamp {
+      background: #fff;
+      color: #3e4a50;
+      box-shadow: inset 0 0 0 1.5px #6d838c;
+    }
+    .person.out { background: #e6e1da; }
+    .person.out .art { filter: grayscale(1); opacity: .72; }
+    .person.out .name { color: #6f675f; }
+    .person.out .stamp { display: inline-block; }
+    .sweat {
+      display: none;
+      top: 6px;
+      right: 8px;
+      width: 12px;
+      height: 16px;
+      background: #79c7f2;
+      border-radius: 8px 8px 8px 2px;
+      transform: rotate(35deg);
+      box-shadow: inset -2px -2px 0 rgba(255, 255, 255, .7);
+    }
+    .person.lied .sweat, .person.wobble .sweat { display: block; }
+    .liebadge {
+      top: 24px;
+      right: 4px;
+      padding: 1px 5px;
+      border-radius: 999px;
+      background: var(--bad);
+      color: #fff;
+      font-size: .62rem;
+      font-weight: 900;
+    }
+    .person.lied .liebadge { display: block; }
+    .ribbon { background: var(--accent); color: #fff; }
+    .person.is-culprit { box-shadow: inset 0 0 0 3px #e2b43a; background: #fff6df; }
+    .person.is-culprit .ribbon { display: inline-block; }
+    .person.wobble { animation: wobble .28s linear 3; }
+    @keyframes wobble {
+      0%, 100% { transform: rotate(0); }
+      25% { transform: rotate(-6deg); }
+      75% { transform: rotate(6deg); }
+    }
+    .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; display: inline-block; }
+    .dot.alibi { background: #3d7ea6; }
+    .dot.paw { background: #d07a32; }
+    .dot.spoon { background: #7a4b9a; }
+    .dot.reach { background: #2f8f5b; }
+    .dot.sweet { background: #d45d8c; }
+    .actions { flex: none; display: grid; gap: 8px; }
+    .actions.is-locked { opacity: .72; }
+    .questions { display: grid; gap: 8px; }
+    .q {
+      min-height: 48px;
+      padding: 8px 12px;
+      border: 0;
+      border-radius: 14px;
+      background: var(--paper);
+      text-align: left;
+      font-weight: 900;
+      font-size: .95rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: inset 4px 0 0 var(--bar, #c8b8a8), inset 0 0 0 1px var(--line);
+    }
+    .q.trait-alibi { --bar: #3d7ea6; }
+    .q.trait-paw { --bar: #d07a32; }
+    .q.trait-spoon { --bar: #7a4b9a; }
+    .q.trait-reach { --bar: #2f8f5b; }
+    .q.trait-sweet { --bar: #d45d8c; }
+    .q:active { transform: scale(.985); }
+    .nomore {
+      margin: 0;
+      min-height: 48px;
+      display: grid;
+      place-items: center;
+      border-radius: 14px;
+      background: rgba(255, 248, 238, .92);
+      font-weight: 900;
+    }
+    .accuse, .go, .retry, .share {
+      display: block;
+      width: 100%;
+      min-height: 48px;
+      border: 0;
+      border-radius: 14px;
+      font-weight: 900;
+      text-align: center;
+      text-decoration: none;
+    }
+    .accuse { background: #5a3828; color: #fff; }
+    .accuse:disabled { background: #cbbbaa; color: #fff; }
+    .go { background: var(--accent); color: #fff; }
+    .retry { background: #fff; color: var(--ink); box-shadow: inset 0 0 0 2px #5a3828; }
+    .share { background: #1d4e89; color: #fff; line-height: 48px; }
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding:
+        calc(max(8px, env(safe-area-inset-top)) + 52px)
+        12px
+        max(12px, env(safe-area-inset-bottom));
+      background: rgba(36, 20, 12, .9);
+      overflow: auto;
+    }
+    .card {
+      width: min(100%, 400px);
+      margin: auto;
+      padding: 14px 14px 16px;
+      border-radius: 22px;
+      background: var(--paper);
+      box-shadow: 0 18px 48px rgba(48, 28, 18, .35);
+      text-align: center;
+    }
+    .card h1, .quote { margin: 0; font-size: 1.5rem; letter-spacing: .04em; line-height: 1.25; }
+    .en, .fine { margin: 4px 0; color: var(--muted); font-size: .75rem; font-weight: 800; }
+    .flavor { margin: 6px 0 8px; font-weight: 900; }
+    .hero { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 84px; }
+    .hero .pud { width: 78px; height: 78px; }
+    .hero .ham-slot { width: 96px; height: 86px; }
+    .hero .ham-slot svg { width: 96px; height: 86px; }
+    .rules { margin: 8px 0 12px; padding: 0 0 0 1.2em; text-align: left; display: grid; gap: 6px; }
+    .rules li { font-weight: 900; font-size: .88rem; line-height: 1.45; word-break: keep-all; line-break: strict; }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 10px 0; }
+    .stats div { background: #fff; border-radius: 14px; padding: 8px 4px; box-shadow: inset 0 0 0 1px var(--line); }
+    .stats b { display: block; font-size: 1.35rem; font-variant-numeric: tabular-nums; }
+    .stats span { font-size: .72rem; font-weight: 800; color: var(--muted); }
+    .bnotes p { margin: 4px 0; font-weight: 900; font-size: .9rem; }
+    .res { margin: 4px 0; font-weight: 900; }
+    .rank-line { margin: 8px 0; font-size: .78rem; font-weight: 800; line-height: 1.45; }
+    .cause { margin: 4px 0; font-weight: 900; color: var(--bad); }
+    .fine a { color: var(--muted); }
+    .fail-dock {
+      position: fixed;
+      z-index: 65;
+      left: 50%;
+      bottom: max(10px, env(safe-area-inset-bottom));
+      transform: translateX(-50%);
+      width: min(100% - 16px, 440px);
+      padding: 12px;
+      border-radius: 18px;
+      background: var(--paper);
+      text-align: center;
+      box-shadow: 0 14px 40px rgba(48, 28, 18, .28);
+    }
+    .fail-dock p { margin: 4px 0; font-weight: 900; }
+    .fail-dock .sub { color: var(--muted); font-size: .86rem; }
+    body.phase-title .shell,
+    body.phase-brief .shell,
+    body.phase-end .shell { visibility: hidden; }
+    svg.hamster.smug { animation: hop .45s ease; }
+    svg.hamster.shock { animation: shake .35s linear; }
+    @keyframes hop { 50% { transform: translateY(-4px); } }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-3px); }
+      75% { transform: translateX(3px); }
+    }
+    @media (max-height: 740px) {
+      .shell { gap: 4px; padding-top: calc(max(4px, env(safe-area-inset-top)) + 42px); padding-bottom: max(4px, env(safe-area-inset-bottom)); }
+      .hud { padding: 4px 8px; }
+      .hud .ham-slot, .hud .ham-slot svg { width: 42px; height: 38px; }
+      .say { font-size: .75rem; min-height: 2.3em; }
+      .logo { font-size: .86rem; }
+      .meter { margin-top: 2px; }
+      .board { gap: 4px; padding: 6px; }
+      .ev { padding: 4px 8px; font-size: .75rem; }
+      .evs { min-height: 0; }
+      .person { min-height: 0; padding: 4px 2px 4px; }
+      .person .art, .person .art svg { width: 48px; height: 48px; }
+      .person .name { font-size: .72rem; }
+      .fact { font-size: .58rem; }
+      .q { min-height: 44px; padding: 4px 10px; font-size: .88rem; }
+      .accuse, .go, .retry { min-height: 44px; }
+      .actions { gap: 6px; }
+      .questions { gap: 6px; }
+    }
+    @media (max-height: 600px) {
+      .label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+      .person .art, .person .art svg { width: 42px; height: 42px; }
+      .person { padding-top: 2px; padding-bottom: 2px; }
+      .board { gap: 3px; }
+      .ev { padding: 2px 7px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .hearts i.pop, .person.wobble, svg.hamster.smug, svg.hamster.shock { animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <a class="back" href="../../index.html">ギャラリー</a>
+  <button type="button" class="mute" id="mute" aria-pressed="false" aria-label="音を消す">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="M4 9h4l5-4v14l-5-4H4z"/>
+      <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 9.5a4 4 0 0 1 0 5"/>
+      <path class="slash" fill="none" stroke="#c4322e" stroke-width="2.4" stroke-linecap="round" d="M6 5l13 14"/>
+    </svg>
+  </button>
+  <p class="live" id="live" aria-live="polite"></p>
+  <div class="shell">
+    <header class="hud">
+      <div class="row">
+        <b class="logo">プリン消失事件</b>
+        <span class="hearts" id="hearts" aria-label="ハート2"><i>♥</i><i>♥</i></span>
+      </div>
+      <div class="row say-row">
+        <div class="ham-slot" id="hud-ham"></div>
+        <p class="say" id="say"><span class="who">ハム警部</span><span id="say-text">冷蔵庫のプリンが、ない。</span></p>
+        <span class="round-label" id="round-label"></span>
+      </div>
+      <div class="row meter">
+        <p class="qleft" id="q-left"><span>残り質問</span><b>—</b></p>
+        <div class="timewrap">
+          <div class="timebar" id="timebar"><div class="timefill" id="timefill"></div></div>
+          <span class="time-num" id="time-num">—</span>
+        </div>
+      </div>
+    </header>
+    <div class="board">
+      <p class="label">現場の証拠</p>
+      <div class="evs" id="evidence"></div>
+      <p class="label">あやしい人</p>
+      <div class="people" id="people"></div>
+    </div>
+    <div class="actions" id="actions">
+      <div class="questions" id="questions"></div>
+      <p class="nomore" id="nomore" hidden>質問はもうない。犯人を決めよう</p>
+      <button type="button" class="accuse" id="accuse" hidden disabled>犯人だ！</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="title">
+    <div class="card">
+      <div class="hero">
+        <svg class="pud" viewBox="0 0 80 80" aria-hidden="true">
+          <path d="M18 28h44l-4 36a8 8 0 0 1-8 7H30a8 8 0 0 1-8-7z" fill="#f4fbff" stroke="#8fb8c6" stroke-width="2"/>
+          <path d="M22 34h36l-1 8H23z" fill="#e7b15a"/>
+          <path d="M26 36c2 6 4 6 6 0" fill="none" stroke="#c47a2a" stroke-width="2"/>
+          <text x="40" y="62" text-anchor="middle" font-size="16" font-weight="700" fill="#c47a2a">?</text>
+        </svg>
+        <div class="ham-slot" id="title-ham"></div>
+      </div>
+      <h1>プリン消失事件</h1>
+      <p class="en">Pudding Culprit · Day 33</p>
+      <p class="flavor">冷蔵庫のプリンが消えた。ハム警部と、犯人を探す。</p>
+      <ol class="rules" id="rules">
+        <li>3つの質問から1つタップして聞きこみ</li>
+        <li>証拠に合う1人をタップして『犯人だ！』</li>
+        <li>まちがい・時間切れでハート−1（練習はノーカウント）</li>
+      </ol>
+      <button type="button" class="go" id="btn-start">はじめる</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="brief" hidden>
+    <div class="card">
+      <div class="ham-slot" id="brief-ham" style="margin:0 auto;width:92px;height:82px"></div>
+      <p class="en" id="brief-round">第1回</p>
+      <p class="quote">捜査開始</p>
+      <div class="stats">
+        <div><b id="stat-sus">3人</b><span>容疑者</span></div>
+        <div><b id="stat-q">4回</b><span>質問</span></div>
+        <div><b id="stat-t">45秒</b><span>時間</span></div>
+      </div>
+      <div class="bnotes" id="brief-notes"></div>
+      <button type="button" class="go" id="btn-go">捜査開始</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="end" hidden>
+    <div class="card">
+      <div class="ham-slot" id="end-ham" style="margin:0 auto;width:92px;height:82px"></div>
+      <p class="en">結果カード · プリン消失事件</p>
+      <p class="quote" id="end-rank">見習い</p>
+      <p class="res" id="end-detail"></p>
+      <p class="cause" id="end-cause" hidden></p>
+      <p class="res" id="end-ev" hidden></p>
+      <p class="res" id="end-react"></p>
+      <p class="rank-line" id="end-rule"></p>
+      <button type="button" class="retry" id="btn-retry">もういちど</button>
+      <a class="share" id="btn-share" href="https://x.com/intent/tweet" target="_blank" rel="noopener noreferrer">結果をXでシェア</a>
+      <p class="fine"><a href="../../index.html">ギャラリーへ</a></p>
+    </div>
+  </div>
+
+  <div class="fail-dock" id="fail" hidden>
+    <p id="fail-text"></p>
+    <p id="fail-ev"></p>
+    <p class="sub" id="fail-sub"></p>
+    <button type="button" class="retry" id="btn-fail">もういちど</button>
+  </div>
+
+  <template id="ham-tpl">
+    <svg class="hamster think" viewBox="0 0 120 108" aria-hidden="true">
+      <ellipse cx="58" cy="86" rx="28" ry="18" fill="#e7a24c"/>
+      <ellipse cx="58" cy="90" rx="15" ry="10" fill="#ffe3bf"/>
+      <circle cx="34" cy="36" r="9" fill="#f0b45c"/>
+      <circle cx="34" cy="36" r="5" fill="#f4b7c6"/>
+      <circle cx="82" cy="36" r="9" fill="#f0b45c"/>
+      <circle cx="82" cy="36" r="5" fill="#f4b7c6"/>
+      <circle cx="58" cy="54" r="26" fill="#f0b45c"/>
+      <path d="M30 48 Q58 16 86 48 L80 42 Q58 24 36 42 Z" fill="#6b3e2a"/>
+      <path d="M32 46 Q22 60 30 68" fill="none" stroke="#6b3e2a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M84 46 Q96 60 86 68" fill="none" stroke="#6b3e2a" stroke-width="6" stroke-linecap="round"/>
+      <path d="M38 44 Q58 36 78 44" fill="none" stroke="#c47a3a" stroke-width="3"/>
+      <ellipse cx="58" cy="60" rx="4" ry="2.6" fill="#e48a98"/>
+      <circle cx="44" cy="62" r="3.2" fill="#f3b7a0" opacity=".8"/>
+      <circle cx="72" cy="62" r="3.2" fill="#f3b7a0" opacity=".8"/>
+      <g class="face-think">
+        <circle cx="48" cy="52" r="3.1" fill="#2a1a14"/>
+        <circle cx="68" cy="52" r="3.1" fill="#2a1a14"/>
+        <path d="M50 68 Q58 74 66 68" fill="none" stroke="#2a1a14" stroke-width="2" stroke-linecap="round"/>
+      </g>
+      <g class="face-smug" hidden>
+        <path d="M42 54 Q48 46 54 54" fill="none" stroke="#2a1a14" stroke-width="2.6" stroke-linecap="round"/>
+        <path d="M62 54 Q68 46 74 54" fill="none" stroke="#2a1a14" stroke-width="2.6" stroke-linecap="round"/>
+        <path d="M46 64 Q58 80 72 64" fill="none" stroke="#2a1a14" stroke-width="2.8" stroke-linecap="round"/>
+      </g>
+      <g class="face-shock" hidden>
+        <circle cx="48" cy="52" r="5.4" fill="#fff"/>
+        <circle cx="68" cy="52" r="5.4" fill="#fff"/>
+        <circle cx="48" cy="52" r="2.2" fill="#2a1a14"/>
+        <circle cx="68" cy="52" r="2.2" fill="#2a1a14"/>
+        <ellipse cx="58" cy="70" rx="6" ry="8" fill="#6a3030"/>
+      </g>
+      <g class="face-alert" hidden>
+        <circle cx="48" cy="52" r="4.6" fill="#fff"/>
+        <circle cx="68" cy="52" r="4.6" fill="#fff"/>
+        <circle cx="49" cy="52" r="2" fill="#2a1a14"/>
+        <circle cx="69" cy="52" r="2" fill="#2a1a14"/>
+        <circle cx="58" cy="69" r="2.4" fill="#6a3030"/>
+      </g>
+      <g class="mag">
+        <circle cx="98" cy="70" r="13" fill="#e7f6ff" stroke="#4a3428" stroke-width="3.5"/>
+        <path d="M89 80 L78 96" stroke="#4a3428" stroke-width="4" stroke-linecap="round"/>
+      </g>
+    </svg>
+  </template>
+
+  <script src="logic.js"></script>
+  <script>
+  (function () {
+    "use strict";
+    var L = window.PuddingLogic;
+    var sayText = document.getElementById("say-text");
+    var liveEl = document.getElementById("live");
+    var heartsEl = document.getElementById("hearts");
+    var roundLabel = document.getElementById("round-label");
+    var qLeft = document.getElementById("q-left");
+    var timebar = document.getElementById("timebar");
+    var timefill = document.getElementById("timefill");
+    var timeNum = document.getElementById("time-num");
+    var evidenceEl = document.getElementById("evidence");
+    var peopleEl = document.getElementById("people");
+    var questionsEl = document.getElementById("questions");
+    var nomoreEl = document.getElementById("nomore");
+    var accuseBtn = document.getElementById("accuse");
+    var actionsEl = document.getElementById("actions");
+    var titleEl = document.getElementById("title");
+    var briefEl = document.getElementById("brief");
+    var endEl = document.getElementById("end");
+    var failEl = document.getElementById("fail");
+    var muteBtn = document.getElementById("mute");
+
+    var G = {
+      phase: "title",
+      hearts: 2,
+      cleared: 0,
+      roundIndex: 0,
+      attempt: 0,
+      runSeed: 1,
+      caseState: null,
+      selectedId: null,
+      timeLeft: 0,
+      timeMax: 0,
+      say: "冷蔵庫のプリンが、ない。",
+      mood: "think",
+      lieLeft: 0,
+      pendingOut: null,
+      lieInfo: null,
+      shownOffers: [],
+      muted: false
+    };
+    var audioCtx = null;
+    var lastNow = 0;
+
+    function mountHam(id) {
+      var slot = document.getElementById(id);
+      slot.textContent = "";
+      slot.appendChild(document.getElementById("ham-tpl").content.cloneNode(true));
+    }
+    mountHam("hud-ham");
+    mountHam("title-ham");
+    mountHam("brief-ham");
+    mountHam("end-ham");
+
+    function setMood(mood) {
+      G.mood = mood;
+      document.body.className = "phase-" + G.phase;
+      var nodes = document.querySelectorAll("svg.hamster");
+      var faces = ["think", "smug", "shock", "alert"];
+      for (var i = 0; i < nodes.length; i++) {
+        nodes[i].setAttribute("class", "hamster " + mood);
+        for (var f = 0; f < faces.length; f++) {
+          var g = nodes[i].querySelector(".face-" + faces[f]);
+          if (!g) continue;
+          g.hidden = faces[f] !== mood;
+        }
+      }
+    }
+    function setSay(text) {
+      G.say = text;
+      sayText.textContent = text;
+      liveEl.textContent = text;
+    }
+    function updateHearts(pop) {
+      var html = "";
+      html += '<i class="' + (G.hearts >= 1 ? "" : "off") + (pop && G.hearts === 0 ? " pop" : "") + '">♥</i>';
+      html += '<i class="' + (G.hearts >= 2 ? "" : "off") + (pop && G.hearts === 1 ? " pop" : "") + '">♥</i>';
+      heartsEl.innerHTML = html;
+      heartsEl.setAttribute("aria-label", "ハート" + G.hearts);
+    }
+    function renderBudget(n) {
+      qLeft.innerHTML = "<span>残り質問</span><b>" + n + "</b>";
+    }
+    function renderTimer() {
+      var max = G.timeMax || 1;
+      var left = Math.max(0, G.timeLeft);
+      var shown = Math.ceil(left);
+      var low = G.phase === "play" && left <= 8;
+      timefill.style.width = Math.max(0, Math.min(100, (left / max) * 100)) + "%";
+      timebar.classList.toggle("low", low);
+      timeNum.classList.toggle("low", low);
+      timeNum.textContent = (G.phase === "title" ? "—" : shown + "秒");
+    }
+
+    function art(look) {
+      if (look === "papa") {
+        return '<svg viewBox="0 0 80 90"><rect x="24" y="48" width="32" height="34" rx="8" fill="#3d7ec4"/><circle cx="40" cy="34" r="16" fill="#f3c7a5"/><path d="M24 32 Q40 12 56 32 Q50 20 40 18 Q30 20 24 32" fill="#3a2a22"/><circle cx="34" cy="34" r="2" fill="#2a1a14"/><circle cx="46" cy="34" r="2" fill="#2a1a14"/><path d="M31 44 h18 v4 h-18z" fill="#6a4632"/><path d="M32 40 Q40 44 48 40" fill="none" stroke="#6a4632" stroke-width="1.6"/></svg>';
+      }
+      if (look === "mama") {
+        return '<svg viewBox="0 0 80 90"><circle cx="40" cy="16" r="7" fill="#3a2418"/><path d="M22 40 Q18 78 30 82 h20 Q62 78 58 40" fill="#3a2418"/><rect x="24" y="50" width="32" height="32" rx="12" fill="#e87aa0"/><circle cx="40" cy="38" r="15" fill="#f3c7a5"/><circle cx="34" cy="38" r="1.8" fill="#2a1a14"/><circle cx="46" cy="38" r="1.8" fill="#2a1a14"/><path d="M32 35 Q34 33 36 35" fill="none" stroke="#2a1a14" stroke-width="1.4"/><path d="M44 35 Q46 33 48 35" fill="none" stroke="#2a1a14" stroke-width="1.4"/><path d="M34 46 Q40 50 46 46" fill="none" stroke="#c45b78" stroke-width="1.6" stroke-linecap="round"/></svg>';
+      }
+      if (look === "sister") {
+        return '<svg viewBox="0 0 80 90"><circle cx="16" cy="40" r="8" fill="#3a2418"/><circle cx="64" cy="40" r="8" fill="#3a2418"/><rect x="14" y="34" width="8" height="6" rx="2" fill="#e25d33"/><rect x="58" y="34" width="8" height="6" rx="2" fill="#e25d33"/><rect x="28" y="58" width="24" height="22" rx="8" fill="#f2c14d"/><circle cx="40" cy="44" r="13" fill="#f6d0b0"/><circle cx="35" cy="44" r="2.2" fill="#2a1a14"/><circle cx="45" cy="44" r="2.2" fill="#2a1a14"/><path d="M36 50 Q40 53 44 50" fill="none" stroke="#c45b78" stroke-width="1.5" stroke-linecap="round"/></svg>';
+      }
+      if (look === "grandma") {
+        return '<svg viewBox="0 0 80 90"><circle cx="40" cy="18" r="6" fill="#c8c2bc"/><path d="M24 36 Q22 24 40 20 Q58 24 56 36" fill="#d5d0ca"/><rect x="26" y="52" width="28" height="30" rx="10" fill="#7d5ea7"/><circle cx="40" cy="40" r="14" fill="#f0d0b8"/><circle cx="34" cy="40" r="5" fill="none" stroke="#4a3428" stroke-width="1.4"/><circle cx="46" cy="40" r="5" fill="none" stroke="#4a3428" stroke-width="1.4"/><path d="M39 40 h2" stroke="#4a3428" stroke-width="1.4"/><circle cx="34" cy="40" r="1.4" fill="#2a1a14"/><circle cx="46" cy="40" r="1.4" fill="#2a1a14"/><path d="M35 48 Q40 51 45 48" fill="none" stroke="#8a5a58" stroke-width="1.4"/><path d="M62 46 v36" stroke="#8a6a42" stroke-width="3" stroke-linecap="round"/></svg>';
+      }
+      if (look === "dog") {
+        return '<svg viewBox="0 0 80 90"><ellipse cx="46" cy="62" rx="22" ry="16" fill="#c4844a"/><circle cx="28" cy="48" r="14" fill="#c4844a"/><ellipse cx="16" cy="52" rx="7" ry="10" fill="#a86b34"/><ellipse cx="20" cy="54" rx="5" ry="4" fill="#f0c090"/><circle cx="18" cy="54" r="2" fill="#2a1a14"/><circle cx="24" cy="46" r="1.8" fill="#2a1a14"/><path d="M58 58 Q74 50 70 40" fill="none" stroke="#c4844a" stroke-width="5" stroke-linecap="round"/><path d="M36 74 v8 M52 74 v8" stroke="#8a5a32" stroke-width="3" stroke-linecap="round"/></svg>';
+      }
+      if (look === "cat") {
+        return '<svg viewBox="0 0 80 90"><path d="M22 40 L30 18 L38 38" fill="#f0a04a"/><path d="M42 38 L50 18 L58 40" fill="#f0a04a"/><circle cx="40" cy="46" r="16" fill="#f0a04a"/><ellipse cx="40" cy="68" rx="18" ry="14" fill="#f0a04a"/><path d="M58 66 Q74 60 68 48" fill="none" stroke="#f0a04a" stroke-width="5" stroke-linecap="round"/><circle cx="34" cy="46" r="2" fill="#2a1a14"/><circle cx="46" cy="46" r="2" fill="#2a1a14"/><path d="M38 52 h4" stroke="#2a1a14" stroke-width="1.4"/><path d="M18 48 h10 M52 48 h10 M18 52 h8 M54 52 h8" stroke="#5a3a28" stroke-width="1.2"/><path d="M30 62 h4 M46 70 h5" stroke="#d07a32" stroke-width="2"/></svg>';
+      }
+      return '<svg viewBox="0 0 80 90"><ellipse cx="40" cy="50" rx="18" ry="16" fill="#3cb371"/><path d="M28 40 Q40 24 52 40" fill="#2e9a5c"/><path d="M52 50 L68 46 L52 56 Z" fill="#f2c14d"/><circle cx="34" cy="48" r="2.2" fill="#2a1a14"/><path d="M30 70 l-6 10 M40 72 v10 M50 70 l6 10" stroke="#e07a32" stroke-width="2" stroke-linecap="round"/><path d="M22 46 Q10 40 16 32" fill="none" stroke="#2e9a5c" stroke-width="3"/></svg>';
+    }
+
+    function factHtml(person, trait) {
+      var rev = person.revealed[trait];
+      var short = L.TRAIT_SHORT[trait];
+      if (!rev) return "";
+      if (G.phase === "lie" && rev.lie) {
+        return '<span class="fact hot">' + short + " " + L.answerText(trait, rev.shown) + "</span>";
+      }
+      if (rev.lie) {
+        return '<span class="fact">' + short + " <s>" + L.answerText(trait, rev.shown) + '</s> <span class="truth">本当は' + L.answerText(trait, rev.truth) + "</span></span>";
+      }
+      return '<span class="fact">' + short + " " + L.answerText(trait, rev.truth) + "</span>";
+    }
+
+    function renderBoard() {
+      var state = G.caseState;
+      evidenceEl.textContent = "";
+      peopleEl.textContent = "";
+      if (!state) return;
+      var reveal = G.phase === "fail" || G.phase === "success" || G.phase === "end";
+      var pending = G.pendingOut || { ids: [], lieId: null };
+      for (var i = 0; i < state.evidence.length; i++) {
+        var ev = state.evidence[i];
+        var chip = document.createElement("div");
+        chip.className = "ev";
+        chip.innerHTML = '<i class="dot ' + ev.trait + '"></i><span>' + ev.text + "</span>";
+        evidenceEl.appendChild(chip);
+      }
+      for (i = 0; i < state.suspects.length; i++) {
+        var s = state.suspects[i];
+        var hold = G.phase === "lie" && pending.ids.indexOf(s.id) >= 0;
+        var out = s.eliminated && !hold;
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "person";
+        if (out) btn.className += " out";
+        if (s.lied) btn.className += " lied";
+        if (G.phase === "lie" && s.id === pending.lieId) btn.className += " wobble";
+        if (G.selectedId === s.id && !out) btn.className += " is-selected";
+        if (reveal && s.id === state.culpritId) btn.className += " is-culprit";
+        btn.setAttribute("data-id", s.id);
+        btn.setAttribute("aria-pressed", G.selectedId === s.id ? "true" : "false");
+        var facts = "";
+        for (var t = 0; t < L.TRAITS.length; t++) facts += factHtml(s, L.TRAITS[t]);
+        if (reveal && s.id === state.culpritId) {
+          for (t = 0; t < state.evidence.length; t++) {
+            var trait = state.evidence[t].trait;
+            if (!s.revealed[trait]) {
+              facts += '<span class="fact"><span class="truth">' + L.TRAIT_SHORT[trait] + " " + L.answerText(trait, true) + "</span></span>";
+            }
+          }
+        }
+        btn.innerHTML = '<span class="sweat"></span><span class="liebadge">ウソ</span><span class="art">' + art(s.look) + '</span><span class="stamp">✓シロ</span><span class="ribbon">犯人</span><span class="name">' + s.name + '</span><span class="facts">' + facts + "</span>";
+        peopleEl.appendChild(btn);
+      }
+    }
+
+    function renderActions() {
+      var play = G.phase === "play";
+      var lie = G.phase === "lie";
+      var success = G.phase === "success";
+      actionsEl.classList.toggle("is-locked", lie);
+      var offers = lie ? (G.shownOffers || []) : (play && G.caseState ? G.caseState.offers : []);
+      questionsEl.textContent = "";
+      var showQs = (play || lie) && offers.length > 0;
+      questionsEl.hidden = !showQs;
+      nomoreEl.hidden = !(play && G.caseState && G.caseState.questionsLeft <= 0);
+      if (showQs) {
+        for (var i = 0; i < offers.length; i++) {
+          var q = offers[i];
+          var btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "q trait-" + q.trait;
+          btn.setAttribute("data-kind", q.kind);
+          btn.setAttribute("data-trait", q.trait);
+          btn.innerHTML = '<i class="dot ' + q.trait + '"></i><span>' + L.questionLabel(q) + "</span>";
+          questionsEl.appendChild(btn);
+        }
+      }
+      if (success) {
+        accuseBtn.hidden = false;
+        accuseBtn.disabled = false;
+        accuseBtn.textContent = G.roundIndex >= L.ROUNDS.length - 1 ? "結果を見る" : "つぎへ";
+      } else if (play) {
+        accuseBtn.hidden = false;
+        accuseBtn.disabled = !G.selectedId;
+        accuseBtn.textContent = "犯人だ！";
+      } else {
+        accuseBtn.hidden = true;
+        accuseBtn.disabled = true;
+        accuseBtn.textContent = "犯人だ！";
+      }
+      var n = "—";
+      if (G.caseState && (play || lie || success || G.phase === "fail")) n = String(G.caseState.questionsLeft);
+      else if (G.phase === "brief") n = String(L.budgetOf(L.ROUNDS[G.roundIndex]));
+      renderBudget(n);
+      renderTimer();
+    }
+
+    function render() {
+      renderBoard();
+      renderActions();
+      setMood(G.mood);
+    }
+
+    function clearBadSelection() {
+      if (!G.selectedId || !G.caseState) return;
+      var s = L.findSuspect(G.caseState, G.selectedId);
+      if (!s || s.eliminated) G.selectedId = null;
+    }
+
+    function ensureAudio() {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      if (!audioCtx) audioCtx = new AC();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+    }
+    function tone(freq, dur, type, gain, delay) {
+      if (G.muted || !audioCtx) return;
+      var t0 = audioCtx.currentTime + (delay || 0);
+      var o = audioCtx.createOscillator();
+      var g = audioCtx.createGain();
+      o.type = type || "sine";
+      o.frequency.setValueAtTime(freq, t0);
+      g.gain.setValueAtTime(gain || 0.05, t0);
+      g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+      o.connect(g);
+      g.connect(audioCtx.destination);
+      o.start(t0);
+      o.stop(t0 + dur + 0.02);
+    }
+    function playTap() { tone(640, 0.05, "sine", 0.04); }
+    function playLie() {
+      tone(330, 0.16, "triangle", 0.08);
+      tone(190, 0.24, "sawtooth", 0.045, 0.08);
+      if (navigator.vibrate) navigator.vibrate(30);
+    }
+    function playOk() {
+      tone(523, 0.09, "sine", 0.05);
+      tone(659, 0.09, "sine", 0.05, 0.08);
+      tone(784, 0.14, "sine", 0.05, 0.16);
+    }
+    function playBad() { tone(150, 0.22, "triangle", 0.06); }
+    function playTime() {
+      tone(440, 0.1, "sine", 0.04);
+      tone(300, 0.16, "sine", 0.04, 0.1);
+    }
+
+    function openBrief() {
+      var spec = L.ROUNDS[G.roundIndex];
+      G.phase = "brief";
+      G.caseState = null;
+      G.selectedId = null;
+      G.pendingOut = null;
+      G.shownOffers = [];
+      G.timeMax = spec.time;
+      G.timeLeft = spec.time;
+      document.getElementById("brief-round").textContent = spec.practice ? ("第" + spec.id + "回・練習") : ("第" + spec.id + "回");
+      document.getElementById("stat-sus").textContent = spec.suspects + "人";
+      document.getElementById("stat-q").textContent = L.budgetOf(spec) + "回";
+      document.getElementById("stat-t").textContent = spec.time + "秒";
+      document.getElementById("brief-notes").innerHTML = L.briefNotes(spec).map(function (line) {
+        return "<p>" + line + "</p>";
+      }).join("");
+      roundLabel.textContent = spec.id + "/6" + (spec.practice ? " 練習" : "");
+      setMood("think");
+      setSay(L.briefHam(spec));
+      titleEl.hidden = true;
+      endEl.hidden = true;
+      failEl.hidden = true;
+      briefEl.hidden = false;
+      render();
+    }
+
+    function beginPlay() {
+      if (G.phase !== "brief") return;
+      var spec = L.ROUNDS[G.roundIndex];
+      var seed = L.mixSeed(G.runSeed, spec.id, G.attempt);
+      G.caseState = L.generateCase(spec, seed);
+      G.selectedId = null;
+      G.shownOffers = G.caseState.offers.slice();
+      G.timeMax = spec.time;
+      G.timeLeft = spec.time;
+      G.phase = "play";
+      briefEl.hidden = true;
+      setMood("think");
+      setSay(L.startHam(spec));
+      render();
+    }
+
+    function ask(q) {
+      if (G.phase !== "play" || !G.caseState || !q) return;
+      var prevOffers = G.caseState.offers.slice();
+      var res = L.applyQuestion(G.caseState, q, G.selectedId);
+      if (!res.consumed) {
+        setMood("think");
+        setSay("だれに聞く？人をタップして");
+        render();
+        return;
+      }
+      playTap();
+      G.caseState = res.state;
+      if (res.lie) {
+        playLie();
+        G.shownOffers = prevOffers;
+        G.pendingOut = { ids: res.eliminatedIds.slice(), lieId: res.lieId };
+        G.lieInfo = { eliminatedCount: res.eliminatedCount };
+        G.phase = "lie";
+        G.lieLeft = 1.05;
+        setMood("alert");
+        setSay(L.LIE_LINE);
+        render();
+        return;
+      }
+      G.shownOffers = G.caseState.offers.slice();
+      clearBadSelection();
+      setMood("think");
+      setSay(L.lineAfter(G.caseState, res));
+      render();
+    }
+
+    function finishLie() {
+      if (G.phase !== "lie") return;
+      G.phase = "play";
+      G.pendingOut = null;
+      G.shownOffers = G.caseState.offers.slice();
+      clearBadSelection();
+      setMood("think");
+      setSay(L.lineAfter(G.caseState, G.lieInfo || { eliminatedCount: 0 }));
+      render();
+    }
+
+    function onSuccess() {
+      if (G.phase !== "play") return;
+      G.phase = "success";
+      G.cleared += 1;
+      G.selectedId = G.caseState.culpritId;
+      setMood("smug");
+      setSay(L.successLine(L.culpritName(G.caseState)));
+      playOk();
+      render();
+      var el = document.querySelector(".person.is-culprit");
+      if (el && el.scrollIntoView) el.scrollIntoView({ block: "nearest" });
+    }
+
+    function onFail(kind) {
+      if (G.phase !== "play" && G.phase !== "lie") return;
+      if (G.phase === "lie") finishLie();
+      var spec = L.ROUNDS[G.roundIndex];
+      var name = L.culpritName(G.caseState);
+      var line = kind === "time" ? L.timeoutLine(name) : L.failLine(name);
+      var prev = G.hearts;
+      G.hearts = L.nextHearts(G.hearts, spec.practice);
+      updateHearts(G.hearts < prev);
+      setMood("shock");
+      setSay(line);
+      if (kind === "time") playTime();
+      else playBad();
+      if (G.hearts <= 0) {
+        openEnd(line);
+        return;
+      }
+      G.phase = "fail";
+      document.getElementById("fail-text").textContent = line;
+      document.getElementById("fail-ev").textContent = L.evidenceLine(G.caseState);
+      document.getElementById("fail-sub").textContent = L.failSub(spec.practice);
+      failEl.hidden = false;
+      render();
+      var el = document.querySelector(".person.is-culprit");
+      if (el && el.scrollIntoView) el.scrollIntoView({ block: "nearest" });
+    }
+
+    function accuseNow() {
+      if (G.phase !== "play" || !G.caseState || !G.selectedId) return;
+      var s = L.findSuspect(G.caseState, G.selectedId);
+      if (!s || s.eliminated) return;
+      if (G.selectedId === G.caseState.culpritId) onSuccess();
+      else onFail("wrong");
+    }
+
+    function continueSuccess() {
+      if (G.phase !== "success") return;
+      if (G.roundIndex >= L.ROUNDS.length - 1) openEnd("");
+      else {
+        G.roundIndex += 1;
+        G.attempt = 0;
+        openBrief();
+      }
+    }
+
+    function openEnd(cause) {
+      G.phase = "end";
+      var rank = L.rankFor(G.cleared, G.hearts);
+      var react = L.endReaction(rank, G.hearts);
+      setMood(react.mood);
+      setSay(react.line);
+      document.getElementById("end-rank").textContent = rank;
+      document.getElementById("end-detail").textContent = G.cleared + "/6 解決　ハート" + G.hearts;
+      document.getElementById("end-react").textContent = "ハム警部「" + react.line + "」";
+      document.getElementById("end-rule").textContent = L.RANK_LINE;
+      var causeEl = document.getElementById("end-cause");
+      var evEl = document.getElementById("end-ev");
+      if (cause) {
+        causeEl.hidden = false;
+        causeEl.textContent = cause;
+        evEl.hidden = false;
+        evEl.textContent = G.caseState ? L.evidenceLine(G.caseState) : "";
+      } else {
+        causeEl.hidden = true;
+        evEl.hidden = true;
+      }
+      var tweet = L.shareText(rank, G.cleared, G.hearts);
+      document.getElementById("btn-share").href = "https://x.com/intent/tweet?text=" + encodeURIComponent(tweet) + "&url=" + encodeURIComponent(L.PLAY_URL);
+      titleEl.hidden = true;
+      briefEl.hidden = true;
+      failEl.hidden = true;
+      endEl.hidden = false;
+      render();
+    }
+
+    function newRun() {
+      G.hearts = 2;
+      G.cleared = 0;
+      G.roundIndex = 0;
+      G.attempt = 0;
+      G.runSeed = ((Date.now() ^ (Math.random() * 0x100000000)) >>> 0) || 1;
+      updateHearts(false);
+      openBrief();
+    }
+
+    function onTimeout() {
+      if (G.phase !== "play") return;
+      G.timeLeft = 0;
+      renderTimer();
+      onFail("time");
+    }
+
+    document.getElementById("btn-start").addEventListener("click", function () {
+      ensureAudio();
+      newRun();
+    });
+    document.getElementById("btn-go").addEventListener("click", function () {
+      ensureAudio();
+      beginPlay();
+    });
+    document.getElementById("btn-fail").addEventListener("click", function () {
+      ensureAudio();
+      if (G.phase !== "fail") return;
+      G.attempt += 1;
+      openBrief();
+    });
+    document.getElementById("btn-retry").addEventListener("click", function () {
+      ensureAudio();
+      newRun();
+    });
+    accuseBtn.addEventListener("click", function () {
+      ensureAudio();
+      if (G.phase === "success") continueSuccess();
+      else accuseNow();
+    });
+    questionsEl.addEventListener("click", function (e) {
+      var btn = e.target.closest ? e.target.closest("button") : null;
+      if (!btn || !btn.getAttribute("data-kind")) return;
+      ensureAudio();
+      ask({ kind: btn.getAttribute("data-kind"), trait: btn.getAttribute("data-trait") });
+    });
+    peopleEl.addEventListener("click", function (e) {
+      var btn = e.target.closest ? e.target.closest("button") : null;
+      if (!btn || G.phase !== "play" || !G.caseState) return;
+      var id = btn.getAttribute("data-id");
+      var s = L.findSuspect(G.caseState, id);
+      if (!s || s.eliminated) return;
+      G.selectedId = G.selectedId === id ? null : id;
+      render();
+    });
+    muteBtn.addEventListener("click", function () {
+      G.muted = !G.muted;
+      muteBtn.classList.toggle("is-muted", G.muted);
+      muteBtn.setAttribute("aria-pressed", G.muted ? "true" : "false");
+      muteBtn.setAttribute("aria-label", G.muted ? "音を出す" : "音を消す");
+      if (!G.muted) ensureAudio();
+    });
+
+    function frame(now) {
+      if (!lastNow) lastNow = now;
+      var dt = Math.min(0.1, (now - lastNow) / 1000);
+      lastNow = now;
+      if (G.phase === "play") {
+        G.timeLeft -= dt;
+        if (G.timeLeft <= 0) onTimeout();
+        else renderTimer();
+      } else if (G.phase === "lie") {
+        G.lieLeft -= dt;
+        if (G.lieLeft <= 0) finishLie();
+      }
+      requestAnimationFrame(frame);
+    }
+
+    updateHearts(false);
+    setMood("think");
+    setSay("冷蔵庫のプリンが、ない。");
+    renderTimer();
+    requestAnimationFrame(frame);
+
+    window.__pudding = {
+      audit: function () { return L.auditRounds(); },
+      logic: L,
+      newRun: newRun,
+      beginPlay: beginPlay,
+      ask: ask,
+      accuse: accuseNow,
+      finishLie: finishLie,
+      snapshot: function () {
+        return {
+          phase: G.phase,
+          hearts: G.hearts,
+          cleared: G.cleared,
+          round: G.roundIndex + 1,
+          say: sayText.textContent,
+          mood: G.mood,
+          timeLeft: G.timeLeft,
+          selected: G.selectedId,
+          remaining: G.caseState ? L.remainingCount(G.caseState) : null,
+          questions: G.caseState ? G.caseState.questionsLeft : null,
+          buttons: questionsEl.querySelectorAll("button").length,
+          grey: peopleEl.querySelectorAll(".person.out").length,
+          stamps: peopleEl.querySelectorAll(".stamp").length,
+          culpritMarked: !!peopleEl.querySelector(".is-culprit"),
+          failText: document.getElementById("fail-text").textContent,
+          failSub: document.getElementById("fail-sub").textContent,
+          rank: document.getElementById("end-rank").textContent,
+          rankLine: document.getElementById("end-rule").textContent
+        };
+      },
+      loadRound: function (index) {
+        G.roundIndex = index;
+        G.attempt = 0;
+        openBrief();
+      },
+      setTime: function (sec) { G.timeLeft = sec; },
+      caseCulprit: function () { return G.caseState ? G.caseState.culpritId : null; },
+      perfectRound: function () {
+        if (G.phase === "brief") beginPlay();
+        var guard = 0;
+        while ((G.phase === "play" || G.phase === "lie") && guard++ < 12) {
+          if (G.phase === "lie") finishLie();
+          if (L.remainingCount(G.caseState) <= 1) {
+            var phaseBefore = G.phase;
+            G.selectedId = L.remainingIds(G.caseState)[0];
+            var snap = { phaseBefore: phaseBefore, remaining: 1, marked: !!peopleEl.querySelector(".is-culprit") };
+            accuseNow();
+            snap.phaseAfter = G.phase;
+            return snap;
+          }
+          var q = null;
+          var offers = G.caseState.offers;
+          for (var i = 0; i < offers.length; i++) if (L.isProgress(G.caseState, offers[i])) q = offers[i];
+          if (!q) return { stuck: true };
+          ask(q);
+        }
+        return { phase: G.phase, guard: guard };
+      }
+    };
+  })();
+  </script>
+</body>
+</html>
