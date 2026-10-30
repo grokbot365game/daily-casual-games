@@ -1,0 +1,1555 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#2a1244">
+  <meta name="description" content="かぼちゃらせん皮むき。おばけのポルと、押したままかぼちゃをくるくる回して皮を一本のらせんにむく。">
+  <meta property="og:title" content="かぼちゃらせん皮むき — Pumpkin Peel">
+  <meta property="og:description" content="速度の帯の中でくるくる回す。速すぎ・遅すぎ・指が離れると皮が切れる。">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://grokbot365game.github.io/daily-casual-games/games/2026-10-30-pumpkin-peel/">
+  <title>かぼちゃらせん皮むき</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='9' r='5.2' fill='%23ff8a1e'/%3E%3Crect x='7.2' y='2.2' width='1.6' height='2.4' rx='.6' fill='%232f8a3a'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      --ink: #3a2418;
+      --muted: #7a5b48;
+      --paper: #fff8ef;
+      --accent: #e85d04;
+      --good: #1f9d55;
+      --danger: #e1062e;
+      --line: rgba(58, 36, 24, .14);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none; }
+    body {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      color: var(--ink);
+      background:
+        radial-gradient(80% 40% at 50% -10%, #6a3a88 0%, transparent 60%),
+        #1a0b28;
+      font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Yu Gothic", "WenQuanYi Micro Hei", "Droid Sans Fallback", "Meiryo", sans-serif;
+      font-size: 16px;
+      line-height: 1.35;
+      -webkit-text-size-adjust: 100%;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none;
+      user-select: none;
+      touch-action: none;
+    }
+    [hidden] { display: none !important; }
+    button, a { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+    button:focus-visible, a:focus-visible { outline: 3px solid #ffe08a; outline-offset: 2px; }
+    .back, .mute {
+      position: fixed;
+      z-index: 80;
+      top: max(8px, env(safe-area-inset-top));
+      border: 0;
+      border-radius: 999px;
+      color: var(--ink);
+      background: rgba(255, 248, 239, .96);
+      box-shadow: inset 0 0 0 1px var(--line);
+      font-weight: 800;
+      touch-action: manipulation;
+    }
+    .back {
+      left: max(10px, env(safe-area-inset-left));
+      min-height: 44px;
+      padding: 8px 14px;
+      display: grid;
+      place-items: center;
+      font-size: .78rem;
+      letter-spacing: .04em;
+      text-decoration: none;
+    }
+    .mute {
+      right: max(10px, env(safe-area-inset-right));
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+    }
+    .mute svg { width: 22px; height: 22px; display: block; }
+    .mute .slash { display: none; }
+    .mute.is-muted .slash { display: block; }
+    .live {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+    }
+    .shell {
+      height: 100%;
+      max-width: 480px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding:
+        calc(max(6px, env(safe-area-inset-top)) + 48px)
+        max(8px, env(safe-area-inset-right))
+        max(8px, env(safe-area-inset-bottom))
+        max(8px, env(safe-area-inset-left));
+      min-height: 0;
+    }
+    .hud {
+      flex: none;
+      border-radius: 16px;
+      padding: 6px 10px 8px;
+      background: rgba(255, 248, 239, .97);
+      box-shadow: inset 0 0 0 1px var(--line);
+    }
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .hud b.logo { font-size: .95rem; letter-spacing: .04em; }
+    .round-label { flex: none; white-space: nowrap; font-size: .78rem; font-weight: 800; color: var(--muted); }
+    .say-row { align-items: center; margin-top: 2px; }
+    .hero { flex: none; }
+    .hero svg { width: 100%; height: 100%; display: block; }
+    .hero.hud { width: 64px; height: 58px; }
+    .hero.lg { width: 128px; height: 116px; margin: 0 auto; }
+    .say { margin: 0; flex: 1; min-width: 0; min-height: 2.6em; font-size: .86rem; font-weight: 900; line-height: 1.35; }
+    .say .who { display: block; color: var(--accent); font-size: .72rem; letter-spacing: .06em; }
+    .hearts { letter-spacing: .06em; font-size: 1.05rem; }
+    .hearts i { font-style: normal; color: #e0233a; }
+    .hearts i.off { color: #eadfd4; }
+    .hearts i.pop { display: inline-block; animation: heartpop .35s ease; }
+    @keyframes heartpop { 0% { transform: scale(1.45); } 100% { transform: scale(1); } }
+    .cm-row { margin-top: 4px; align-items: baseline; }
+    .cm-row strong { font-size: 1.35rem; font-variant-numeric: tabular-nums; letter-spacing: -0.03em; line-height: 1; }
+    .cm-row span { font-weight: 900; color: var(--muted); font-size: .78rem; }
+    .goal { margin-left: auto; font-size: .78rem; font-weight: 800; color: #c24100; }
+    .meter { margin-top: 4px; height: 8px; border-radius: 999px; background: #f3e2d4; overflow: hidden; }
+    .meter i { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, #ffb020, #ff6a00); }
+    .gauge { margin-top: 6px; }
+    .gauge-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: .72rem;
+      font-weight: 900;
+      color: var(--muted);
+    }
+    .gauge-label b { color: var(--ink); font-size: .8rem; letter-spacing: .04em; }
+    .gauge-track {
+      position: relative;
+      height: 22px;
+      margin-top: 3px;
+      border-radius: 999px;
+      background: #2a211c;
+      box-shadow: inset 0 0 0 2px #3a2a24;
+      overflow: hidden;
+    }
+    .gauge-band {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      border-radius: 999px;
+      background: #37d67a;
+      box-shadow: inset 0 0 0 2px #0e7a3a;
+    }
+    .gauge-needle {
+      position: absolute;
+      top: -3px;
+      bottom: -3px;
+      width: 4px;
+      margin-left: -2px;
+      border-radius: 4px;
+      background: #fff8ef;
+      box-shadow: 0 0 0 2px #ff7a18;
+    }
+    .gauge.is-fast .gauge-track { box-shadow: inset 0 0 0 3px var(--danger); }
+    .gauge.is-slow .gauge-track { box-shadow: inset 0 0 0 3px #3d6bff; }
+    .gauge-foot {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      min-height: 1.35em;
+      margin-top: 2px;
+      font-weight: 900;
+      font-size: .84rem;
+    }
+    .gauge-foot .read { font-variant-numeric: tabular-nums; color: var(--ink); }
+    #gauge-state { color: var(--danger); }
+    .gauge.is-ok #gauge-state { color: var(--good); }
+    .hint {
+      margin: 2px 0 0;
+      min-height: 1.2em;
+      font-size: .8rem;
+      font-weight: 900;
+      color: var(--accent);
+    }
+    .stage {
+      position: relative;
+      flex: 1;
+      min-height: 220px;
+      border-radius: 18px;
+      overflow: hidden;
+      background: #14081f;
+      touch-action: none;
+      box-shadow: inset 0 0 0 3px #5a3418, 0 8px 20px rgba(0, 0, 0, .25);
+    }
+    .stage.flash-bad { box-shadow: inset 0 0 0 6px #ff2a4a, 0 8px 20px rgba(0, 0, 0, .25); }
+    .stage.flash-good { box-shadow: inset 0 0 0 6px #ffc53d, 0 8px 20px rgba(0, 0, 0, .25); }
+    canvas#board {
+      width: 100%;
+      height: 100%;
+      display: block;
+      touch-action: none;
+      cursor: grab;
+    }
+    canvas#board.dragging { cursor: grabbing; }
+    .banner, .callout { pointer-events: none; }
+    .banner {
+      position: absolute;
+      z-index: 3;
+      left: 50%;
+      top: 8px;
+      transform: translateX(-50%);
+      margin: 0;
+      max-width: calc(100% - 16px);
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: #fff4cc;
+      color: #6a3b12;
+      font-weight: 900;
+      font-size: .78rem;
+      white-space: nowrap;
+      text-align: center;
+      box-shadow: 0 6px 16px rgba(40, 20, 0, .2);
+    }
+    .callout {
+      position: absolute;
+      z-index: 4;
+      left: 50%;
+      top: 38%;
+      transform: translate(-50%, -50%);
+      width: min(92%, 340px);
+      margin: 0;
+      padding: 16px 12px 14px;
+      border-radius: 22px;
+      text-align: center;
+      color: #fff;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, .35);
+    }
+    .callout b {
+      display: block;
+      font-size: 2.8rem;
+      line-height: 1.05;
+      letter-spacing: .04em;
+      text-shadow: 0 3px 0 rgba(0, 0, 0, .28);
+    }
+    .callout span { display: block; margin-top: 6px; font-weight: 900; font-size: .98rem; }
+    .callout.bad { background: #c8102e; }
+    .callout.good { background: #ef8b12; color: #3a2408; }
+    .callout.good b { text-shadow: none; }
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding:
+        calc(max(8px, env(safe-area-inset-top)) + 52px)
+        12px
+        max(10px, env(safe-area-inset-bottom));
+      background: rgba(20, 8, 28, .82);
+      overflow: auto;
+    }
+    .card {
+      width: min(100%, 400px);
+      margin: auto;
+      padding: 14px 14px 16px;
+      border-radius: 22px;
+      background: var(--paper);
+      box-shadow: 0 18px 48px rgba(20, 8, 20, .45);
+      text-align: center;
+    }
+    .card h1, .quote { margin: 0; font-size: 1.5rem; letter-spacing: .04em; line-height: 1.25; font-weight: 900; }
+    .quote.win { color: #c24100; }
+    .quote.lose { color: var(--danger); }
+    .en, .fine { margin: 4px 0; color: var(--muted); font-size: .75rem; font-weight: 800; }
+    .flavor { margin: 4px 0 6px; font-weight: 900; font-size: .92rem; }
+    .rules {
+      margin: 8px 0 10px;
+      padding: 8px 10px 8px 1.6em;
+      border-radius: 14px;
+      background: #fff1e0;
+      text-align: left;
+      display: grid;
+      gap: 4px;
+    }
+    .rules li { font-weight: 900; font-size: .88rem; line-height: 1.4; }
+    .note-line { margin: 0 0 8px; font-size: .78rem; font-weight: 800; color: var(--muted); }
+    .life { margin: 0 0 8px; letter-spacing: .12em; font-size: 1.15rem; color: #e0233a; }
+    .demo-gauge {
+      position: relative;
+      height: 16px;
+      margin: 0 18px 4px;
+      border-radius: 999px;
+      background: #2a211c;
+      overflow: hidden;
+    }
+    .demo-gauge i {
+      position: absolute;
+      left: 28%;
+      width: 44%;
+      top: 0;
+      bottom: 0;
+      background: #37d67a;
+    }
+    .demo-gauge b {
+      position: absolute;
+      left: 48%;
+      top: -2px;
+      bottom: -2px;
+      width: 3px;
+      background: #fff8ef;
+      box-shadow: 0 0 0 2px #ff7a18;
+    }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 8px 0; }
+    .stats div { background: #fff; border-radius: 14px; padding: 8px 4px; box-shadow: inset 0 0 0 1px var(--line); }
+    .stats b { display: block; font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+    .stats span { font-size: .72rem; font-weight: 800; color: var(--muted); }
+    .mech { margin: 0 0 8px; font-weight: 900; font-size: .95rem; color: #8a3a12; }
+    .go, .retry, .copy {
+      display: block;
+      width: 100%;
+      min-height: 48px;
+      border: 0;
+      border-radius: 14px;
+      font-weight: 900;
+      text-align: center;
+      text-decoration: none;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .go { background: var(--accent); color: #fff; }
+    .retry { margin-top: 8px; background: #fff; color: var(--ink); box-shadow: inset 0 0 0 2px #8a3a32; }
+    .copy { margin-top: 8px; background: #2a211c; color: #fff8ef; }
+    .res { margin: 4px 0; font-weight: 900; }
+    .share {
+      margin: 8px 0;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: #fff;
+      box-shadow: inset 0 0 0 1px var(--line);
+      font-weight: 900;
+      font-size: .95rem;
+      line-height: 1.45;
+    }
+    .rank-line { margin: 8px 0; font-size: .72rem; font-weight: 800; line-height: 1.45; color: var(--muted); }
+    .fine a { color: var(--muted); font-weight: 900; }
+    body[data-phase="title"] .shell,
+    body[data-phase="card"] .shell,
+    body[data-phase="end"] .shell { visibility: hidden; }
+    @keyframes bob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+    .hero.lg { animation: bob 2.6s ease-in-out infinite; }
+    @media (max-height: 700px) {
+      .hero.lg { width: 92px; height: 84px; }
+      .card { padding: 10px 12px; }
+      .card h1, .quote { font-size: 1.28rem; }
+      .rules { margin: 6px 0; }
+      .rules li { font-size: .8rem; }
+      .hero.hud { width: 52px; height: 46px; }
+      .say { font-size: .78rem; min-height: 2.2em; }
+      .hud { padding: 4px 8px 6px; }
+      .cm-row strong { font-size: 1.15rem; }
+      .callout b { font-size: 2.2rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .hearts i.pop, .hero.lg { animation: none !important; }
+    }
+  </style>
+</head>
+<body data-phase="title">
+  <a class="back" href="../../index.html">ギャラリー</a>
+  <button type="button" class="mute" id="mute" aria-pressed="false" aria-label="音を消す">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="M4 9h4l5-4v14l-5-4H4z"/>
+      <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 9.5a4 4 0 0 1 0 5"/>
+      <path class="slash" fill="none" stroke="#c4322e" stroke-width="2.4" stroke-linecap="round" d="M6 5l13 14"/>
+    </svg>
+  </button>
+  <p class="live" id="live" aria-live="polite"></p>
+  <div class="shell">
+    <header class="hud">
+      <div class="row">
+        <b class="logo">かぼちゃらせん皮むき</b>
+        <span class="hearts" id="hearts" aria-label="ハート2"><i>♥</i><i>♥</i></span>
+      </div>
+      <div class="row say-row">
+        <div class="hero hud" id="hero-hud"></div>
+        <p class="say"><span class="who">ポル</span><span id="say-text"></span></p>
+        <span class="round-label" id="round-label"></span>
+      </div>
+      <div class="row cm-row">
+        <strong id="cm-now">0.0</strong><span>cm</span>
+        <span class="goal" id="cm-goal">目標 —</span>
+      </div>
+      <div class="meter" aria-hidden="true"><i id="cm-fill"></i></div>
+      <div class="gauge" id="gauge">
+        <div class="gauge-label"><span>おそい</span><b>回転スピード</b><span>はやい</span></div>
+        <div class="gauge-track" id="gauge-track">
+          <div class="gauge-band" id="gauge-band"></div>
+          <div class="gauge-needle" id="gauge-needle"></div>
+        </div>
+        <div class="gauge-foot">
+          <span class="read"><span id="speed-read">0.00</span> 回/秒</span>
+          <span id="gauge-state">緑の帯の中</span>
+        </div>
+      </div>
+      <p class="hint" id="hint"></p>
+    </header>
+    <div class="stage" id="stage">
+      <canvas id="board" width="360" height="480" aria-label="かぼちゃ。押したまままわりを回して皮をむく"></canvas>
+      <p class="banner" id="banner" hidden>練習：ランクに入らない</p>
+      <p class="callout bad" id="tear" hidden>
+        <b id="tear-title">速すぎ</b>
+        <span id="tear-sub">皮が切れた</span>
+      </p>
+      <p class="callout good" id="ok" hidden>
+        <b id="ok-title">まるむき！</b>
+        <span id="ok-sub">らせん完成</span>
+      </p>
+    </div>
+  </div>
+
+  <div class="overlay" id="title">
+    <div class="card">
+      <div class="hero lg" id="hero-title"></div>
+      <h1>かぼちゃらせん皮むき</h1>
+      <p class="en">Pumpkin Peel · Day 35</p>
+      <p class="flavor" id="title-say"></p>
+      <ol class="rules" id="rules">
+        <li>マウスでも指でも、押したままかぼちゃのまわりをくるくる回す</li>
+        <li>速すぎ・遅すぎ・指が離れると切れて、そのラウンドは最初から</li>
+        <li>ハートは2つ。帯がせまい・帯がゆれる・こぶで速度が跳ねる</li>
+      </ol>
+      <div class="demo-gauge" aria-hidden="true"><i></i><b></b></div>
+      <p class="fine">緑の帯の中の速さで回す。切れると「速すぎ」「遅すぎ」「指が離れた」</p>
+      <p class="note-line">ラウンド1は練習（ランクに入らない・ハートは減らない）</p>
+      <p class="life" aria-hidden="true">♥♥</p>
+      <button type="button" class="go" id="btn-start">はじめる</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="brief" hidden>
+    <div class="card">
+      <div class="hero lg" id="hero-card"></div>
+      <p class="en" id="brief-kicker">ラウンド</p>
+      <p class="quote" id="brief-title">練習ラウンド</p>
+      <p class="flavor" id="card-say"></p>
+      <div class="stats">
+        <div><b id="brief-round">1/6</b><span>ラウンド</span></div>
+        <div><b id="brief-cm">72.0cm</b><span>皮の長さ</span></div>
+        <div><b id="brief-band">広い</b><span>速度の帯</span></div>
+      </div>
+      <p class="mech" id="brief-note"></p>
+      <button type="button" class="go" id="btn-go">スタート</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="end" hidden>
+    <div class="card">
+      <div class="hero lg" id="hero-end"></div>
+      <p class="en" id="end-kicker">結果カード · かぼちゃらせん皮むき</p>
+      <p class="res" id="end-head">ゲームオーバー</p>
+      <p class="quote" id="end-rank">ちぎり</p>
+      <p class="flavor" id="end-say"></p>
+      <div class="stats">
+        <div><b id="end-cm">0.0cm</b><span>皮の長さ</span></div>
+        <div><b id="end-miss">0</b><span>ミス</span></div>
+        <div><b id="end-hearts">♥♥</b><span>残りハート</span></div>
+      </div>
+      <p class="fine" id="end-cm-note">練習の皮は含まない</p>
+      <p class="res" id="end-reach" hidden></p>
+      <p class="share" id="end-quote">かぼちゃらせん皮むき「ちぎり」皮0cm</p>
+      <p class="rank-line">ハロウィン王:ノーミス全クリ / まるむき:クリア / ちぎり:ゲームオーバー</p>
+      <button type="button" class="copy" id="btn-copy">この結果をコピー</button>
+      <button type="button" class="retry" id="btn-retry">もういちど</button>
+      <p class="fine"><a href="../../index.html">ギャラリーへ</a></p>
+    </div>
+  </div>
+
+  <script src="logic.js"></script>
+  <script>
+  (function () {
+    "use strict";
+    var L = window.PeelLogic;
+    var FONT = '"Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", "WenQuanYi Micro Hei", "Droid Sans Fallback", sans-serif';
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    var titleEl = document.getElementById("title");
+    var briefEl = document.getElementById("brief");
+    var endEl = document.getElementById("end");
+    var sayText = document.getElementById("say-text");
+    var titleSay = document.getElementById("title-say");
+    var cardSay = document.getElementById("card-say");
+    var endSay = document.getElementById("end-say");
+    var roundLabel = document.getElementById("round-label");
+    var heartsEl = document.getElementById("hearts");
+    var hintEl = document.getElementById("hint");
+    var bannerEl = document.getElementById("banner");
+    var tearEl = document.getElementById("tear");
+    var tearTitle = document.getElementById("tear-title");
+    var tearSub = document.getElementById("tear-sub");
+    var okEl = document.getElementById("ok");
+    var okSub = document.getElementById("ok-sub");
+    var liveEl = document.getElementById("live");
+    var stage = document.getElementById("stage");
+    var canvas = document.getElementById("board");
+    var ctx = canvas.getContext("2d");
+    var gauge = document.getElementById("gauge");
+    var bandEl = document.getElementById("gauge-band");
+    var needleEl = document.getElementById("gauge-needle");
+    var speedRead = document.getElementById("speed-read");
+    var gaugeState = document.getElementById("gauge-state");
+    var cmNow = document.getElementById("cm-now");
+    var cmGoal = document.getElementById("cm-goal");
+    var cmFill = document.getElementById("cm-fill");
+    var briefNote = document.getElementById("brief-note");
+    var body = document.body;
+
+    var audioCtx = null;
+    var G = {
+      phase: "title",
+      hearts: 2,
+      round: 0,
+      spec: null,
+      peelCm: 0,
+      rankedTears: 0,
+      cleared: false,
+      mood: "cheer",
+      w: 360,
+      h: 480,
+      cx: 180,
+      cy: 220,
+      R: 90,
+      down: false,
+      pointerId: null,
+      lastAngle: null,
+      lastMove: 0,
+      head: -Math.PI / 2,
+      dir: 0,
+      dirAccum: 0,
+      startAng: null,
+      maxTurns: 0,
+      smooth: 0,
+      eff: 0,
+      danger: 0,
+      playT: 0,
+      graceUntil: null,
+      started: false,
+      verdict: "ok",
+      reason: "",
+      boost: { add: 0, warn: false, active: false, marks: [] },
+      peel: null,
+      safeSpeed: 0.8,
+      until: 0,
+      chatAt: 0,
+      lastFrame: 0,
+      muted: false,
+      stars: []
+    };
+
+    var si;
+    for (si = 0; si < 26; si++) {
+      G.stars.push({
+        x: ((si * 97) % 100) / 100,
+        y: ((si * 53) % 72) / 100,
+        r: (si % 3) + 1,
+        a: 0.28 + (si % 5) * 0.1
+      });
+    }
+
+    function ghostSVG(mood) {
+      var eye = "";
+      var mouth = "";
+      var sweat = "";
+      var arms = "";
+      if (mood === "shock") {
+        eye = '<circle cx="52" cy="78" r="7" fill="#2a211c"/><circle cx="88" cy="78" r="7" fill="#2a211c"/><circle cx="54" cy="76" r="2.2" fill="#fff"/><circle cx="90" cy="76" r="2.2" fill="#fff"/>';
+        mouth = '<ellipse cx="70" cy="98" rx="8" ry="9" fill="#2a211c"/>';
+        sweat = '<ellipse cx="104" cy="70" rx="4" ry="6" fill="#8fd4ff"/>';
+      } else if (mood === "worry") {
+        eye = '<ellipse cx="52" cy="78" rx="6" ry="7" fill="#2a211c"/><ellipse cx="88" cy="78" rx="6" ry="7" fill="#2a211c"/><circle cx="54" cy="76" r="2" fill="#fff"/><circle cx="90" cy="76" r="2" fill="#fff"/>';
+        mouth = '<path d="M60 96 Q70 92 80 98" fill="none" stroke="#2a211c" stroke-width="3" stroke-linecap="round"/>';
+        sweat = '<ellipse cx="104" cy="72" rx="4" ry="6" fill="#8fd4ff"/>';
+      } else if (mood === "happy" || mood === "cheer") {
+        eye = '<path d="M44 80 Q52 70 60 80" fill="none" stroke="#2a211c" stroke-width="3.2" stroke-linecap="round"/><path d="M80 80 Q88 70 96 80" fill="none" stroke="#2a211c" stroke-width="3.2" stroke-linecap="round"/>';
+        mouth = '<path d="M58 94 Q70 108 82 94" fill="none" stroke="#2a211c" stroke-width="3.2" stroke-linecap="round"/>';
+      } else {
+        eye = '<ellipse cx="52" cy="78" rx="6" ry="7.5" fill="#2a211c"/><ellipse cx="88" cy="78" rx="6" ry="7.5" fill="#2a211c"/><circle cx="54" cy="76" r="2" fill="#fff"/><circle cx="90" cy="76" r="2" fill="#fff"/>';
+        mouth = '<path d="M60 96 Q70 104 80 96" fill="none" stroke="#2a211c" stroke-width="3" stroke-linecap="round"/>';
+      }
+      if (mood === "cheer") {
+        arms = '<ellipse cx="28" cy="78" rx="8" ry="6" fill="#f4f6ff" transform="rotate(-30 28 78)"/><ellipse cx="112" cy="78" rx="8" ry="6" fill="#f4f6ff" transform="rotate(30 112 78)"/>';
+      } else {
+        arms = '<ellipse cx="30" cy="96" rx="8" ry="6" fill="#f4f6ff"/><ellipse cx="110" cy="96" rx="8" ry="6" fill="#f4f6ff"/>';
+      }
+      return '<svg viewBox="0 0 140 150" aria-hidden="true">'
+        + '<ellipse cx="70" cy="132" rx="28" ry="6" fill="rgba(40,20,10,.18)"/>'
+        + '<ellipse cx="70" cy="34" rx="16" ry="13" fill="#ff8a1e"/>'
+        + '<rect x="66" y="16" width="8" height="12" rx="3" fill="#2f8a3a"/>'
+        + '<path d="M34 86 C34 48 106 48 106 86 L106 112 Q96 104 86 118 Q76 104 70 118 Q64 104 54 118 Q44 104 34 112 Z" fill="#f7f8ff" stroke="#d5d9ee" stroke-width="2"/>'
+        + arms
+        + '<ellipse cx="50" cy="92" rx="6" ry="3.5" fill="#ffb7c8" opacity=".85"/>'
+        + '<ellipse cx="90" cy="92" rx="6" ry="3.5" fill="#ffb7c8" opacity=".85"/>'
+        + eye + mouth + sweat
+        + '</svg>';
+    }
+
+    function visualMood() {
+      if (G.phase === "tear") return "shock";
+      if (G.phase === "clear") return "cheer";
+      if (G.phase === "end") return G.cleared ? "cheer" : "shock";
+      if (G.boost && G.boost.active) return "worry";
+      if (G.phase === "play" && (G.verdict === "fast" || G.verdict === "slow")) return "worry";
+      if (G.phase === "play" && G.verdict === "ok" && G.started) return "happy";
+      return G.mood || "idle";
+    }
+
+    function paintHeroes() {
+      var svg = ghostSVG(visualMood());
+      var ids = ["hero-hud", "hero-title", "hero-card", "hero-end"];
+      for (var i = 0; i < ids.length; i++) {
+        var el = document.getElementById(ids[i]);
+        if (el) el.innerHTML = svg;
+      }
+    }
+
+    function setSpeak(line) {
+      if (!line) return;
+      G.mood = line.mood;
+      sayText.textContent = line.text;
+      if (G.phase === "title") titleSay.textContent = line.text;
+      if (G.phase === "card") cardSay.textContent = line.text;
+      if (G.phase === "end") endSay.textContent = line.text;
+      liveEl.textContent = line.text;
+      paintHeroes();
+    }
+
+    function updateHearts(pop) {
+      var html = "";
+      var i;
+      for (i = 1; i <= 2; i++) {
+        var on = G.hearts >= i;
+        var lost = pop && !on && i === G.hearts + 1;
+        html += '<i class="' + (on ? "" : "off") + (lost ? " pop" : "") + '">♥</i>';
+      }
+      heartsEl.innerHTML = html;
+      heartsEl.setAttribute("aria-label", "ハート" + Math.max(0, G.hearts));
+    }
+
+    function beep(kind) {
+      if (G.muted) return;
+      try {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        if (!audioCtx) audioCtx = new AC();
+        var now = audioCtx.currentTime;
+        function tone(freq, t0, dur, type, gain) {
+          var osc = audioCtx.createOscillator();
+          var amp = audioCtx.createGain();
+          osc.type = type || "sine";
+          osc.frequency.setValueAtTime(freq, t0);
+          amp.gain.setValueAtTime(gain, t0);
+          amp.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+          osc.connect(amp);
+          amp.connect(audioCtx.destination);
+          osc.start(t0);
+          osc.stop(t0 + dur + 0.02);
+          return osc;
+        }
+        if (kind === "tear") {
+          var osc = audioCtx.createOscillator();
+          var amp = audioCtx.createGain();
+          osc.type = "sawtooth";
+          osc.frequency.setValueAtTime(240, now);
+          osc.frequency.exponentialRampToValueAtTime(70, now + 0.22);
+          amp.gain.setValueAtTime(0.07, now);
+          amp.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+          osc.connect(amp);
+          amp.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.26);
+        } else if (kind === "ok") {
+          tone(523, now, 0.16, "triangle", 0.06);
+          tone(659, now + 0.07, 0.16, "triangle", 0.06);
+          tone(784, now + 0.14, 0.2, "triangle", 0.06);
+        } else if (kind === "go") {
+          tone(540, now, 0.1, "sine", 0.05);
+        }
+      } catch (err) {}
+    }
+
+    function fitCanvas() {
+      var rect = stage.getBoundingClientRect();
+      var w = Math.max(1, Math.round(rect.width));
+      var h = Math.max(1, Math.round(rect.height));
+      var dpr = Math.min(2, window.devicePixelRatio || 1);
+      if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
+        canvas.width = Math.round(w * dpr);
+        canvas.height = Math.round(h * dpr);
+      }
+      canvas.style.width = w + "px";
+      canvas.style.height = h + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      G.w = w;
+      G.h = h;
+      G.cx = w * 0.5;
+      G.cy = h * 0.46;
+      G.R = Math.max(68, Math.min(w, h) * 0.26);
+    }
+
+    function headAngle() {
+      var dir = G.dir || 1;
+      var start = G.startAng == null ? -Math.PI / 2 : G.startAng;
+      return start + dir * G.maxTurns * Math.PI * 2;
+    }
+
+    function resetStroke() {
+      G.down = false;
+      G.pointerId = null;
+      G.lastAngle = null;
+      G.dir = 0;
+      G.dirAccum = 0;
+      G.startAng = null;
+      G.maxTurns = 0;
+      G.smooth = 0;
+      G.eff = 0;
+      G.danger = 0;
+      G.graceUntil = null;
+      G.started = false;
+      G.verdict = "ok";
+      G.head = -Math.PI / 2;
+      G.peel = L.createPeel(G.spec);
+      G.boost = G.peel.boost(G.head, G.playT);
+      canvas.classList.remove("dragging");
+    }
+
+    function updateReadout() {
+      if (!G.spec) return;
+      var goal = L.peelCm(G.spec);
+      var cur = G.maxTurns * L.CM_PER_TURN;
+      if (cur < 0) cur = 0;
+      cmNow.textContent = cur.toFixed(1);
+      cmGoal.textContent = "目標 " + goal.toFixed(1) + "cm";
+      cmFill.style.width = Math.max(0, Math.min(100, (cur / goal) * 100)) + "%";
+      var band = G.band || L.bandAt(G.spec, G.playT);
+      var max = L.GAUGE_MAX;
+      bandEl.style.left = (band.min / max) * 100 + "%";
+      bandEl.style.width = ((band.max - band.min) / max) * 100 + "%";
+      var shown = G.eff;
+      if (shown < 0) shown = 0;
+      if (shown > max) shown = max;
+      needleEl.style.left = (shown / max) * 100 + "%";
+      speedRead.textContent = shown.toFixed(2);
+      gauge.classList.toggle("is-fast", G.verdict === "fast");
+      gauge.classList.toggle("is-slow", G.verdict === "slow");
+      gauge.classList.toggle("is-ok", G.phase !== "tear" && G.verdict === "ok" && G.down);
+      var state = "緑の帯の中";
+      if (G.phase === "tear" && G.reason) state = L.REASON[G.reason];
+      else if (G.phase === "clear") state = "まるむき";
+      else if (G.boost && G.boost.active) state = "こぶ！針が上がってる";
+      else if (G.verdict === "fast") state = "速すぎ";
+      else if (G.verdict === "slow") state = "遅すぎ";
+      else if (!G.down) state = "押したまま回す";
+      gaugeState.textContent = state;
+    }
+
+    function computeSafe() {
+      var band = L.bandAt(G.spec, G.playT);
+      var cautious = false;
+      if (G.spec.bumpAdd > 0) {
+        if ((G.boost && (G.boost.active || G.boost.warn)) || L.nearWart(G.spec, G.head, G.spec.bumpArc + 0.7)) {
+          cautious = true;
+        }
+      }
+      if (!cautious) return band.center;
+      var raw = band.max - G.spec.bumpAdd - 0.07;
+      if (raw < band.min + 0.03) raw = band.min + 0.03;
+      return raw;
+    }
+
+    function showTitle() {
+      G.phase = "title";
+      body.dataset.phase = "title";
+      titleEl.hidden = false;
+      briefEl.hidden = true;
+      endEl.hidden = true;
+      tearEl.hidden = true;
+      okEl.hidden = true;
+      stage.classList.remove("flash-bad");
+      stage.classList.remove("flash-good");
+      setSpeak(L.speak("title"));
+    }
+
+    function showCard() {
+      G.phase = "card";
+      G.spec = L.ROUNDS[G.round];
+      body.dataset.phase = "card";
+      titleEl.hidden = true;
+      endEl.hidden = true;
+      briefEl.hidden = false;
+      tearEl.hidden = true;
+      okEl.hidden = true;
+      stage.classList.remove("flash-bad");
+      stage.classList.remove("flash-good");
+      var info = L.roundInfo(G.spec);
+      document.getElementById("brief-kicker").textContent = G.spec.practice ? "練習ラウンド" : "ラウンド開始";
+      document.getElementById("brief-title").textContent = info.title;
+      document.getElementById("brief-round").textContent = info.round;
+      document.getElementById("brief-cm").textContent = info.cm;
+      document.getElementById("brief-band").textContent = info.band;
+      briefNote.textContent = info.note;
+      roundLabel.textContent = G.spec.id + "/6" + (G.spec.practice ? " 練習" : "");
+      setSpeak(L.speak("card", { practice: !!G.spec.practice, line: G.spec.line }));
+    }
+
+    function beginPlay() {
+      G.phase = "play";
+      G.spec = L.ROUNDS[G.round];
+      body.dataset.phase = "play";
+      titleEl.hidden = true;
+      briefEl.hidden = true;
+      endEl.hidden = true;
+      tearEl.hidden = true;
+      okEl.hidden = true;
+      stage.classList.remove("flash-bad");
+      stage.classList.remove("flash-good");
+      G.playT = 0;
+      G.reason = "";
+      G.chatAt = 0;
+      resetStroke();
+      roundLabel.textContent = G.spec.id + "/6" + (G.spec.practice ? " 練習" : "");
+      if (G.spec.practice) {
+        bannerEl.hidden = false;
+        bannerEl.textContent = "練習：ランクに入らない";
+      } else {
+        bannerEl.hidden = false;
+        bannerEl.textContent = G.spec.note;
+      }
+      hintEl.textContent = "押したまま、まわりを回して";
+      setSpeak(L.speak("ready"));
+      G.band = L.bandAt(G.spec, 0);
+      updateReadout();
+      beep("go");
+      fitCanvas();
+    }
+
+    function maybeDone() {
+      if (G.phase === "play" && G.spec && G.maxTurns >= G.spec.turns) {
+        onClear();
+        return true;
+      }
+      return false;
+    }
+
+    function onTear(kind) {
+      if (G.phase !== "play") return;
+      G.phase = "tear";
+      G.down = false;
+      G.pointerId = null;
+      canvas.classList.remove("dragging");
+      G.reason = kind;
+      var practice = !!(G.spec && G.spec.practice);
+      if (!practice) {
+        G.hearts = L.nextHearts(G.hearts, false);
+        G.rankedTears += 1;
+        updateHearts(true);
+      }
+      tearTitle.textContent = L.REASON[kind];
+      tearSub.textContent = L.tearDetail(practice);
+      tearEl.hidden = false;
+      okEl.hidden = true;
+      stage.classList.add("flash-bad");
+      hintEl.textContent = L.REASON[kind];
+      setSpeak(L.speak(kind, { practice: practice }));
+      liveEl.textContent = L.REASON[kind] + "。" + L.tearDetail(practice);
+      beep("tear");
+      G.until = performance.now() + 1150;
+    }
+
+    function onClear() {
+      if (G.phase !== "play") return;
+      G.phase = "clear";
+      G.down = false;
+      G.pointerId = null;
+      canvas.classList.remove("dragging");
+      var gained = L.peelCm(G.spec);
+      G.peelCm = L.commitCm(G.peelCm, G.spec);
+      tearEl.hidden = true;
+      okEl.hidden = false;
+      okSub.textContent = (G.spec.practice ? "練習クリア " : "+") + gained.toFixed(1) + "cm";
+      stage.classList.add("flash-good");
+      stage.classList.remove("flash-bad");
+      hintEl.textContent = L.CLEAR_WORD;
+      setSpeak(L.speak("ok"));
+      beep("ok");
+      G.until = performance.now() + 1100;
+    }
+
+    function showEnd(cleared) {
+      G.phase = "end";
+      G.cleared = cleared;
+      body.dataset.phase = "end";
+      titleEl.hidden = true;
+      briefEl.hidden = true;
+      endEl.hidden = false;
+      var rank = L.rankFor(cleared, G.rankedTears);
+      var rankEl = document.getElementById("end-rank");
+      rankEl.textContent = rank;
+      rankEl.className = "quote " + (cleared ? "win" : "lose");
+      document.getElementById("end-head").textContent = cleared ? "クリア" : L.FAIL_HEAD;
+      document.getElementById("end-cm").textContent = G.peelCm.toFixed(1) + "cm";
+      document.getElementById("end-miss").textContent = String(G.rankedTears);
+      var hearts = "";
+      var i;
+      for (i = 0; i < G.hearts; i++) hearts += "♥";
+      if (!hearts) hearts = "なし";
+      document.getElementById("end-hearts").textContent = hearts;
+      document.getElementById("end-quote").textContent = L.quote(rank, G.peelCm);
+      var reach = document.getElementById("end-reach");
+      reach.hidden = false;
+      reach.textContent = cleared ? "ランク対象を全部むききった" : ("到達: 第" + L.ROUNDS[G.round].id + "ラウンド");
+      document.getElementById("btn-copy").textContent = "この結果をコピー";
+      setSpeak(L.speak("end", { rank: rank }));
+    }
+
+    function afterTear() {
+      if (G.hearts <= 0) showEnd(false);
+      else showCard();
+    }
+
+    function afterClear() {
+      if (G.round >= L.ROUNDS.length - 1) showEnd(true);
+      else {
+        G.round += 1;
+        showCard();
+      }
+    }
+
+    function localPoint(e) {
+      var rect = canvas.getBoundingClientRect();
+      return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    }
+
+    function onDown(e) {
+      if (G.phase !== "play") return;
+      if (e.button !== undefined && e.button !== 0) return;
+      if (G.pointerId !== null) return;
+      G.pointerId = e.pointerId;
+      G.down = true;
+      canvas.classList.add("dragging");
+      if (G.graceUntil == null) G.graceUntil = G.playT + G.spec.grace;
+      var p = localPoint(e);
+      var dx = p.x - G.cx;
+      var dy = p.y - G.cy;
+      G.lastMove = performance.now();
+      if (dx * dx + dy * dy >= 24 * 24) {
+        G.head = Math.atan2(dy, dx);
+        G.lastAngle = G.head;
+      } else {
+        G.lastAngle = null;
+      }
+      try { stage.setPointerCapture(e.pointerId); } catch (err) {}
+      e.preventDefault();
+    }
+
+    function onMove(e) {
+      if (!G.down || e.pointerId !== G.pointerId || G.phase !== "play") return;
+      e.preventDefault();
+      var p = localPoint(e);
+      var dx = p.x - G.cx;
+      var dy = p.y - G.cy;
+      if (dx * dx + dy * dy < 24 * 24) return;
+      var ang = Math.atan2(dy, dx);
+      var now = performance.now();
+      if (G.lastAngle == null) {
+        G.lastAngle = ang;
+        G.lastMove = now;
+        G.head = ang;
+        return;
+      }
+      var dt = (now - G.lastMove) / 1000;
+      var dAng = L.wrapPi(ang - G.lastAngle);
+      G.lastAngle = ang;
+      G.lastMove = now;
+      G.head = ang;
+      if (!(dt > 0) || dt > 0.09 || Math.abs(dAng) > 1.05) return;
+      if (!G.dir) {
+        G.dirAccum += dAng;
+        if (Math.abs(G.dirAccum) >= 0.5) {
+          G.dir = G.dirAccum > 0 ? 1 : -1;
+          G.startAng = ang - dAng;
+          G.maxTurns = 0;
+        }
+      }
+      if (G.dir) {
+        var forward = dAng * G.dir;
+        if (forward > 0) G.maxTurns += forward / (Math.PI * 2);
+      }
+      var inst = (dAng / (Math.PI * 2)) / dt;
+      var signed = G.dir ? inst * G.dir : Math.abs(inst);
+      var alpha = 1 - Math.exp(-dt / 0.08);
+      G.smooth += (signed - G.smooth) * alpha;
+      if (G.maxTurns >= 0.12) G.started = true;
+      maybeDone();
+    }
+
+    function onUp(e) {
+      if (G.pointerId === null || e.pointerId !== G.pointerId) return;
+      if (G.phase !== "play") {
+        G.down = false;
+        G.pointerId = null;
+        canvas.classList.remove("dragging");
+        return;
+      }
+      if (maybeDone()) return;
+      if (!G.started) {
+        resetStroke();
+        hintEl.textContent = "押したまま、まわりを回し続けて";
+        setSpeak(L.speak("ready"));
+        return;
+      }
+      onTear("lift");
+    }
+
+    stage.addEventListener("pointerdown", onDown);
+    window.addEventListener("pointermove", onMove, { passive: false });
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+    stage.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+
+    function maybeChat(now) {
+      if (G.phase !== "play" || now < G.chatAt || !G.down) return;
+      if (G.graceUntil == null || G.playT < G.graceUntil) return;
+      if (G.boost && G.boost.active) {
+        setSpeak(L.speak("bump-on"));
+        G.chatAt = now + 900;
+        return;
+      }
+      if (G.boost && G.boost.warn) {
+        setSpeak(L.speak("bump"));
+        G.chatAt = now + 1100;
+        return;
+      }
+      var band = G.band;
+      if (!band) return;
+      var w = band.max - band.min;
+      if (G.verdict === "fast" || G.eff > band.max - w * 0.16) {
+        setSpeak(L.speak("edge-fast"));
+        G.chatAt = now + 1000;
+        return;
+      }
+      if (G.verdict === "slow" || (G.started && G.eff < band.min + w * 0.16)) {
+        setSpeak(L.speak("edge-slow"));
+        G.chatAt = now + 1000;
+        return;
+      }
+      if (G.verdict === "ok" && G.started) {
+        setSpeak(L.speak("good"));
+        G.chatAt = now + 2400;
+      }
+    }
+
+    function tick(dt, now) {
+      if (!G.spec || G.phase !== "play") return;
+      G.playT += dt;
+      if (G.down && (now - G.lastMove) / 1000 > 0.07) {
+        var alpha = 1 - Math.exp(-dt / 0.08);
+        G.smooth += (0 - G.smooth) * alpha;
+      }
+      var head = G.down ? G.head : headAngle();
+      G.boost = G.peel.boost(head, G.playT);
+      var boost = (G.smooth > 0.02 && G.boost) ? G.boost.add : 0;
+      G.eff = G.smooth + boost;
+      G.band = L.bandAt(G.spec, G.playT);
+      G.safeSpeed = computeSafe();
+      if (maybeDone()) return;
+      var inGrace = G.graceUntil == null || G.playT < G.graceUntil;
+      if (G.down) {
+        var verdict = L.judgeSpeed(G.eff, G.band);
+        G.verdict = verdict;
+        if (!inGrace) {
+          G.danger = L.stepDanger(G.danger, dt, verdict);
+          if (L.torn(G.danger, G.spec.sustain)) {
+            onTear(verdict === "fast" ? "fast" : "slow");
+            return;
+          }
+        } else {
+          G.danger = Math.max(0, G.danger - dt * 2.2);
+        }
+      } else {
+        G.verdict = "ok";
+        G.danger = Math.max(0, G.danger - dt * 2.2);
+      }
+      maybeChat(now);
+      updateReadout();
+    }
+
+    function drawSky(now) {
+      var g = ctx.createLinearGradient(0, 0, 0, G.h);
+      g.addColorStop(0, "#3a1860");
+      g.addColorStop(0.55, "#1a0c32");
+      g.addColorStop(1, "#120814");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, G.w, G.h);
+      var moonX = G.w * 0.78;
+      var moonY = G.h * 0.16;
+      ctx.beginPath();
+      ctx.fillStyle = "#ffe7b0";
+      ctx.arc(moonX, moonY, Math.min(28, G.w * 0.07), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.fillStyle = "#3a1860";
+      ctx.arc(moonX + 10, moonY - 4, Math.min(22, G.w * 0.055), 0, Math.PI * 2);
+      ctx.fill();
+      var i;
+      for (i = 0; i < G.stars.length; i++) {
+        var s = G.stars[i];
+        ctx.globalAlpha = s.a;
+        ctx.fillStyle = "#fff6d8";
+        ctx.beginPath();
+        ctx.arc(s.x * G.w, s.y * G.h, s.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function drawRibbon(torn) {
+      var turns = G.maxTurns;
+      if (turns < 0.03) return;
+      var dir = G.dir || 1;
+      var prog = turns * Math.PI * 2;
+      var endAng = headAngle();
+      var maxExtra = Math.min(G.w, G.h) * 0.46 - G.R;
+      if (maxExtra < 22) maxExtra = 22;
+      if (maxExtra > G.R * 1.05) maxExtra = G.R * 1.05;
+      var steps = Math.max(16, Math.floor(prog / 0.1));
+      ctx.save();
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.beginPath();
+      var i;
+      for (i = 0; i <= steps; i++) {
+        var age = 1 - i / steps;
+        var ang = endAng - dir * prog * age;
+        var rad = G.R + 2 + age * maxExtra;
+        var x = G.cx + Math.cos(ang) * rad;
+        var y = G.cy + Math.sin(ang) * rad;
+        if (torn && age < 0.08) {
+          x += 12;
+          y += 16;
+        }
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = torn ? "#9a3030" : "#ff5714";
+      ctx.lineWidth = Math.max(8, G.R * 0.1);
+      ctx.stroke();
+      ctx.strokeStyle = torn ? "#f0c2b4" : "#ffe3bf";
+      ctx.lineWidth = Math.max(2.5, G.R * 0.03);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawPumpkin() {
+      var cx = G.cx;
+      var cy = G.cy;
+      var R = G.R;
+      ctx.save();
+      ctx.fillStyle = "rgba(0,0,0,.28)";
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + R * 0.98, R * 0.86, R * 0.14, 0, 0, Math.PI * 2);
+      ctx.fill();
+      var g = ctx.createRadialGradient(cx - R * 0.32, cy - R * 0.36, R * 0.08, cx, cy, R * 1.05);
+      g.addColorStop(0, "#ffe6ad");
+      g.addColorStop(0.42, "#ff9a28");
+      g.addColorStop(1, "#d24c00");
+      ctx.beginPath();
+      ctx.fillStyle = g;
+      ctx.arc(cx, cy, R, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, R, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.strokeStyle = "rgba(128, 40, 0, .4)";
+      ctx.lineWidth = Math.max(2, R * 0.035);
+      var i;
+      for (i = -4; i <= 4; i++) {
+        var x = cx + i * R * 0.18;
+        ctx.beginPath();
+        ctx.moveTo(x, cy - R);
+        ctx.quadraticCurveTo(x + R * 0.1, cy, x, cy + R);
+        ctx.stroke();
+      }
+      ctx.restore();
+      if (G.maxTurns > 0.04) {
+        var dir = G.dir || 1;
+        var head = headAngle();
+        var span = Math.min(G.maxTurns, 1.05) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.strokeStyle = "rgba(255, 232, 190, .95)";
+        ctx.lineWidth = Math.max(5, R * 0.07);
+        ctx.lineCap = "round";
+        ctx.arc(cx, cy, R * 0.84, head - dir * span, head, dir < 0);
+        ctx.stroke();
+      }
+      ctx.fillStyle = "#5c260c";
+      function eye(x, y) {
+        ctx.beginPath();
+        ctx.moveTo(x, y - R * 0.1);
+        ctx.lineTo(x - R * 0.09, y + R * 0.06);
+        ctx.lineTo(x + R * 0.09, y + R * 0.06);
+        ctx.closePath();
+        ctx.fill();
+      }
+      eye(cx - R * 0.26, cy - R * 0.02);
+      eye(cx + R * 0.26, cy - R * 0.02);
+      ctx.beginPath();
+      ctx.strokeStyle = "#5c260c";
+      ctx.lineWidth = Math.max(2, R * 0.035);
+      ctx.lineCap = "round";
+      ctx.moveTo(cx - R * 0.16, cy + R * 0.28);
+      ctx.quadraticCurveTo(cx, cy + R * 0.46, cx + R * 0.16, cy + R * 0.28);
+      ctx.stroke();
+      ctx.fillStyle = "#2c7a38";
+      ctx.fillRect(cx - R * 0.07, cy - R * 1.16, R * 0.14, R * 0.24);
+      ctx.restore();
+    }
+
+    function drawWarts() {
+      if (!G.spec || !G.spec.bumps) return;
+      var warts = L.wartAngles(G.spec);
+      var marks = (G.boost && G.boost.marks) || [];
+      var i;
+      for (i = 0; i < warts.length; i++) {
+        var a = warts[i];
+        var x = G.cx + Math.cos(a) * G.R * 0.9;
+        var y = G.cy + Math.sin(a) * G.R * 0.9;
+        var hot = marks[i] && marks[i].hot;
+        var near = marks[i] && marks[i].d <= G.spec.bumpArc + G.spec.warnArc;
+        var rad = hot ? G.R * 0.16 : G.R * 0.13;
+        ctx.beginPath();
+        ctx.fillStyle = hot ? "#ff3418" : "#7a2400";
+        ctx.arc(x, y, rad, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.fillStyle = hot ? "#ffe7a8" : "#ffb15a";
+        ctx.arc(x - rad * 0.28, y - rad * 0.32, rad * 0.38, 0, Math.PI * 2);
+        ctx.fill();
+        if (near || hot) {
+          ctx.beginPath();
+          ctx.lineWidth = 3;
+          ctx.strokeStyle = hot ? "#ffe27a" : "#ffd7a1";
+          ctx.arc(x, y, rad + 3, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        if (hot) {
+          ctx.fillStyle = "#fff8ef";
+          ctx.font = "900 13px " + FONT;
+          ctx.textAlign = "center";
+          ctx.fillText("こぶ", x, y - rad - 6);
+        }
+      }
+    }
+
+    function drawGuide(now) {
+      var rad = G.R + 30;
+      ctx.save();
+      ctx.beginPath();
+      ctx.strokeStyle = "rgba(255, 236, 210, .4)";
+      ctx.setLineDash([6, 7]);
+      ctx.lineWidth = 2;
+      ctx.arc(G.cx, G.cy, rad, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      if (G.phase === "play" && G.down) {
+        var ang = G.head;
+        var x = G.cx + Math.cos(ang) * rad;
+        var y = G.cy + Math.sin(ang) * rad;
+        ctx.beginPath();
+        ctx.fillStyle = G.verdict === "ok" ? "#37d67a" : "#ff3355";
+        ctx.arc(x, y, 11, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = "#fff8ef";
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawGhost(now) {
+      var s = Math.max(0.72, Math.min(1, G.w / 380));
+      var x = Math.max(46, G.w * 0.16);
+      var y = G.h - 18;
+      var bob = reduce ? 0 : Math.sin(now / 280) * 3;
+      var mood = visualMood();
+      ctx.save();
+      ctx.translate(x, y + bob);
+      ctx.scale(s, s);
+      ctx.translate(0, -70);
+      ctx.fillStyle = "rgba(0,0,0,.25)";
+      ctx.beginPath();
+      ctx.ellipse(0, 62, 22, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#ff8a1e";
+      ctx.beginPath();
+      ctx.ellipse(0, -30, 13, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#2f8a3a";
+      ctx.fillRect(-3, -46, 6, 10);
+      ctx.fillStyle = "#f7f8ff";
+      ctx.beginPath();
+      ctx.moveTo(-26, 8);
+      ctx.bezierCurveTo(-26, -28, 26, -28, 26, 8);
+      ctx.lineTo(26, 36);
+      ctx.quadraticCurveTo(16, 28, 8, 44);
+      ctx.quadraticCurveTo(0, 30, -8, 44);
+      ctx.quadraticCurveTo(-16, 28, -26, 36);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = "#d5d9ee";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = "#ffb7c8";
+      ctx.beginPath();
+      ctx.ellipse(-12, 16, 5, 3, 0, 0, Math.PI * 2);
+      ctx.ellipse(12, 16, 5, 3, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#2a211c";
+      ctx.strokeStyle = "#2a211c";
+      ctx.lineWidth = 2.4;
+      ctx.lineCap = "round";
+      if (mood === "happy" || mood === "cheer") {
+        ctx.beginPath();
+        ctx.moveTo(-16, 4);
+        ctx.quadraticCurveTo(-10, -4, -4, 4);
+        ctx.moveTo(4, 4);
+        ctx.quadraticCurveTo(10, -4, 16, 4);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(-8, 18);
+        ctx.quadraticCurveTo(0, 28, 8, 18);
+        ctx.stroke();
+      } else if (mood === "shock") {
+        ctx.beginPath();
+        ctx.arc(-10, 2, 5.5, 0, Math.PI * 2);
+        ctx.arc(10, 2, 5.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#fff";
+        ctx.beginPath();
+        ctx.arc(-8.5, 0.5, 1.7, 0, Math.PI * 2);
+        ctx.arc(11.5, 0.5, 1.7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#2a211c";
+        ctx.beginPath();
+        ctx.arc(0, 20, 6, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.beginPath();
+        ctx.ellipse(-10, 2, 4.5, 5.5, 0, 0, Math.PI * 2);
+        ctx.ellipse(10, 2, 4.5, 5.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#fff";
+        ctx.beginPath();
+        ctx.arc(-8.6, 0.4, 1.5, 0, Math.PI * 2);
+        ctx.arc(11.4, 0.4, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#2a211c";
+        ctx.beginPath();
+        if (mood === "worry") {
+          ctx.moveTo(-7, 20);
+          ctx.quadraticCurveTo(0, 16, 7, 22);
+        } else {
+          ctx.moveTo(-7, 18);
+          ctx.quadraticCurveTo(0, 24, 7, 18);
+        }
+        ctx.stroke();
+      }
+      if (mood === "worry" || mood === "shock") {
+        ctx.fillStyle = "#8fd4ff";
+        ctx.beginPath();
+        ctx.ellipse(24, -4, 3.5, 5, 0.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = "#ffe7b0";
+      ctx.font = "800 11px " + FONT;
+      ctx.textAlign = "center";
+      ctx.fillText("ポル", 0, 58);
+      ctx.restore();
+    }
+
+    function drawSparkles(now) {
+      if (G.phase !== "clear") return;
+      var i;
+      ctx.save();
+      for (i = 0; i < 14; i++) {
+        var a = now / 400 + i;
+        var rad = G.R + 20 + (i % 5) * 12;
+        var x = G.cx + Math.cos(a) * rad;
+        var y = G.cy + Math.sin(a * 1.3) * rad * 0.75;
+        ctx.globalAlpha = 0.75;
+        ctx.fillStyle = i % 2 ? "#ffe08a" : "#fff";
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function render(now) {
+      drawSky(now);
+      if (G.spec) {
+        drawRibbon(G.phase === "tear");
+        drawPumpkin();
+        drawWarts();
+        drawGuide(now);
+      } else {
+        drawPumpkin();
+      }
+      drawSparkles(now);
+      drawGhost(now);
+      if (G.phase === "play" && !G.down && G.maxTurns < 0.02) {
+        ctx.fillStyle = "rgba(255, 244, 220, .92)";
+        ctx.font = "800 14px " + FONT;
+        ctx.textAlign = "center";
+        ctx.fillText("まわりを押したまま回す", G.cx, G.cy + G.R + 58);
+      }
+    }
+
+    function frame(now) {
+      if (!G.lastFrame) G.lastFrame = now;
+      var dt = Math.min(0.05, (now - G.lastFrame) / 1000);
+      G.lastFrame = now;
+      if (stage.clientWidth !== G.w || stage.clientHeight !== G.h) fitCanvas();
+      if (G.phase === "play") tick(dt, now);
+      if (G.phase === "tear" && now >= G.until) afterTear();
+      if (G.phase === "clear" && now >= G.until) afterClear();
+      if (G.phase === "play" || G.phase === "tear" || G.phase === "clear") {
+        updateReadout();
+        render(now);
+        paintHeroes();
+      }
+      requestAnimationFrame(frame);
+    }
+
+    document.getElementById("btn-start").addEventListener("click", function () {
+      G.hearts = 2;
+      G.round = 0;
+      G.peelCm = 0;
+      G.rankedTears = 0;
+      G.cleared = false;
+      updateHearts(false);
+      showCard();
+    });
+    document.getElementById("btn-go").addEventListener("click", function () {
+      beginPlay();
+    });
+    document.getElementById("btn-retry").addEventListener("click", function () {
+      G.hearts = 2;
+      G.round = 0;
+      G.peelCm = 0;
+      G.rankedTears = 0;
+      G.cleared = false;
+      updateHearts(false);
+      showCard();
+    });
+    document.getElementById("btn-copy").addEventListener("click", function () {
+      var rank = document.getElementById("end-rank").textContent;
+      var text = L.shareText(rank, G.peelCm);
+      var btn = document.getElementById("btn-copy");
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () {
+          btn.textContent = "コピーした";
+        }, function () {
+          btn.textContent = text;
+        });
+      } else {
+        btn.textContent = text;
+      }
+    });
+    document.getElementById("mute").addEventListener("click", function () {
+      G.muted = !G.muted;
+      var btn = document.getElementById("mute");
+      btn.classList.toggle("is-muted", G.muted);
+      btn.setAttribute("aria-pressed", G.muted ? "true" : "false");
+      btn.setAttribute("aria-label", G.muted ? "音を出す" : "音を消す");
+    });
+
+    setSpeak(L.speak("title"));
+    updateHearts(false);
+    fitCanvas();
+    requestAnimationFrame(frame);
+
+    window.__PEEL = {
+      startRound: function (id) {
+        G.hearts = 2;
+        G.round = Math.max(0, Math.min(L.ROUNDS.length, id) - 1);
+        G.peelCm = 0;
+        G.rankedTears = 0;
+        G.cleared = false;
+        updateHearts(false);
+        showCard();
+      },
+      begin: function () {
+        if (G.phase !== "card") showCard();
+        beginPlay();
+      },
+      getState: function () {
+        var rect = canvas.getBoundingClientRect();
+        var band = G.band || (G.spec ? L.bandAt(G.spec, G.playT) : null);
+        return {
+          phase: G.phase,
+          hearts: G.hearts,
+          round: G.spec ? G.spec.id : (L.ROUNDS[G.round] ? L.ROUNDS[G.round].id : 0),
+          practice: !!(G.spec && G.spec.practice),
+          peelCm: G.peelCm,
+          maxTurns: G.maxTurns,
+          eff: G.eff,
+          verdict: G.verdict,
+          reason: G.reason,
+          say: sayText.textContent,
+          tear: tearEl.hidden ? "" : tearTitle.textContent,
+          tearSub: tearEl.hidden ? "" : tearSub.textContent,
+          ok: okEl.hidden ? "" : document.getElementById("ok-title").textContent,
+          rank: document.getElementById("end-rank").textContent,
+          quote: document.getElementById("end-quote").textContent,
+          headFail: document.getElementById("end-head").textContent,
+          reach: document.getElementById("end-reach").textContent,
+          cx: G.cx,
+          cy: G.cy,
+          R: G.R,
+          left: rect.left,
+          top: rect.top,
+          safeSpeed: G.safeSpeed || 0,
+          mood: visualMood(),
+          note: briefNote.textContent,
+          banner: bannerEl.hidden ? "" : bannerEl.textContent,
+          gauge: gaugeState.textContent,
+          bandWidth: band ? band.max - band.min : 0,
+          rankedTears: G.rankedTears,
+          cleared: !!G.cleared,
+          hero: (document.getElementById("hero-title").innerHTML || "").length,
+          hint: hintEl.textContent
+        };
+      }
+    };
+  })();
+  </script>
+</body>
+</html>
