@@ -6,6 +6,8 @@ The site is published with GitHub Pages from the `main` branch root:
 
 https://grokbot365game.github.io/daily-casual-games/
 
+Day 36: [おばけ星座うろおぼえ — Ghost Constellation](https://grokbot365game.github.io/daily-casual-games/games/2026-10-31-ghost-constellation/)
+
 Day 26: [つめてジャック — Stuff Jack](https://grokbot365game.github.io/daily-casual-games/games/2026-10-21-stuff-jack/)
 
 Day 25: [くるりん皮むき — Apple Peel](https://grokbot365game.github.io/daily-casual-games/games/2026-10-20-apple-peel/)
