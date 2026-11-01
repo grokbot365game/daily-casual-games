@@ -1,0 +1,1374 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#f3e2cf">
+  <meta name="description" content="おぼえてきざめ。彫刻グマのベルと、見た形を長押しで彫る記憶ゲーム。">
+  <meta property="og:title" content="おぼえてきざめ — Memory Carve">
+  <meta property="og:description" content="形を見て、ノミの長押しで削る。割れか精度不足でハートが減る。">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://grokbot365game.github.io/daily-casual-games/games/2026-11-01-memory-carve/">
+  <title>おぼえてきざめ</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='9' r='5.2' fill='%23d0925a'/%3E%3Cellipse cx='9' cy='4.2' rx='4.2' ry='2.2' fill='%23b4233c'/%3E%3Cpath d='M11 9.5l2.2 3.2-1.6.6z' fill='%23e7ebf0'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      --ink: #3a2c24;
+      --muted: #7a6558;
+      --paper: #fffaf3;
+      --accent: #e07a3a;
+      --good: #1f9d55;
+      --danger: #d4333a;
+      --line: rgba(58, 44, 36, .14);
+      --gold: #e6a317;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none; }
+    body {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      color: var(--ink);
+      background:
+        radial-gradient(80% 42% at 50% -8%, #ffe7c2 0%, transparent 58%),
+        #f3e2cf;
+      font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Yu Gothic", "WenQuanYi Micro Hei", "Droid Sans Fallback", "Meiryo", sans-serif;
+      font-size: 16px;
+      line-height: 1.35;
+      -webkit-text-size-adjust: 100%;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none;
+      user-select: none;
+      touch-action: none;
+    }
+    [hidden] { display: none !important; }
+    button, a { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+    button:focus-visible, a:focus-visible { outline: 3px solid #e6a317; outline-offset: 2px; }
+    button, .round-label, .hearts, .logo, .now-call, .acc, .passline, .head, .stats b, .stats small, .stats span, .spec span, .rows span, .rank-line span, .go, .next, .retry, .copy, .legend span, .keyhint {
+      white-space: nowrap;
+    }
+    .back, .mute {
+      position: fixed;
+      z-index: 80;
+      top: max(8px, env(safe-area-inset-top));
+      border: 0;
+      border-radius: 999px;
+      color: var(--ink);
+      background: rgba(255, 250, 243, .96);
+      box-shadow: inset 0 0 0 1px var(--line);
+      font-weight: 800;
+      touch-action: manipulation;
+    }
+    .back {
+      left: max(10px, env(safe-area-inset-left));
+      min-height: 44px;
+      padding: 8px 14px;
+      display: grid;
+      place-items: center;
+      font-size: .78rem;
+      letter-spacing: .04em;
+      text-decoration: none;
+    }
+    .mute {
+      right: max(10px, env(safe-area-inset-right));
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+    }
+    .mute svg { width: 22px; height: 22px; display: block; }
+    .mute .slash { display: none; }
+    .mute.is-muted .slash { display: block; }
+    .live {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+    }
+    .shell {
+      height: 100%;
+      max-width: 480px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding:
+        calc(max(6px, env(safe-area-inset-top)) + 48px)
+        max(8px, env(safe-area-inset-right))
+        max(8px, env(safe-area-inset-bottom))
+        max(8px, env(safe-area-inset-left));
+      min-height: 0;
+    }
+    .hud {
+      flex: none;
+      border-radius: 16px;
+      padding: 6px 10px 8px;
+      background: rgba(255, 250, 243, .97);
+      box-shadow: inset 0 0 0 1px var(--line);
+    }
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .hud b.logo { font-size: .92rem; letter-spacing: .02em; }
+    .round-label { flex: none; font-size: .78rem; font-weight: 800; color: var(--muted); }
+    .say-row { align-items: center; margin-top: 2px; }
+    .hero { flex: none; }
+    .hero svg { width: 100%; height: 100%; display: block; }
+    .hero.hud { width: 72px; height: 82px; }
+    .hero.lg { width: 128px; height: 144px; margin: 0 auto; }
+    .bear .face { display: none; }
+    .bear[data-mood="idle"] .face.idle,
+    .bear[data-mood="focus"] .face.focus,
+    .bear[data-mood="cheer"] .face.cheer,
+    .bear[data-mood="worry"] .face.worry,
+    .bear[data-mood="shock"] .face.shock,
+    .bear[data-mood="happy"] .face.happy { display: block; }
+    .say { margin: 0; flex: 1; min-width: 0; min-height: 2.6em; font-size: .86rem; font-weight: 900; line-height: 1.35; }
+    .say .who { display: block; color: #b4233c; font-size: .72rem; letter-spacing: .06em; }
+    .hearts { letter-spacing: .06em; font-size: 1.05rem; }
+    .hearts i { font-style: normal; color: #e0233a; }
+    .hearts i.off { color: #eadfd4; }
+    .hearts i.pop { display: inline-block; animation: heartpop .35s ease; }
+    @keyframes heartpop { 0% { transform: scale(1.45); } 100% { transform: scale(1); } }
+    .spec { display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 4px 0 0; }
+    .spec span { font-size: .74rem; font-weight: 900; color: var(--ink); background: #fff; border-radius: 999px; padding: 2px 8px; box-shadow: inset 0 0 0 1px var(--line); }
+    .meter-label {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 4px;
+      font-size: .75rem;
+      font-weight: 900;
+      color: var(--muted);
+    }
+    .meter-label b { color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .meter { margin-top: 3px; height: 10px; border-radius: 999px; background: #f0e2d4; overflow: hidden; }
+    .meter i { display: block; height: 100%; width: 0%; border-radius: inherit; background: linear-gradient(90deg, #f0c36a, #e07a3a); }
+    .meter.is-low i { background: linear-gradient(90deg, #ffb020, #d4333a); }
+    .hint {
+      margin: 4px 0 0;
+      min-height: 1.2em;
+      font-size: .8rem;
+      font-weight: 900;
+      color: #9a3d22;
+      white-space: nowrap;
+    }
+    .stage {
+      position: relative;
+      flex: 1;
+      min-height: 180px;
+      border-radius: 18px;
+      overflow: hidden;
+      background: #efe2d2;
+      touch-action: none;
+      box-shadow: inset 0 0 0 3px #e2c7a4, 0 8px 20px rgba(90, 50, 20, .12);
+    }
+    .stage.flash-good { box-shadow: inset 0 0 0 6px #e6a317, 0 8px 20px rgba(90, 50, 20, .12); }
+    .stage.flash-bad { box-shadow: inset 0 0 0 6px #d4333a, 0 8px 20px rgba(90, 50, 20, .12); }
+    canvas#board { width: 100%; height: 100%; display: block; touch-action: none; }
+    .now-call {
+      position: absolute;
+      left: 50%;
+      top: 46%;
+      transform: translate(-50%, -50%);
+      margin: 0;
+      padding: 8px 18px;
+      border-radius: 999px;
+      background: rgba(255, 236, 196, .96);
+      color: #3a2c24;
+      font-size: 2rem;
+      font-weight: 900;
+      letter-spacing: .08em;
+      pointer-events: none;
+    }
+    .foot { flex: none; }
+    .result {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      border-radius: 16px;
+      padding: 8px 10px;
+      background: rgba(255, 250, 243, .97);
+      box-shadow: inset 0 0 0 1px var(--line);
+    }
+    .result .nums { display: flex; gap: 10px; align-items: baseline; }
+    .result .acc { margin: 0; font-size: 1.7rem; font-weight: 900; font-variant-numeric: tabular-nums; line-height: 1; }
+    .result .acc.good { color: var(--good); }
+    .result .acc.bad { color: var(--danger); }
+    .result .passline { margin: 0; font-size: .95rem; font-weight: 900; }
+    .result .head { margin: 2px 0 0; font-size: 1.05rem; font-weight: 900; }
+    .result .sub { margin: 0; font-weight: 800; color: var(--muted); }
+    .legend { margin: 4px 0; font-size: .75rem; font-weight: 800; color: var(--muted); }
+    .legend span { font-style: normal; }
+    .legend .gold { color: #a97810; }
+    .next, .go, .retry, .copy {
+      min-height: 44px;
+      border: 0;
+      border-radius: 14px;
+      font-weight: 900;
+      touch-action: manipulation;
+      cursor: pointer;
+    }
+    .next { background: var(--accent); color: #fff; }
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      display: grid;
+      place-items: center;
+      padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+      background: rgba(58, 36, 22, .45);
+      overflow: auto;
+    }
+    .card {
+      width: min(100%, 420px);
+      border-radius: 22px;
+      padding: 16px 16px 14px;
+      background: var(--paper);
+      box-shadow: 0 16px 40px rgba(58, 36, 22, .22);
+      text-align: center;
+    }
+    .card h1 { margin: 4px 0 0; font-size: 1.55rem; letter-spacing: .04em; white-space: nowrap; }
+    .en { margin: 2px 0; color: var(--muted); font-size: .78rem; font-weight: 800; }
+    .flavor { margin: 6px 0; font-weight: 900; min-height: 1.3em; }
+    .rules { margin: 8px 0; padding-left: 1.2em; text-align: left; }
+    .rules li { font-weight: 900; font-size: .88rem; line-height: 1.45; margin: 4px 0; }
+    .rules li span { white-space: nowrap; }
+    .note-line { margin: 6px 0; font-size: .8rem; font-weight: 800; color: var(--muted); }
+    .life { margin: 0; letter-spacing: .12em; color: #e0233a; font-size: 1.1rem; white-space: nowrap; }
+    .go { width: 100%; background: var(--accent); color: #fff; margin-top: 6px; }
+    .quote { margin: 4px 0; font-size: 1.55rem; font-weight: 900; white-space: nowrap; }
+    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 8px 0; }
+    .stats.thirds { grid-template-columns: repeat(3, 1fr); }
+    .stats div { border-radius: 12px; padding: 6px 4px; background: #fff; box-shadow: inset 0 0 0 1px var(--line); }
+    .stats b { display: block; font-size: 1.02rem; }
+    .stats small { display: block; font-size: .68rem; font-weight: 800; color: var(--muted); }
+    .stats span { font-size: .68rem; font-weight: 800; color: var(--muted); }
+    .mech { margin: 4px 0 0; min-height: 1.2em; font-weight: 900; color: #9a3d22; }
+    .cue { margin: 2px 0 0; font-size: .78rem; font-weight: 800; color: var(--muted); }
+    .retry { margin-top: 8px; width: 100%; background: #fff; color: var(--ink); box-shadow: inset 0 0 0 2px #b4233c; }
+    .copy { margin-top: 8px; width: 100%; background: #3a2c24; color: #fffaf3; }
+    .res { margin: 4px 0; font-weight: 900; white-space: nowrap; }
+    .rows { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 8px 0; }
+    .rows span { font-weight: 900; font-size: .78rem; background: #fff; border-radius: 999px; padding: 4px 8px; box-shadow: inset 0 0 0 1px var(--line); }
+    .share {
+      margin: 8px 0;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: #fff;
+      box-shadow: inset 0 0 0 1px var(--line);
+      font-weight: 900;
+      font-size: .82rem;
+      line-height: 1.45;
+      text-align: left;
+      overflow-wrap: break-word;
+    }
+    .rank-line { margin: 8px 0; font-size: .72rem; font-weight: 800; line-height: 1.55; color: var(--muted); }
+    .fine { margin: 8px 0 0; font-size: .78rem; }
+    .fine a { color: var(--muted); font-weight: 900; }
+    body[data-phase="title"] .shell,
+    body[data-phase="card"] .shell,
+    body[data-phase="end"] .shell { visibility: hidden; }
+    @keyframes bob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+    .hero.lg { animation: bob 2.6s ease-in-out infinite; }
+    @media (max-height: 700px) {
+      .hero.lg { width: 88px; height: 100px; }
+      .card { padding: 10px 12px; }
+      .card h1, .quote { font-size: 1.28rem; }
+      .rules { margin: 6px 0; }
+      .rules li { font-size: .78rem; }
+      .hero.hud { width: 58px; height: 66px; }
+      .say { font-size: .78rem; min-height: 2.2em; }
+      .hud { padding: 4px 8px 6px; }
+      .now-call { font-size: 1.6rem; }
+      .result .acc { font-size: 1.45rem; }
+    }
+    @media (max-width: 360px) {
+      .card h1 { font-size: 1.28rem; }
+      .stats b { font-size: .92rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .hearts i.pop, .hero.lg { animation: none !important; }
+    }
+  </style>
+</head>
+<body data-phase="title">
+  <a class="back" href="../../index.html">ギャラリー</a>
+  <button type="button" class="mute" id="mute" aria-pressed="false" aria-label="音を消す">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="M4 9h4l5-4v14l-5-4H4z"/>
+      <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 9.5a4 4 0 0 1 0 5"/>
+      <path class="slash" fill="none" stroke="#c4322e" stroke-width="2.4" stroke-linecap="round" d="M6 5l13 14"/>
+    </svg>
+  </button>
+  <p class="live" id="live" aria-live="polite"></p>
+  <div class="shell" id="shell">
+    <header class="hud">
+      <div class="row">
+        <b class="logo">おぼえてきざめ</b>
+        <span class="hearts" id="hearts" aria-label="ハート3"><i>♥</i><i>♥</i><i>♥</i></span>
+      </div>
+      <div class="row say-row">
+        <div class="hero hud bear" id="hero-hud" data-mood="idle" aria-hidden="true"></div>
+        <p class="say"><span class="who">ベル</span><span id="say-text"></span></p>
+        <span class="round-label" id="round-label"></span>
+      </div>
+      <p class="spec" id="spec-line"></p>
+      <div class="meter-label"><span id="meter-name">見る時間</span><b id="meter-read">—</b></div>
+      <div class="meter" id="meter" aria-hidden="true"><i id="meter-fill"></i></div>
+      <p class="hint" id="hint"></p>
+    </header>
+    <div class="stage" id="stage">
+      <canvas id="board" width="360" height="480" aria-label="石。見た形を長押しで彫る"></canvas>
+      <p class="now-call" id="now-call" hidden>彫れ！</p>
+    </div>
+    <div class="foot">
+      <div class="result" id="result" hidden>
+        <div class="nums">
+          <p class="acc" id="acc-num">0%</p>
+          <p class="passline" id="pass-line">合格ライン —%</p>
+        </div>
+        <p class="head" id="result-head"></p>
+        <p class="sub" id="result-sub"></p>
+        <p class="legend"><span class="gold" id="legend-main">金線＝正解</span>　<span id="legend-name"></span></p>
+        <button type="button" class="next" id="btn-next">つぎへ</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="title">
+    <div class="card">
+      <div class="hero lg bear" id="hero-title" data-mood="cheer" role="img" aria-label="ベル"></div>
+      <h1>おぼえてきざめ</h1>
+      <p class="en">Memory Carve · Day 37</p>
+      <p class="flavor" id="title-say"></p>
+      <ol class="rules" id="rules">
+        <li><span>ノミは自動で進む。</span><span>長押しで削る（離すと止まる）</span></li>
+        <li><span>精度%は高さの近さ。</span><span>届かないか割れでハート−1</span><span>（3つ・練習は減らない）</span></li>
+        <li><span>割れ＝ブロックの22%より</span><span>深く削りすぎ（赤・戻せない）</span></li>
+      </ol>
+      <p class="note-line">最初の1回は練習（ハートは減らない）</p>
+      <p class="life" aria-hidden="true">♥♥♥</p>
+      <button type="button" class="go" id="btn-start">はじめる</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="brief" hidden>
+    <div class="card">
+      <div class="hero lg bear" id="hero-card" data-mood="cheer" aria-hidden="true"></div>
+      <p class="en" id="brief-kicker">ラウンド開始</p>
+      <p class="quote" id="brief-title">練習</p>
+      <p class="flavor" id="card-say"></p>
+      <div class="stats">
+        <div><b id="brief-cols"></b><span>列の数</span></div>
+        <div><b id="brief-view"></b><span>見る時間</span></div>
+        <div><b id="brief-speed"></b><small id="brief-sweep"></small><span>ノミの速さ</span></div>
+        <div><b id="brief-pass"></b><span>合格ライン</span></div>
+      </div>
+      <p class="cue">秒/列が短いほど速い</p>
+      <p class="cue">金色のあいだに離す。赤く光ったら割れ</p>
+      <p class="mech" id="brief-note"></p>
+      <button type="button" class="go" id="btn-go">スタート</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="end" hidden>
+    <div class="card">
+      <div class="hero lg bear" id="hero-end" data-mood="happy" aria-hidden="true"></div>
+      <p class="en">結果カード · おぼえてきざめ</p>
+      <p class="res" id="end-head">ゲームオーバー</p>
+      <p class="quote" id="end-rank">石ころ</p>
+      <p class="flavor" id="end-say"></p>
+      <div class="stats thirds">
+        <div><b id="end-reach">—</b><span>到達</span></div>
+        <div><b id="end-hearts">♥♥♥</b><span>残りハート</span></div>
+        <div><b id="end-clear">まだ</b><span>クリア</span></div>
+      </div>
+      <p class="rows" id="end-rows"></p>
+      <p class="share" id="end-quote"></p>
+      <p class="rank-line"><span>全クリア＋ハート3＝巨匠</span> / <span>全クリア＝彫り師</span> / <span>R4以上＝助手</span> / <span>それ未満＝石ころ</span></p>
+      <button type="button" class="copy" id="btn-copy">この結果をコピー</button>
+      <button type="button" class="retry" id="btn-retry">もういちど</button>
+      <p class="fine"><a href="../../index.html">ギャラリーへ</a></p>
+    </div>
+  </div>
+
+  <template id="hero-tpl">
+    <svg viewBox="0 0 120 136" aria-hidden="true">
+      <ellipse cx="60" cy="130" rx="32" ry="5" fill="rgba(58,44,36,.2)"/>
+      <path d="M16 112 l10 3 -12 3 z" fill="#e4d8c8"/>
+      <ellipse cx="64" cy="104" rx="34" ry="26" fill="#c4844a"/>
+      <path d="M42 94 h40 l-3 28 h-34 z" fill="#f7f1e7"/>
+      <path d="M52 96 v24 M74 96 v24" stroke="#e4d4c4" stroke-width="1.4"/>
+      <ellipse cx="64" cy="112" rx="16" ry="12" fill="#f6d7b0"/>
+      <ellipse cx="46" cy="124" rx="12" ry="7" fill="#a86b34"/>
+      <ellipse cx="82" cy="124" rx="12" ry="7" fill="#a86b34"/>
+      <circle cx="32" cy="52" r="13" fill="#c4844a"/>
+      <circle cx="32" cy="52" r="7" fill="#f0b4b8"/>
+      <circle cx="90" cy="52" r="13" fill="#c4844a"/>
+      <circle cx="90" cy="52" r="7" fill="#f0b4b8"/>
+      <circle cx="60" cy="66" r="30" fill="#d0925a"/>
+      <ellipse cx="74" cy="42" rx="26" ry="12" fill="#b4233c"/>
+      <ellipse cx="80" cy="38" rx="11" ry="5.5" fill="#d23b56"/>
+      <circle cx="96" cy="36" r="4.2" fill="#7d1528"/>
+      <ellipse cx="60" cy="78" rx="15" ry="11" fill="#f8e2c8"/>
+      <ellipse cx="60" cy="74" rx="4.2" ry="3" fill="#3a2c24"/>
+      <g transform="translate(98,90) rotate(26)">
+        <rect x="-3" y="0" width="6" height="18" rx="2" fill="#8d5a32"/>
+        <path d="M-4.5 18 h9 l-4.5 10 z" fill="#e7ebf0"/>
+        <path d="M-4.5 18 h9 l-4.5 3 z" fill="#c5ccd4"/>
+      </g>
+      <circle cx="96" cy="92" r="7.5" fill="#d0925a"/>
+      <g class="face idle">
+        <ellipse cx="48" cy="64" rx="3.2" ry="3.8" fill="#3a2c24"/>
+        <ellipse cx="72" cy="64" rx="3.2" ry="3.8" fill="#3a2c24"/>
+        <circle cx="49" cy="63" r="1" fill="#fff"/>
+        <circle cx="73" cy="63" r="1" fill="#fff"/>
+        <path d="M54 84 q6 5 12 0" fill="none" stroke="#3a2c24" stroke-width="1.6" stroke-linecap="round"/>
+      </g>
+      <g class="face focus">
+        <path d="M42 60 q6 -6 12 2" fill="none" stroke="#3a2c24" stroke-width="1.8" stroke-linecap="round"/>
+        <path d="M66 62 q6 -6 12 2" fill="none" stroke="#3a2c24" stroke-width="1.8" stroke-linecap="round"/>
+        <ellipse cx="48" cy="66" rx="3" ry="3.4" fill="#3a2c24"/>
+        <ellipse cx="72" cy="66" rx="3" ry="3.4" fill="#3a2c24"/>
+        <path d="M54 84 q6 2 12 0" fill="none" stroke="#3a2c24" stroke-width="1.6" stroke-linecap="round"/>
+      </g>
+      <g class="face cheer">
+        <path d="M44 66 q6 -8 12 0" fill="none" stroke="#3a2c24" stroke-width="2" stroke-linecap="round"/>
+        <path d="M66 66 q6 -8 12 0" fill="none" stroke="#3a2c24" stroke-width="2" stroke-linecap="round"/>
+        <path d="M52 82 q8 8 16 0" fill="none" stroke="#3a2c24" stroke-width="1.7" stroke-linecap="round"/>
+        <ellipse cx="40" cy="74" rx="4" ry="2.2" fill="#f0a0a8"/>
+        <ellipse cx="82" cy="74" rx="4" ry="2.2" fill="#f0a0a8"/>
+      </g>
+      <g class="face happy">
+        <path d="M44 66 q6 -8 12 0" fill="none" stroke="#3a2c24" stroke-width="2" stroke-linecap="round"/>
+        <path d="M66 66 q6 -8 12 0" fill="none" stroke="#3a2c24" stroke-width="2" stroke-linecap="round"/>
+        <path d="M52 82 q8 9 16 0" fill="none" stroke="#3a2c24" stroke-width="1.7" stroke-linecap="round"/>
+        <ellipse cx="40" cy="74" rx="4" ry="2.2" fill="#f0a0a8"/>
+        <ellipse cx="82" cy="74" rx="4" ry="2.2" fill="#f0a0a8"/>
+      </g>
+      <g class="face worry">
+        <ellipse cx="48" cy="66" rx="2.8" ry="3.2" fill="#3a2c24"/>
+        <ellipse cx="72" cy="66" rx="2.8" ry="3.2" fill="#3a2c24"/>
+        <path d="M54 86 q6 2 12 0" fill="none" stroke="#3a2c24" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M84 58 q4 6 0 12" fill="none" stroke="#7eb8e8" stroke-width="2" stroke-linecap="round"/>
+      </g>
+      <g class="face shock">
+        <circle cx="48" cy="64" r="5" fill="#fffaf3"/>
+        <circle cx="72" cy="64" r="5" fill="#fffaf3"/>
+        <circle cx="48" cy="65" r="2.2" fill="#3a2c24"/>
+        <circle cx="72" cy="65" r="2.2" fill="#3a2c24"/>
+        <ellipse cx="60" cy="84" rx="4" ry="5" fill="#3a2c24"/>
+        <ellipse cx="40" cy="74" rx="4" ry="2.2" fill="#f0a0a8"/>
+        <ellipse cx="82" cy="74" rx="4" ry="2.2" fill="#f0a0a8"/>
+      </g>
+    </svg>
+  </template>
+
+  <script src="logic.js"></script>
+  <script>
+  (function () {
+    "use strict";
+    var L = window.CarveLogic;
+    var FONT = '"Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", sans-serif';
+    var params = new URLSearchParams(location.search);
+    var DEBUG = params.get("debug") === "1";
+
+    var titleEl = document.getElementById("title");
+    var briefEl = document.getElementById("brief");
+    var endEl = document.getElementById("end");
+    var shellEl = document.getElementById("shell");
+    var sayText = document.getElementById("say-text");
+    var titleSay = document.getElementById("title-say");
+    var cardSay = document.getElementById("card-say");
+    var endSay = document.getElementById("end-say");
+    var roundLabel = document.getElementById("round-label");
+    var heartsEl = document.getElementById("hearts");
+    var hintEl = document.getElementById("hint");
+    var liveEl = document.getElementById("live");
+    var stage = document.getElementById("stage");
+    var canvas = document.getElementById("board");
+    var ctx = canvas.getContext("2d");
+    var nowCall = document.getElementById("now-call");
+    var resultEl = document.getElementById("result");
+    var accNum = document.getElementById("acc-num");
+    var passLine = document.getElementById("pass-line");
+    var resultHead = document.getElementById("result-head");
+    var resultSub = document.getElementById("result-sub");
+    var btnNext = document.getElementById("btn-next");
+    var meterName = document.getElementById("meter-name");
+    var meterRead = document.getElementById("meter-read");
+    var meterFill = document.getElementById("meter-fill");
+    var meter = document.getElementById("meter");
+    var specLine = document.getElementById("spec-line");
+    var muteBtn = document.getElementById("mute");
+    var audioCtx = null;
+    var lastVoice = "";
+
+    var G = {
+      phase: "title",
+      hearts: L.HEARTS,
+      round: 0,
+      roll: null,
+      remains: [],
+      goodSeen: [],
+      brokenSeen: [],
+      log: [],
+      acc: 0,
+      brokenN: 0,
+      reason: "",
+      didPass: false,
+      reachedId: 0,
+      attempt: 0,
+      lastShape: "",
+      muted: false,
+      pointerHold: false,
+      pointerId: null,
+      keyHold: false,
+      autoPerfect: false,
+      showT0: 0,
+      nowT0: 0,
+      sweepT0: 0,
+      settleT0: 0,
+      lastTs: 0,
+      tickLeft: 99,
+      particles: [],
+      flashUntil: 0,
+      flashKind: "",
+      cutSnd: 0,
+      w: 360,
+      h: 480
+    };
+
+    function mountHeroes() {
+      var tpl = document.getElementById("hero-tpl");
+      var ids = ["hero-hud", "hero-title", "hero-card", "hero-end"];
+      var i;
+      for (i = 0; i < ids.length; i++) {
+        document.getElementById(ids[i]).appendChild(tpl.content.cloneNode(true));
+      }
+    }
+
+    function setSpeak(line) {
+      if (!line) return;
+      var mood = line.mood || "idle";
+      var text = line.text || "";
+      var key = mood + "|" + text;
+      if (key === lastVoice) return;
+      lastVoice = key;
+      var bears = document.querySelectorAll(".bear");
+      var i;
+      for (i = 0; i < bears.length; i++) bears[i].dataset.mood = mood;
+      sayText.textContent = text;
+      titleSay.textContent = text;
+      cardSay.textContent = text;
+      endSay.textContent = text;
+      liveEl.textContent = text;
+    }
+
+    function setPhase(phase) {
+      G.phase = phase;
+      document.body.dataset.phase = phase;
+      titleEl.hidden = phase !== "title";
+      briefEl.hidden = phase !== "card";
+      endEl.hidden = phase !== "end";
+      resultEl.hidden = phase !== "result";
+      nowCall.hidden = phase !== "now";
+      var shellHidden = phase === "title" || phase === "card" || phase === "end";
+      shellEl.setAttribute("aria-hidden", shellHidden ? "true" : "false");
+      if (phase !== "result" && phase !== "settle") {
+        stage.classList.remove("flash-good");
+        stage.classList.remove("flash-bad");
+      }
+    }
+
+    function updateHearts(pop) {
+      var html = "";
+      var i;
+      for (i = 1; i <= L.HEARTS; i++) {
+        var on = G.hearts >= i;
+        var lost = pop && !on && i === G.hearts + 1;
+        html += '<i class="' + (on ? "" : "off") + (lost ? " pop" : "") + '">♥</i>';
+      }
+      heartsEl.innerHTML = html;
+      heartsEl.setAttribute("aria-label", "ハート" + Math.max(0, G.hearts));
+    }
+
+    function beep(kind) {
+      if (G.muted) return;
+      try {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        if (!audioCtx) audioCtx = new AC();
+        if (audioCtx.state === "suspended") audioCtx.resume();
+        var now = audioCtx.currentTime;
+        function tone(freq, t0, dur, type, gain) {
+          var osc = audioCtx.createOscillator();
+          var amp = audioCtx.createGain();
+          osc.type = type || "sine";
+          osc.frequency.setValueAtTime(freq, t0);
+          amp.gain.setValueAtTime(gain, t0);
+          amp.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+          osc.connect(amp);
+          amp.connect(audioCtx.destination);
+          osc.start(t0);
+          osc.stop(t0 + dur + 0.02);
+        }
+        if (kind === "cut") {
+          tone(160 + Math.random() * 50, now, 0.03, "square", 0.02);
+        } else if (kind === "tick") {
+          tone(720, now, 0.05, "square", 0.03);
+        } else if (kind === "now") {
+          tone(520, now, 0.1, "triangle", 0.06);
+          tone(780, now + 0.08, 0.14, "triangle", 0.06);
+        } else if (kind === "view") {
+          tone(440, now, 0.1, "sine", 0.04);
+        } else if (kind === "good") {
+          tone(880, now, 0.08, "sine", 0.06);
+          tone(1320, now + 0.06, 0.12, "sine", 0.05);
+        } else if (kind === "bad") {
+          tone(140, now, 0.16, "sawtooth", 0.04);
+          tone(90, now + 0.06, 0.18, "triangle", 0.05);
+        } else if (kind === "ok") {
+          tone(523, now, 0.12, "triangle", 0.06);
+          tone(659, now + 0.07, 0.12, "triangle", 0.06);
+          tone(784, now + 0.14, 0.16, "triangle", 0.06);
+        }
+      } catch (err) {}
+    }
+
+    function holding() {
+      return !!(G.pointerHold || G.keyHold);
+    }
+
+    function freshRemains(n) {
+      var a = [];
+      var i;
+      for (i = 0; i < n; i++) a.push(1);
+      return a;
+    }
+
+    function fitCanvas() {
+      var rect = stage.getBoundingClientRect();
+      var w = Math.max(1, Math.round(rect.width));
+      var h = Math.max(1, Math.round(rect.height));
+      var dpr = Math.min(2, window.devicePixelRatio || 1);
+      if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
+        canvas.width = Math.round(w * dpr);
+        canvas.height = Math.round(h * dpr);
+      }
+      canvas.style.width = w + "px";
+      canvas.style.height = h + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      G.w = w;
+      G.h = h;
+    }
+
+    function metrics() {
+      var n = G.roll ? G.roll.cols : 4;
+      var padX = 12;
+      var banner = 8;
+      var bearRoom = 54;
+      var bottom = 14;
+      var blockTop = banner + bearRoom;
+      var blockH = Math.max(48, G.h - blockTop - bottom);
+      var gap = n > 7 ? 3 : 4;
+      var colW = (G.w - padX * 2 - gap * (n - 1)) / n;
+      return { n: n, padX: padX, blockTop: blockTop, blockH: blockH, gap: gap, colW: colW };
+    }
+
+    function colX(i, m) {
+      return m.padX + i * (m.colW + m.gap);
+    }
+
+    function yOf(hNorm, m) {
+      return m.blockTop + m.blockH * (1 - hNorm);
+    }
+
+    function roundRectPath(x, y, w, h, r) {
+      var rr = Math.min(r, w / 2, h / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + rr, y);
+      ctx.arcTo(x + w, y, x + w, y + h, rr);
+      ctx.arcTo(x + w, y + h, x, y + h, rr);
+      ctx.arcTo(x, y + h, x, y, rr);
+      ctx.arcTo(x, y, x + w, y, rr);
+      ctx.closePath();
+    }
+
+    function spawnChips(x, y) {
+      var k;
+      for (k = 0; k < 3; k++) {
+        G.particles.push({
+          x: x + (Math.random() - 0.5) * 10,
+          y: y,
+          vx: (Math.random() - 0.5) * 90,
+          vy: -30 - Math.random() * 80,
+          life: 0.28 + Math.random() * 0.22,
+          age: 0,
+          r: 1.4 + Math.random() * 1.8
+        });
+      }
+    }
+
+    function flash(kind) {
+      G.flashKind = kind;
+      G.flashUntil = performance.now() + 180;
+      stage.classList.toggle("flash-good", kind === "good");
+      stage.classList.toggle("flash-bad", kind === "bad");
+    }
+
+    function drawScene(now) {
+      var g = ctx.createLinearGradient(0, 0, 0, G.h);
+      g.addColorStop(0, "#f6e6d2");
+      g.addColorStop(0.72, "#f3dcc4");
+      g.addColorStop(1, "#e7c39a");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, G.w, G.h);
+      ctx.fillStyle = "rgba(255,255,255,.35)";
+      ctx.beginPath();
+      ctx.arc(G.w - 36, 28, 18, 0, Math.PI * 2);
+      ctx.fill();
+      var m = metrics();
+      ctx.fillStyle = "#d7a56a";
+      ctx.fillRect(0, m.blockTop + m.blockH - 4, G.w, G.h);
+      ctx.fillStyle = "#c4894a";
+      ctx.fillRect(0, m.blockTop + m.blockH + 8, G.w, 8);
+    }
+
+    function drawBar(x, y, w, h, fill) {
+      if (h < 1 || w < 1) return;
+      roundRectPath(x, y, w, h, 5);
+      ctx.fillStyle = fill;
+      ctx.fill();
+    }
+
+    function drawWatcher(m) {
+      drawCarver(m.padX + 18, m.blockTop - 2, false, 0);
+    }
+
+    function drawCarver(x, tipY, cutting, now) {
+      var bob = cutting ? Math.sin(now / 70) * 1.6 : 0;
+      ctx.save();
+      ctx.translate(x, tipY + bob);
+      ctx.fillStyle = "#d7dde4";
+      ctx.beginPath();
+      ctx.moveTo(-5, -14);
+      ctx.lineTo(5, -14);
+      ctx.lineTo(0, 1);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = "#8d5a32";
+      ctx.fillRect(-3, -30, 6, 16);
+      ctx.fillStyle = "#d0925a";
+      ctx.beginPath();
+      ctx.arc(0, -34, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(-1, -52, 11, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(-10, -58, 4.2, 0, Math.PI * 2);
+      ctx.arc(8, -58, 4.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#b4233c";
+      ctx.beginPath();
+      ctx.ellipse(2, -60, 11, 5, -0.4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#3a2c24";
+      ctx.beginPath();
+      ctx.arc(-5, -52, 1.3, 0, Math.PI * 2);
+      ctx.arc(2, -52, 1.3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function currentCol(now) {
+      if (!G.roll || G.phase !== "sweep") return 0;
+      var total = G.roll.sweep * G.roll.cols;
+      var u = (now - G.sweepT0) / 1000 / total;
+      return L.columnIndex(u, G.roll.cols);
+    }
+
+    function drawShow(now) {
+      var m = metrics();
+      var roll = G.roll;
+      drawWatcher(m);
+      ctx.fillStyle = "#3a2c24";
+      ctx.font = "800 15px " + FONT;
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillText(roll.mirror ? "左右反対に彫る" : "この形", m.padX + 40, 16);
+      var i;
+      for (i = 0; i < roll.cols; i++) {
+        var x = colX(i, m);
+        var y = yOf(roll.shown[i], m);
+        var h = m.blockTop + m.blockH - y;
+        drawBar(x, y, m.colW, h, "#3a2c24");
+      }
+    }
+
+    function drawBlock(now, col, showAnswer) {
+      var m = metrics();
+      var roll = G.roll;
+      var i;
+      for (i = 0; i < roll.cols; i++) {
+        var x = colX(i, m);
+        var remain = G.remains[i];
+        var target = roll.targets[i];
+        var y = yOf(remain, m);
+        var h = m.blockTop + m.blockH - y;
+        var z = L.zone(target, remain);
+        drawBar(x, y, m.colW, h, z === "broken" ? "#e7b2a8" : "#e7d7c8");
+        ctx.save();
+        roundRectPath(x, y, m.colW, Math.max(h, 1), 5);
+        ctx.clip();
+        var grad = ctx.createLinearGradient(x, y, x, y + h);
+        grad.addColorStop(0, z === "broken" ? "#f0c2b8" : "#f4ece3");
+        grad.addColorStop(0.18, z === "broken" ? "#e7b2a8" : "#ddcbb8");
+        grad.addColorStop(1, "#cbb59f");
+        ctx.fillStyle = grad;
+        ctx.fillRect(x, y, m.colW, h);
+        ctx.restore();
+        if (i === col && (G.phase === "sweep" || G.phase === "now")) {
+          ctx.strokeStyle = "rgba(224, 122, 58, .95)";
+          ctx.lineWidth = 3;
+          roundRectPath(x + 1, m.blockTop + 1, m.colW - 2, m.blockH - 2, 6);
+          ctx.stroke();
+        }
+        if (z === "good") {
+          ctx.fillStyle = "#e6a317";
+          ctx.fillRect(x, y, m.colW, Math.min(8, h));
+        } else if (z === "deep") {
+          ctx.fillStyle = "#e07a3a";
+          ctx.fillRect(x, y, m.colW, Math.min(8, h));
+        } else if (z === "broken") {
+          ctx.strokeStyle = "#d4333a";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(x + 4, y + 6);
+          ctx.lineTo(x + m.colW * 0.45, y + h * 0.45);
+          ctx.lineTo(x + m.colW * 0.3, y + h * 0.75);
+          ctx.stroke();
+        }
+        if (showAnswer) {
+          var yT = yOf(target, m);
+          var top = Math.min(y, yT);
+          var bot = Math.max(y, yT);
+          ctx.fillStyle = remain > target ? "rgba(212, 51, 58, .42)" : "rgba(230, 163, 23, .45)";
+          ctx.fillRect(x + 2, top, m.colW - 4, Math.max(1, bot - top));
+        }
+      }
+      if (showAnswer) {
+        ctx.strokeStyle = "#e6a317";
+        ctx.lineWidth = 3;
+        ctx.lineJoin = "round";
+        ctx.beginPath();
+        for (i = 0; i < roll.cols; i++) {
+          var cx = colX(i, m) + m.colW / 2;
+          var cy = yOf(roll.targets[i], m);
+          if (i === 0) ctx.moveTo(cx, cy);
+          else ctx.lineTo(cx, cy);
+        }
+        ctx.stroke();
+        ctx.fillStyle = "#3a2c24";
+        ctx.font = "800 14px " + FONT;
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        ctx.fillText("精度 " + G.acc + "%", 10, 8);
+      }
+      var tipCol = col;
+      if (G.phase === "result" || G.phase === "settle") tipCol = roll.cols - 1;
+      var tipX = colX(tipCol, m) + m.colW / 2;
+      var tipY = yOf(G.remains[tipCol], m);
+      drawCarver(tipX, tipY, holding() && G.phase === "sweep", now);
+    }
+
+    function drawParticles() {
+      var i;
+      for (i = 0; i < G.particles.length; i++) {
+        var p = G.particles[i];
+        var a = 1 - p.age / p.life;
+        if (a <= 0) continue;
+        ctx.globalAlpha = Math.max(0, a);
+        ctx.fillStyle = "#f7f1e7";
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function drawAnswer(now) {
+      drawBlock(now, -1, true);
+      drawParticles();
+    }
+
+    function draw(now) {
+      fitCanvas();
+      drawScene(now);
+      if (!G.roll) return;
+      if (G.phase === "show") drawShow(now);
+      else if (G.phase === "now") drawBlock(now, 0, false);
+      else if (G.phase === "sweep" || G.phase === "settle") {
+        drawBlock(now, G.phase === "sweep" ? currentCol(now) : -1, false);
+        drawParticles();
+      } else if (G.phase === "result") drawAnswer(now);
+    }
+
+    function fillSpec(info) {
+      specLine.innerHTML = "";
+      var bits = [
+        info.cols + "列",
+        "見る" + info.view + "秒",
+        info.speed + "列/秒",
+        info.perCol + "秒/列",
+        "合格" + info.pass + "%"
+      ];
+      var i;
+      for (i = 0; i < bits.length; i++) {
+        var s = document.createElement("span");
+        s.textContent = bits[i];
+        specLine.appendChild(s);
+      }
+      document.getElementById("brief-cols").textContent = info.cols + "列";
+      document.getElementById("brief-view").textContent = info.view + "秒";
+      document.getElementById("brief-speed").textContent = info.speed + "列/秒";
+      document.getElementById("brief-sweep").textContent = info.perCol + "秒/列";
+      document.getElementById("brief-pass").textContent = info.pass + "%";
+    }
+
+    function showCard() {
+      var spec = L.ROUNDS[G.round];
+      G.attempt += 1;
+      var seed = (Date.now() + G.attempt * 9973) >>> 0;
+      G.roll = L.rollRound(spec, L.mulberry32(seed), G.lastShape);
+      G.lastShape = G.roll.shapeId;
+      G.reachedId = G.roll.id;
+      G.remains = freshRemains(G.roll.cols);
+      G.goodSeen = [];
+      G.brokenSeen = [];
+      G.particles = [];
+      G.pointerHold = false;
+      var info = L.roundInfo(G.roll);
+      document.getElementById("brief-kicker").textContent = info.kicker;
+      document.getElementById("brief-title").textContent = info.title;
+      document.getElementById("brief-note").textContent = info.note;
+      roundLabel.textContent = info.index;
+      fillSpec(info);
+      setPhase("card");
+      setSpeak(L.speak("card", {
+        practice: info.title === "練習",
+        mirror: info.mirror,
+        intro: info.intro,
+        last: info.last
+      }));
+      canvas.setAttribute("aria-label", "石。これから形を見る");
+    }
+
+    function beginShow() {
+      if (!G.roll) return;
+      G.remains = freshRemains(G.roll.cols);
+      G.goodSeen = [];
+      G.brokenSeen = [];
+      G.particles = [];
+      G.showT0 = performance.now();
+      G.tickLeft = 99;
+      G.lastTs = G.showT0;
+      setPhase("show");
+      setSpeak(L.speak("show", { mirror: G.roll.mirror }));
+      beep("view");
+      canvas.setAttribute("aria-label", "石。形を見ている");
+    }
+
+    function startNow(now) {
+      if (G.phase !== "show") return;
+      G.nowT0 = now;
+      setPhase("now");
+      setSpeak(L.speak("now"));
+      beep("now");
+      canvas.setAttribute("aria-label", "彫れ。長押しで削る");
+    }
+
+    function startSweep(now) {
+      if (G.phase !== "now") return;
+      G.sweepT0 = now;
+      G.lastTs = now;
+      setPhase("sweep");
+      canvas.setAttribute("aria-label", "石。ノミが自動で進む。長押しで削る");
+    }
+
+    function startSettle(now) {
+      if (G.phase !== "sweep") return;
+      G.pointerHold = false;
+      G.keyHold = false;
+      G.settleT0 = now;
+      setPhase("settle");
+      var anyBroken = L.brokenCount(G.roll.targets, G.remains) > 0;
+      setSpeak(L.speak("sweep", { holding: false, good: false, deep: false, broken: anyBroken }));
+    }
+
+    function updateSweep(now, dt) {
+      var roll = G.roll;
+      var total = roll.sweep * roll.cols;
+      var elapsed = (now - G.sweepT0) / 1000;
+      var u = elapsed / total;
+      if (u >= 1) {
+        startSettle(now);
+        return;
+      }
+      var col = L.columnIndex(u, roll.cols);
+      if (G.autoPerfect) {
+        G.pointerHold = G.remains[col] > roll.targets[col] + 0.008;
+      }
+      if (holding()) {
+        var before = G.remains[col];
+        var after = L.cut(before, dt);
+        if (G.autoPerfect && after < roll.targets[col]) after = roll.targets[col];
+        if (after < before - 1e-6) {
+          var m = metrics();
+          spawnChips(colX(col, m) + m.colW / 2, yOf(after, m));
+          if (now - G.cutSnd > 80) {
+            beep("cut");
+            G.cutSnd = now;
+          }
+        }
+        if (L.crossedGood(before, after, roll.targets[col]) && !G.goodSeen[col]) {
+          G.goodSeen[col] = true;
+          beep("good");
+          flash("good");
+        }
+        if (L.crossedBroken(before, after, roll.targets[col]) && !G.brokenSeen[col]) {
+          G.brokenSeen[col] = true;
+          beep("bad");
+          flash("bad");
+        }
+        G.remains[col] = after;
+      }
+    }
+
+    function sweepContext(now) {
+      var col = G.phase === "sweep" ? currentCol(now) : 0;
+      var z = "high";
+      if (G.roll && G.remains.length) z = L.zone(G.roll.targets[col], G.remains[col]);
+      return {
+        holding: holding(),
+        good: z === "good" && holding(),
+        deep: z === "deep" && holding(),
+        broken: z === "broken",
+        mirror: !!(G.roll && G.roll.mirror)
+      };
+    }
+
+    function syncVoice(now) {
+      if (!G.roll) return;
+      var ctxVoice = { mirror: !!G.roll.mirror };
+      if (G.phase === "show") setSpeak(L.speak("show", ctxVoice));
+      else if (G.phase === "now") setSpeak(L.speak("now"));
+      else if (G.phase === "sweep") {
+        ctxVoice = sweepContext(now);
+        setSpeak(L.speak("sweep", ctxVoice));
+      }
+      var h = L.hint(G.phase === "settle" ? "sweep" : G.phase, G.phase === "sweep" ? sweepContext(now) : ctxVoice);
+      if (hintEl.textContent !== h) hintEl.textContent = h;
+    }
+
+    function updateMeter(now) {
+      if (!G.roll) return;
+      if (G.phase === "show") {
+        var left = Math.max(0, G.roll.view - (now - G.showT0) / 1000);
+        var ceil = Math.ceil(left);
+        if (ceil < G.tickLeft && left > 0.05 && left < G.roll.view - 0.05) beep("tick");
+        G.tickLeft = ceil;
+        meterName.textContent = "見る時間";
+        meterRead.textContent = left.toFixed(1);
+        meterFill.style.width = Math.max(0, Math.min(100, left / G.roll.view * 100)) + "%";
+        meter.classList.toggle("is-low", left < G.roll.view * 0.3);
+      } else if (G.phase === "sweep" || G.phase === "now" || G.phase === "settle") {
+        var total = G.roll.sweep * G.roll.cols;
+        var u = G.phase === "sweep" ? Math.min(1, (now - G.sweepT0) / 1000 / total) : (G.phase === "settle" ? 1 : 0);
+        var col = G.phase === "sweep" ? currentCol(now) + 1 : (G.phase === "settle" ? G.roll.cols : 1);
+        meterName.textContent = "ノミ";
+        meterRead.textContent = col + "/" + G.roll.cols + "列";
+        meterFill.style.width = (u * 100) + "%";
+        meter.classList.remove("is-low");
+      } else if (G.phase === "result") {
+        meterName.textContent = "精度";
+        meterRead.textContent = G.acc + "%";
+        meterFill.style.width = G.acc + "%";
+        meter.classList.toggle("is-low", G.reason !== "pass");
+      }
+    }
+
+    function stepParticles(dt) {
+      var next = [];
+      var i;
+      for (i = 0; i < G.particles.length; i++) {
+        var p = G.particles[i];
+        p.age += dt;
+        if (p.age >= p.life) continue;
+        p.vy += 280 * dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        next.push(p);
+      }
+      G.particles = next;
+    }
+
+    function finishJudge() {
+      if (G.phase !== "settle") return;
+      var pct = L.accuracyPercent(G.roll.targets, G.remains);
+      var broken = L.brokenCount(G.roll.targets, G.remains);
+      var reason = L.reasonFor(pct, broken, G.roll.pass);
+      var ok = reason === "pass";
+      var practice = !!G.roll.practice;
+      G.hearts = L.nextHearts(G.hearts, practice, ok);
+      G.acc = pct;
+      G.brokenN = broken;
+      G.reason = reason;
+      G.didPass = ok;
+      L.recordRound(G.log, {
+        id: G.roll.id,
+        label: L.labelFor(G.roll),
+        pct: pct,
+        pass: G.roll.pass,
+        broken: broken,
+        ok: ok
+      });
+      updateHearts(!practice && !ok);
+      var copy = L.resultCopy(practice, G.hearts, reason);
+      accNum.textContent = pct + "%";
+      accNum.className = "acc " + (ok ? "good" : "bad");
+      passLine.textContent = "合格ライン " + G.roll.pass + "%";
+      resultHead.textContent = copy.head;
+      resultSub.textContent = copy.sub;
+      document.getElementById("legend-main").textContent = G.roll.mirror ? "左右反対が正解" : "金線＝正解";
+      document.getElementById("legend-name").textContent = G.roll.shapeName;
+      if (ok && G.round >= L.ROUNDS.length - 1) btnNext.textContent = "結果を見る";
+      else if (ok) btnNext.textContent = "つぎへ";
+      else if (!practice && G.hearts <= 0) btnNext.textContent = "結果を見る";
+      else btnNext.textContent = "もういちど";
+      setPhase("result");
+      stage.classList.add(ok ? "flash-good" : "flash-bad");
+      setSpeak(L.speak("result", { practice: practice, hearts: G.hearts, reason: reason }));
+      hintEl.textContent = L.hint("result", { reason: reason });
+      beep(ok ? "ok" : "bad");
+      canvas.setAttribute("aria-label", "答えあわせ。精度" + pct + "パーセント。合格ライン" + G.roll.pass + "パーセント");
+    }
+
+    function reachedLabel(id) {
+      if (!id) return "練習";
+      return "R" + id;
+    }
+
+    function showEnd(cleared) {
+      var rank = L.rankFor(cleared, G.hearts, G.reachedId);
+      var label = reachedLabel(G.reachedId);
+      document.getElementById("end-head").textContent = cleared ? "全クリア" : "ゲームオーバー";
+      document.getElementById("end-rank").textContent = rank;
+      document.getElementById("end-reach").textContent = label;
+      var hearts = "";
+      var i;
+      for (i = 0; i < G.hearts; i++) hearts += "♥";
+      document.getElementById("end-hearts").textContent = hearts || "なし";
+      document.getElementById("end-clear").textContent = cleared ? "した" : "まだ";
+      var rowsEl = document.getElementById("end-rows");
+      rowsEl.innerHTML = "";
+      for (i = 0; i < G.log.length; i++) {
+        var chip = document.createElement("span");
+        chip.textContent = G.log[i].label + " " + G.log[i].pct + "%";
+        rowsEl.appendChild(chip);
+      }
+      document.getElementById("end-quote").textContent = L.shareText(rank, G.hearts, G.log);
+      setPhase("end");
+      setSpeak(L.speak("end", { rank: rank, reached: label }));
+    }
+
+    function onNext() {
+      if (G.didPass) {
+        if (G.round >= L.ROUNDS.length - 1) {
+          showEnd(true);
+          return;
+        }
+        G.round += 1;
+        showCard();
+        return;
+      }
+      if (!G.roll.practice && G.hearts <= 0) {
+        showEnd(false);
+        return;
+      }
+      showCard();
+    }
+
+    function resetGame() {
+      G.hearts = L.HEARTS;
+      G.round = 0;
+      G.reachedId = 0;
+      G.roll = null;
+      G.remains = [];
+      G.log = [];
+      G.didPass = false;
+      G.acc = 0;
+      G.reason = "";
+      G.pointerHold = false;
+      G.keyHold = false;
+      G.particles = [];
+      updateHearts(false);
+      roundLabel.textContent = "";
+      specLine.innerHTML = "";
+      meterRead.textContent = "—";
+      meterFill.style.width = "0%";
+      hintEl.textContent = "";
+      setPhase("title");
+      setSpeak(L.speak("title"));
+      canvas.setAttribute("aria-label", "石。見た形を長押しで彫る");
+    }
+
+    function onDown(e) {
+      if (G.phase !== "show" && G.phase !== "now" && G.phase !== "sweep") return;
+      if (e.button != null && e.button !== 0) return;
+      if (e.target && e.target.closest && e.target.closest("button, a")) return;
+      G.pointerHold = true;
+      G.pointerId = e.pointerId;
+      e.preventDefault();
+    }
+
+    function onMove(e) {
+      if (!G.pointerHold || e.pointerId !== G.pointerId) return;
+      e.preventDefault();
+    }
+
+    function onUp(e) {
+      if (G.pointerId != null && e.pointerId != null && e.pointerId !== G.pointerId) return;
+      G.pointerHold = false;
+      G.pointerId = null;
+    }
+
+    function loop(now) {
+      if (!G.lastTs) G.lastTs = now;
+      var dt = Math.min(0.05, (now - G.lastTs) / 1000);
+      G.lastTs = now;
+      if (G.flashUntil && now > G.flashUntil && G.phase !== "result") {
+        stage.classList.remove("flash-good");
+        stage.classList.remove("flash-bad");
+        G.flashUntil = 0;
+      }
+      if (G.phase === "show") {
+        updateMeter(now);
+        syncVoice(now);
+        if ((now - G.showT0) / 1000 >= G.roll.view) startNow(now);
+      } else if (G.phase === "now") {
+        updateMeter(now);
+        syncVoice(now);
+        if (now - G.nowT0 >= L.NOW_MS) startSweep(now);
+      } else if (G.phase === "sweep") {
+        updateSweep(now, dt);
+        updateMeter(now);
+        syncVoice(now);
+        stepParticles(dt);
+      } else if (G.phase === "settle") {
+        updateMeter(now);
+        stepParticles(dt);
+        if (now - G.settleT0 >= L.SETTLE_MS) finishJudge();
+      } else if (G.phase === "result") {
+        updateMeter(now);
+        stepParticles(dt);
+      }
+      if (G.phase === "show" || G.phase === "now" || G.phase === "sweep" || G.phase === "settle" || G.phase === "result") {
+        draw(now);
+      }
+      requestAnimationFrame(loop);
+    }
+
+    mountHeroes();
+    updateHearts(false);
+    setSpeak(L.speak("title"));
+    stage.addEventListener("pointerdown", onDown, { passive: false });
+    window.addEventListener("pointermove", onMove, { passive: false });
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+    stage.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+    window.addEventListener("keydown", function (e) {
+      if (e.code !== "Space" && e.key !== " ") return;
+      e.preventDefault();
+      if (e.repeat) return;
+      G.keyHold = true;
+    });
+    window.addEventListener("keyup", function (e) {
+      if (e.code !== "Space" && e.key !== " ") return;
+      e.preventDefault();
+      G.keyHold = false;
+    });
+    window.addEventListener("blur", function () {
+      G.pointerHold = false;
+      G.keyHold = false;
+    });
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden) {
+        G.pointerHold = false;
+        G.keyHold = false;
+      }
+    });
+    document.getElementById("btn-start").addEventListener("click", function () {
+      var q = params.get("round");
+      var n = q == null ? 0 : parseInt(q, 10);
+      if (q === "P" || q === "p") n = 0;
+      if (!isNaN(n) && n >= 0 && n < L.ROUNDS.length) G.round = n;
+      else G.round = 0;
+      showCard();
+    });
+    document.getElementById("btn-go").addEventListener("click", beginShow);
+    btnNext.addEventListener("click", onNext);
+    document.getElementById("btn-retry").addEventListener("click", resetGame);
+    document.getElementById("btn-copy").addEventListener("click", function () {
+      var text = document.getElementById("end-quote").textContent;
+      var btn = this;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () {
+          btn.textContent = "コピーした";
+        }).catch(function () {
+          btn.textContent = "コピーした";
+        });
+      } else {
+        btn.textContent = "コピーした";
+      }
+    });
+    muteBtn.addEventListener("click", function () {
+      G.muted = !G.muted;
+      muteBtn.classList.toggle("is-muted", G.muted);
+      muteBtn.setAttribute("aria-pressed", G.muted ? "true" : "false");
+      muteBtn.setAttribute("aria-label", G.muted ? "音を出す" : "音を消す");
+    });
+    window.addEventListener("resize", fitCanvas);
+    if (DEBUG) {
+      window.__carve = {
+        get: function () {
+          return {
+            phase: G.phase,
+            hearts: G.hearts,
+            round: G.round,
+            acc: G.acc,
+            reason: G.reason,
+            didPass: G.didPass,
+            remains: G.remains.slice(),
+            targets: G.roll ? G.roll.targets.slice() : [],
+            shown: G.roll ? G.roll.shown.slice() : [],
+            log: G.log.slice(),
+            holding: holding(),
+            roll: G.roll
+          };
+        },
+        setHold: function (v) { G.pointerHold = !!v; },
+        setAuto: function (v) { G.autoPerfect = !!v; }
+      };
+    }
+    requestAnimationFrame(loop);
+  })();
+  </script>
+</body>
+</html>
